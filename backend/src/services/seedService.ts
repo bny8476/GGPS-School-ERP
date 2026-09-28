@@ -147,6 +147,7 @@ export const seedDatabase = async () => {
         phoneNumber: '+91 98765 00005',
         designation: 'Lead Instructor',
         salary: 4000,
+        assignedClass: 'LKG',
       },
       options
     );

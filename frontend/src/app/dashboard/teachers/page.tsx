@@ -20,6 +20,7 @@ function TeachersContent() {
   const [isSaving, setIsSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedRole, setSelectedRole] = useState("All Roles");
+  const [selectedClass, setSelectedClass] = useState("All Classes");
   const [selectedDesignation, setSelectedDesignation] = useState("All Designations");
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   const [activeTab, setActiveTab] = useState<"All" | "FullTime" | "Heads" | "OnLeave">("All");
@@ -45,6 +46,7 @@ function TeachersContent() {
     salary: '',
     performanceNotes: '',
     roleName: 'Teacher',
+    assignedClass: '',
     teachingAssignments: [] as { classId: string, subjectId: string }[]
   });
 
@@ -59,6 +61,7 @@ function TeachersContent() {
       qualification: "M.A. Child Psychology, D.E.C.Ed",
       experienceYears: 8,
       salary: 65000,
+      assignedClass: "LKG",
       role: { name: "Teacher" },
       status: "Active",
       rating: "4.9 ★"
@@ -73,6 +76,7 @@ function TeachersContent() {
       qualification: "Ph.D. Mathematics",
       experienceYears: 12,
       salary: 82000,
+      assignedClass: "UKG",
       role: { name: "Teacher" },
       status: "Active",
       rating: "5.0 ★"
@@ -87,6 +91,7 @@ function TeachersContent() {
       qualification: "M.A. English, B.Ed",
       experienceYears: 6,
       salary: 58000,
+      assignedClass: "PreKG",
       role: { name: "Teacher" },
       status: "Active",
       rating: "4.8 ★"
@@ -159,6 +164,7 @@ function TeachersContent() {
       firstName: '', lastName: '', email: '', password: '',
       phoneNumber: '', designation: '', qualification: '',
       experienceYears: '', salary: '', performanceNotes: '', roleName: 'Teacher',
+      assignedClass: '',
       teachingAssignments: []
     });
     setEditingTeacherId(null);
@@ -179,6 +185,7 @@ function TeachersContent() {
       salary: teacher.salary?.toString() || '',
       performanceNotes: teacher.performanceNotes || '',
       roleName: teacher.role?.name || 'Teacher',
+      assignedClass: teacher.assignedClass || '',
       teachingAssignments: teacher.teachingAssignments ? teacher.teachingAssignments.map((ta: any) => ({
         classId: ta.classId?._id || ta.classId || '',
         subjectId: ta.subjectId?._id || ta.subjectId || ''
@@ -212,6 +219,9 @@ function TeachersContent() {
         : `${process.env.NEXT_PUBLIC_API_URL}/api/users`;
         
       const payload = { ...formData };
+      if (!editingTeacherId && !payload.password) {
+        payload.password = 'TeacherPassword123!';
+      }
       if (editingTeacherId && !payload.password) {
         delete (payload as any).password;
       }
@@ -244,9 +254,11 @@ function TeachersContent() {
   const filteredTeachers = teachers.filter(t => {
     const matchesSearch = (t.firstName + " " + t.lastName).toLowerCase().includes(searchQuery.toLowerCase()) || 
                           t.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          (t.designation || '').toLowerCase().includes(searchQuery.toLowerCase());
+                          (t.designation || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          (t.assignedClass || '').toLowerCase().includes(searchQuery.toLowerCase());
     const matchesRole = selectedRole === "All Roles" || (t.role || 'Teacher') === selectedRole || (t.designation || '').toLowerCase().includes(selectedRole.toLowerCase());
-    return matchesSearch && matchesRole;
+    const matchesClass = selectedClass === "All Classes" || (t.assignedClass || '') === selectedClass;
+    return matchesSearch && matchesRole && matchesClass;
   });
 
   const pageSize = 6;
@@ -376,9 +388,20 @@ function TeachersContent() {
                 <option value="Staff">Staff</option>
               </select>
 
+              <select
+                value={selectedClass}
+                onChange={(e) => setSelectedClass(e.target.value)}
+                className="px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 outline-none shrink-0"
+              >
+                <option value="All Classes">All Classes</option>
+                <option value="PreKG">PreKG</option>
+                <option value="LKG">LKG</option>
+                <option value="UKG">UKG</option>
+              </select>
+
               <button
                 type="button"
-                onClick={() => { setSelectedRole("All Roles"); setSearchQuery(""); setCurrentPage(1); }}
+                onClick={() => { setSelectedRole("All Roles"); setSelectedClass("All Classes"); setSearchQuery(""); setCurrentPage(1); }}
                 className="px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5 shrink-0 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors"
                 title="Reset Filters"
               >
@@ -452,6 +475,11 @@ function TeachersContent() {
                         <span className="px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider bg-[#E5EEFF] text-[#0050CB]">
                           {t.designation || t.role?.name || 'Faculty'}
                         </span>
+                        {t.assignedClass && (
+                          <span className="px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider bg-orange-100 dark:bg-orange-950/40 text-[#FF690C] border border-[#FF690C]/20">
+                            Class: {t.assignedClass}
+                          </span>
+                        )}
                       </div>
                       
                       <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
@@ -707,6 +735,21 @@ function TeachersContent() {
                   required
                   className="w-full mt-1 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 outline-none"
                 />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 dark:text-slate-300">Teaching Class *</label>
+                <select
+                  value={formData.assignedClass}
+                  onChange={(e) => setFormData({ ...formData, assignedClass: e.target.value })}
+                  required
+                  className="w-full mt-1 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 outline-none font-semibold text-slate-800 dark:text-slate-200 cursor-pointer"
+                >
+                  <option value="">Select Teaching Class (LKG, PreKG, UKG)</option>
+                  <option value="PreKG">PreKG</option>
+                  <option value="LKG">LKG</option>
+                  <option value="UKG">UKG</option>
+                </select>
               </div>
 
               <div className="grid grid-cols-2 gap-3">

@@ -19,6 +19,7 @@ export interface IUser extends Document {
   experienceYears?: number;
   performanceNotes?: string;
   joinDate?: Date;
+  assignedClass?: string;
   teachingAssignments?: {
     classId: mongoose.Types.ObjectId;
     subjectId: mongoose.Types.ObjectId;
@@ -110,6 +111,10 @@ const UserSchema: Schema = new Schema(
     joinDate: {
       type: Date,
       default: Date.now,
+    },
+    assignedClass: {
+      type: String,
+      trim: true,
     },
     teachingAssignments: [
       {

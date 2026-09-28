@@ -62,7 +62,7 @@ export const getUsers = async (req: Request, res: Response) => {
 // @route   POST /api/users
 export const createUser = async (req: Request, res: Response) => {
   try {
-    const { firstName, lastName, email, password, roleName, salary, designation, joinDate, qualification, experienceYears, performanceNotes, teachingAssignments } = req.body;
+    const { firstName, lastName, email, password, roleName, salary, designation, joinDate, qualification, experienceYears, performanceNotes, teachingAssignments, assignedClass } = req.body;
 
     const userExists = await User.findOne({ email });
     if (userExists) {
@@ -90,6 +90,7 @@ export const createUser = async (req: Request, res: Response) => {
       experienceYears,
       performanceNotes,
       teachingAssignments,
+      assignedClass,
       joinDate: joinDate ? new Date(joinDate) : undefined,
     });
 
@@ -118,7 +119,7 @@ export const updateUser = async (req: Request, res: Response) => {
       return res.status(403).json({ message: 'User not authorized to update this profile' });
     }
 
-    const { firstName, lastName, email, phoneNumber, roleName, isActive, salary, designation, joinDate, qualification, experienceYears, performanceNotes, teachingAssignments } = req.body;
+    const { firstName, lastName, email, phoneNumber, roleName, isActive, salary, designation, joinDate, qualification, experienceYears, performanceNotes, teachingAssignments, assignedClass } = req.body;
     
     // Everyone can update basic profile info
     const updates: Record<string, unknown> = { firstName, lastName, email };
@@ -138,6 +139,7 @@ export const updateUser = async (req: Request, res: Response) => {
       }
       if (salary !== undefined) updates.salary = salary;
       if (joinDate !== undefined) updates.joinDate = new Date(joinDate);
+      if (assignedClass !== undefined) updates.assignedClass = assignedClass;
       if (teachingAssignments !== undefined) updates.teachingAssignments = teachingAssignments;
     }
 
