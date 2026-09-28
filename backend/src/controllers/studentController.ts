@@ -70,15 +70,43 @@ export const getStudents = async (req: Request, res: Response) => {
       query.status = status;
     }
 
-    // 3. Search by name or admissionNumber or studentId
+    // 3. Search by name, admissionNumber, studentId, parent name, phone number, class, and section
     if (search) {
-      const searchRegex = new RegExp(String(search).trim(), 'i');
-      query.$or = [
+      const searchTrimmed = String(search).trim();
+      const searchRegex = new RegExp(searchTrimmed, 'i');
+
+      const [matchingParents, matchingClasses, matchingSections] = await Promise.all([
+        Parent.find({
+          $or: [
+            { fatherName: searchRegex },
+            { motherName: searchRegex },
+            { fatherContact: searchRegex },
+            { motherContact: searchRegex },
+            { primaryEmail: searchRegex },
+          ],
+        }).select('_id'),
+        Class.find({ name: searchRegex }).select('_id'),
+        Section.find({ name: searchRegex }).select('_id'),
+      ]);
+
+      const parentIds = matchingParents.map((p) => p._id);
+      const classIds = matchingClasses.map((c) => c._id);
+      const sectionIds = matchingSections.map((s) => s._id);
+
+      const orConditions: any[] = [
         { firstName: searchRegex },
         { lastName: searchRegex },
         { admissionNumber: searchRegex },
         { studentId: searchRegex },
+        { emergencyContact: searchRegex },
+        { grade: searchRegex },
       ];
+
+      if (parentIds.length > 0) orConditions.push({ parentId: { $in: parentIds } });
+      if (classIds.length > 0) orConditions.push({ classId: { $in: classIds } });
+      if (sectionIds.length > 0) orConditions.push({ sectionId: { $in: sectionIds } });
+
+      query.$or = orConditions;
     }
 
     // 4. Class & Section filter

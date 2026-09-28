@@ -6,7 +6,8 @@ import { ArrowRight, Menu, X, Sun, Moon, Globe, ChevronDown, Check } from 'lucid
 import { useState, useRef, useEffect } from 'react';
 import AcademyLogo from '@/components/AcademyLogo';
 import { useTheme } from '@/context/ThemeContext';
-import { useLanguage, type LanguageCode } from '@/context/LanguageContext';
+import { useLanguage } from '@/context/LanguageContext';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { InteractiveHoverButton } from "@/registry/magicui/interactive-hover-button";
 
 export default function Navbar() {
@@ -85,6 +86,60 @@ export default function Navbar() {
           <span className="text-slate-300 dark:text-slate-700 font-light text-sm select-none">|</span>
 
           <Link
+            href="/events"
+            className={`font-saas relative text-sm tracking-wide transition-all duration-200 py-1 hover-expand-spacing ${
+              pathname === '/events'
+                ? 'text-[#0050CB] dark:text-[#38BDF8] font-bold'
+                : 'text-slate-700 dark:text-slate-200 hover:text-[#0050CB] dark:hover:text-[#38BDF8] font-semibold'
+            }`}
+          >
+            <span>{t('nav.events', 'Events')}</span>
+            {pathname === '/events' ? (
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#0050CB] dark:bg-[#38BDF8] rounded-full" />
+            ) : (
+              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#0050CB] dark:bg-[#38BDF8] rounded-full transition-all duration-200 hover:w-full" />
+            )}
+          </Link>
+
+          <span className="text-slate-300 dark:text-slate-700 font-light text-sm select-none">|</span>
+
+          <Link
+            href="/gallery"
+            className={`font-saas relative text-sm tracking-wide transition-all duration-200 py-1 hover-expand-spacing ${
+              pathname === '/gallery'
+                ? 'text-[#0050CB] dark:text-[#38BDF8] font-bold'
+                : 'text-slate-700 dark:text-slate-200 hover:text-[#0050CB] dark:hover:text-[#38BDF8] font-semibold'
+            }`}
+          >
+            <span>Gallery</span>
+            {pathname === '/gallery' ? (
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#0050CB] dark:bg-[#38BDF8] rounded-full" />
+            ) : (
+              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#0050CB] dark:bg-[#38BDF8] rounded-full transition-all duration-200 hover:w-full" />
+            )}
+          </Link>
+
+          <span className="text-slate-300 dark:text-slate-700 font-light text-sm select-none">|</span>
+
+          <Link
+            href="/contact"
+            className={`font-saas relative text-sm tracking-wide transition-all duration-200 py-1 hover-expand-spacing ${
+              pathname === '/contact'
+                ? 'text-[#0050CB] dark:text-[#38BDF8] font-bold'
+                : 'text-slate-700 dark:text-slate-200 hover:text-[#0050CB] dark:hover:text-[#38BDF8] font-semibold'
+            }`}
+          >
+            <span>{t('nav.contact', 'Contact')}</span>
+            {pathname === '/contact' ? (
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#0050CB] dark:bg-[#38BDF8] rounded-full" />
+            ) : (
+              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#0050CB] dark:bg-[#38BDF8] rounded-full transition-all duration-200 hover:w-full" />
+            )}
+          </Link>
+
+          <span className="text-slate-300 dark:text-slate-700 font-light text-sm select-none">|</span>
+
+          <Link
             href="/login"
             className={`font-saas relative text-sm tracking-wide transition-all duration-200 py-1 hover-expand-spacing ${
               pathname === '/login'
@@ -136,52 +191,11 @@ export default function Navbar() {
           </div>
 
           {/* Language Selector Dropdown Pill */}
-          <div className="relative" ref={langRef}>
-            <button
-              type="button"
-              onClick={() => setIsLangOpen(!isLangOpen)}
-              className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white dark:bg-[#001438] border border-slate-200/90 dark:border-slate-700 text-[#000E28] dark:text-white hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50/80 dark:hover:bg-slate-800/80 transition-all shadow-xs text-sm font-semibold cursor-pointer"
-              aria-haspopup="true"
-              aria-expanded={isLangOpen}
-            >
-              <Globe className="w-4 h-4 text-slate-600 dark:text-slate-300" strokeWidth={2} />
-              <span>{currentLanguage.nativeName}</span>
-              <ChevronDown className={`w-3.5 h-3.5 text-slate-500 transition-transform duration-200 ${isLangOpen ? 'rotate-180' : ''}`} />
-            </button>
+          <LanguageSwitcher />
 
-            {isLangOpen && (
-              <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-[#001438] border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl py-1.5 z-50 animate-in fade-in zoom-in-95 duration-150">
-                <div className="px-3.5 py-1 text-[10px] font-bold tracking-wider text-slate-400 uppercase">
-                  {t('nav.selectLanguage', 'Select Language')}
-                </div>
-                {languages.map((lang) => (
-                  <button
-                    key={lang.code}
-                    type="button"
-                    onClick={() => {
-                      setLanguage(lang.code);
-                      setIsLangOpen(false);
-                    }}
-                    className={`w-full text-left px-3.5 py-2 text-xs font-semibold flex items-center justify-between hover:bg-[#E5EEFF] dark:hover:bg-[#0050CB]/25 hover:text-[#0050CB] dark:hover:text-blue-300 transition-colors cursor-pointer ${
-                      language === lang.code ? 'text-[#0050CB] dark:text-blue-400 font-bold bg-[#E5EEFF]/60 dark:bg-[#0050CB]/20' : 'text-slate-700 dark:text-slate-200'
-                    }`}
-                  >
-                    <div className="flex flex-col">
-                      <span>{lang.nativeName}</span>
-                      <span className="text-[10px] text-slate-400 font-normal">{lang.label}</span>
-                    </div>
-                    {language === lang.code && (
-                      <Check className="w-4 h-4 text-[#0050CB] dark:text-blue-400" strokeWidth={2.5} />
-                    )}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Enroll Now CTA Button with Magic UI Interactive Hover Effect */}
-          <InteractiveHoverButton href="/admissions" className="ml-1">
-            {t('nav.enrollNow', 'Enroll Now')}
+          {/* Enquire Now CTA Button with Magic UI Interactive Hover Effect */}
+          <InteractiveHoverButton href="/enquire" className="ml-1">
+            {t('nav.enquireNow', 'Enquire Now')}
           </InteractiveHoverButton>
         </div>
 
@@ -212,11 +226,39 @@ export default function Navbar() {
             {t('nav.admissions', 'Admissions')}
           </Link>
           <Link
+            href="/events"
+            className="text-slate-700 dark:text-slate-300 font-semibold py-2 hover:text-[#0050CB]"
+            onClick={() => setIsOpen(false)}
+          >
+            {t('nav.events', 'Events')}
+          </Link>
+          <Link
+            href="/gallery"
+            className="text-slate-700 dark:text-slate-300 font-semibold py-2 hover:text-[#0050CB]"
+            onClick={() => setIsOpen(false)}
+          >
+            Gallery
+          </Link>
+          <Link
+            href="/contact"
+            className="text-slate-700 dark:text-slate-300 font-semibold py-2 hover:text-[#0050CB]"
+            onClick={() => setIsOpen(false)}
+          >
+            {t('nav.contact', 'Contact')}
+          </Link>
+          <Link
             href="/login"
             className="text-slate-700 dark:text-slate-300 font-semibold py-2 hover:text-[#0050CB]"
             onClick={() => setIsOpen(false)}
           >
             {t('nav.adminPortal', 'Admin Portal')}
+          </Link>
+          <Link
+            href="/enquire"
+            className="text-[#0050CB] font-bold py-2"
+            onClick={() => setIsOpen(false)}
+          >
+            {t('nav.enquireNow', 'Enquire Now')}
           </Link>
           
           {/* Mobile Theme & Language Controls */}
@@ -274,7 +316,7 @@ export default function Navbar() {
           </div>
 
           <InteractiveHoverButton 
-            href="/admissions" 
+            href="/enquiry" 
             className="w-full mt-1 justify-center"
             onClick={() => setIsOpen(false)}
           >

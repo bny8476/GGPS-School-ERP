@@ -21,6 +21,7 @@ import {
   ChevronDown
 } from 'lucide-react';
 import AddStudentModal from '@/components/admin/AddStudentModal';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface AdminExecutiveDashboardProps {
   stats: any;
@@ -41,6 +42,7 @@ export default function AdminExecutiveDashboard({
   userName,
   onRefresh,
 }: AdminExecutiveDashboardProps) {
+  const { t } = useLanguage();
   const [isAddStudentOpen, setIsAddStudentOpen] = useState(false);
 
   const displayName = userName?.trim() || 'Admin';
@@ -111,18 +113,21 @@ export default function AdminExecutiveDashboard({
       ======================================================== */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-4">
         {/* Card 1: Total Students */}
-        <div className="lg:col-span-2 xl:col-span-2 bg-white dark:bg-[#07152F] rounded-2xl p-4 border border-slate-200/80 dark:border-slate-800 shadow-[0_2px_10px_rgba(0,14,40,0.02)] flex flex-col justify-between hover:shadow-md transition-shadow relative overflow-hidden">
+        <Link
+          href="/dashboard/students"
+          className="lg:col-span-2 xl:col-span-2 bg-white dark:bg-[#07152F] rounded-2xl p-4 border border-slate-200/80 dark:border-slate-800 shadow-[0_2px_10px_rgba(0,14,40,0.02)] flex flex-col justify-between hover:shadow-md hover:-translate-y-0.5 transition-all relative overflow-hidden group cursor-pointer block"
+        >
           <div>
             <div className="flex items-center justify-between">
-              <div className="w-9 h-9 rounded-xl bg-[#0050CB] text-white flex items-center justify-center shadow-sm shadow-[#0050CB]/25">
+              <div className="w-9 h-9 rounded-xl bg-[#0050CB] text-white flex items-center justify-center shadow-sm shadow-[#0050CB]/25 group-hover:scale-105 transition-transform">
                 <Users className="w-4 h-4" />
               </div>
               <span className="text-[10px] font-bold text-[#0050CB] dark:text-[#38BDF8] bg-blue-50 dark:bg-[#0050CB]/20 px-2 py-0.5 rounded-full border border-blue-100 dark:border-blue-900/40">
                 Enrolled
               </span>
             </div>
-            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-2.5">
-              Total Students
+            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-2.5 group-hover:text-[#0050CB] transition-colors">
+              {t('dashboard.totalStudents', 'Total Students')}
             </p>
             <p className="text-2xl font-black text-[#000E28] dark:text-white mt-0.5 tracking-tight">
               {stats?.totalStudents ? stats.totalStudents.toLocaleString('en-IN') : '1,248'}
@@ -147,21 +152,24 @@ export default function AdminExecutiveDashboard({
             </div>
             <span className="text-[10px] font-semibold text-slate-400">Live</span>
           </div>
-        </div>
+        </Link>
 
         {/* Card 2: Total Teachers / Staff */}
-        <div className="lg:col-span-2 xl:col-span-2 bg-white dark:bg-[#07152F] rounded-2xl p-4 border border-slate-200/80 dark:border-slate-800 shadow-[0_2px_10px_rgba(0,14,40,0.02)] flex flex-col justify-between hover:shadow-md transition-shadow relative overflow-hidden">
+        <Link
+          href="/dashboard/teachers"
+          className="lg:col-span-2 xl:col-span-2 bg-white dark:bg-[#07152F] rounded-2xl p-4 border border-slate-200/80 dark:border-slate-800 shadow-[0_2px_10px_rgba(0,14,40,0.02)] flex flex-col justify-between hover:shadow-md hover:-translate-y-0.5 transition-all relative overflow-hidden group cursor-pointer block"
+        >
           <div>
             <div className="flex items-center justify-between">
-              <div className="w-9 h-9 rounded-xl bg-[#8B5CF6] text-white flex items-center justify-center shadow-sm shadow-purple-500/25">
+              <div className="w-9 h-9 rounded-xl bg-[#8B5CF6] text-white flex items-center justify-center shadow-sm shadow-purple-500/25 group-hover:scale-105 transition-transform">
                 <GraduationCap className="w-4 h-4" />
               </div>
               <span className="text-[10px] font-bold text-purple-600 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/50 px-2 py-0.5 rounded-full border border-purple-100 dark:border-purple-900/40">
                 1:18 Ratio
               </span>
             </div>
-            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-2.5">
-              Total Teachers / Staff
+            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-2.5 group-hover:text-purple-600 transition-colors">
+              {t('dashboard.totalStaff', 'Total Teachers / Staff')}
             </p>
             <p className="text-2xl font-black text-[#000E28] dark:text-white mt-0.5 tracking-tight">
               {stats?.totalStaff ? stats.totalStaff.toLocaleString('en-IN') : '86'}
@@ -186,21 +194,24 @@ export default function AdminExecutiveDashboard({
             </div>
             <span className="text-[10px] font-semibold text-slate-400">Verified</span>
           </div>
-        </div>
+        </Link>
 
         {/* Card 3: New Admissions */}
-        <div className="lg:col-span-2 xl:col-span-2 bg-white dark:bg-[#07152F] rounded-2xl p-4 border border-slate-200/80 dark:border-slate-800 shadow-[0_2px_10px_rgba(0,14,40,0.02)] flex flex-col justify-between hover:shadow-md transition-shadow relative overflow-hidden">
+        <Link
+          href="/dashboard/admissions"
+          className="lg:col-span-2 xl:col-span-2 bg-white dark:bg-[#07152F] rounded-2xl p-4 border border-slate-200/80 dark:border-slate-800 shadow-[0_2px_10px_rgba(0,14,40,0.02)] flex flex-col justify-between hover:shadow-md hover:-translate-y-0.5 transition-all relative overflow-hidden group cursor-pointer block"
+        >
           <div>
             <div className="flex items-center justify-between">
-              <div className="w-9 h-9 rounded-xl bg-[#10B981] text-white flex items-center justify-center shadow-sm shadow-emerald-500/25">
+              <div className="w-9 h-9 rounded-xl bg-[#10B981] text-white flex items-center justify-center shadow-sm shadow-emerald-500/25 group-hover:scale-105 transition-transform">
                 <UserPlus className="w-4 h-4" />
               </div>
               <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded-full border border-emerald-100 dark:border-emerald-900/40">
                 AY 25-26
               </span>
             </div>
-            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-2.5">
-              New Admissions
+            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-2.5 group-hover:text-emerald-600 transition-colors">
+              {t('dashboard.newAdmissions', 'New Admissions')}
             </p>
             <p className="text-2xl font-black text-[#000E28] dark:text-white mt-0.5 tracking-tight">
               {stats?.newAdmissions ?? stats?.admissionPipeline?.confirmed ?? 42}
@@ -225,21 +236,24 @@ export default function AdminExecutiveDashboard({
             </div>
             <span className="text-[10px] font-semibold text-slate-400">Target</span>
           </div>
-        </div>
+        </Link>
 
         {/* Card 4: Fee Collection */}
-        <div className="lg:col-span-2 xl:col-span-2 bg-white dark:bg-[#07152F] rounded-2xl p-4 border border-slate-200/80 dark:border-slate-800 shadow-[0_2px_10px_rgba(0,14,40,0.02)] flex flex-col justify-between hover:shadow-md transition-shadow relative overflow-hidden">
+        <Link
+          href="/dashboard/fees"
+          className="lg:col-span-2 xl:col-span-2 bg-white dark:bg-[#07152F] rounded-2xl p-4 border border-slate-200/80 dark:border-slate-800 shadow-[0_2px_10px_rgba(0,14,40,0.02)] flex flex-col justify-between hover:shadow-md hover:-translate-y-0.5 transition-all relative overflow-hidden group cursor-pointer block"
+        >
           <div>
             <div className="flex items-center justify-between">
-              <div className="w-9 h-9 rounded-xl bg-[#F59E0B] text-white flex items-center justify-center shadow-sm shadow-amber-500/25">
+              <div className="w-9 h-9 rounded-xl bg-[#F59E0B] text-white flex items-center justify-center shadow-sm shadow-amber-500/25 group-hover:scale-105 transition-transform">
                 <IndianRupee className="w-4 h-4 stroke-[2.5]" />
               </div>
               <span className="text-[10px] font-bold text-amber-600 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/50 px-2 py-0.5 rounded-full border border-amber-100 dark:border-amber-900/40">
                 Term 1
               </span>
             </div>
-            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-2.5">
-              Fee Collection
+            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-2.5 group-hover:text-amber-600 transition-colors">
+              {t('dashboard.feeCollection', 'Fee Collection')}
             </p>
             <p className="text-2xl font-black text-[#000E28] dark:text-white mt-0.5 tracking-tight">
               {formatCurrency(stats?.feeStats?.collected ?? stats?.feeCollectionSummary, '₹ 8.42 L')}
@@ -264,19 +278,19 @@ export default function AdminExecutiveDashboard({
             </div>
             <span className="text-[10px] font-semibold text-slate-400">Q3 Pace</span>
           </div>
-        </div>
+        </Link>
 
         {/* Card 5: Quick Actions (Spans 4 columns for full readable action buttons) */}
         <div className="sm:col-span-2 lg:col-span-4 xl:col-span-4 bg-white dark:bg-[#07152F] rounded-2xl p-4 border border-slate-200/80 dark:border-slate-800 shadow-[0_2px_10px_rgba(0,14,40,0.02)] flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <h3 className="text-xs sm:text-sm font-bold text-[#000E28] dark:text-white">
-              Quick Actions
+              {t('dashboard.quickActions', 'Quick Actions')}
             </h3>
             <Link
               href="/dashboard/workflows"
               className="text-[11px] font-bold text-[#0050CB] hover:underline"
             >
-              View All
+              {t('dashboard.viewAll', 'View All')}
             </Link>
           </div>
 
@@ -291,7 +305,7 @@ export default function AdminExecutiveDashboard({
                 <UserPlus className="w-3.5 h-3.5" />
               </div>
               <span className="text-[11px] sm:text-xs font-semibold text-slate-700 dark:text-slate-200 group-hover:text-[#0050CB] truncate">
-                Add Student
+                {t('dashboard.addStudent', 'Add Student')}
               </span>
             </button>
 
@@ -303,7 +317,7 @@ export default function AdminExecutiveDashboard({
                 <UserPlus className="w-3.5 h-3.5" />
               </div>
               <span className="text-[11px] sm:text-xs font-semibold text-slate-700 dark:text-slate-200 group-hover:text-[#0050CB] truncate">
-                Add Teacher
+                {t('dashboard.addTeacher', 'Add Teacher')}
               </span>
             </Link>
 
@@ -315,7 +329,7 @@ export default function AdminExecutiveDashboard({
                 <UserCheck className="w-3.5 h-3.5" />
               </div>
               <span className="text-[11px] sm:text-xs font-semibold text-slate-700 dark:text-slate-200 group-hover:text-emerald-600 truncate">
-                New Admission
+                {t('dashboard.newAdmission', 'New Admission')}
               </span>
             </Link>
 
@@ -327,7 +341,7 @@ export default function AdminExecutiveDashboard({
                 <IndianRupee className="w-3.5 h-3.5 stroke-[2.5]" />
               </div>
               <span className="text-[11px] sm:text-xs font-semibold text-slate-700 dark:text-slate-200 group-hover:text-amber-600 truncate">
-                Fee Payment
+                {t('finance.collectPayment', 'Fee Payment')}
               </span>
             </Link>
 
@@ -339,7 +353,7 @@ export default function AdminExecutiveDashboard({
                 <CheckSquare className="w-3.5 h-3.5" />
               </div>
               <span className="text-[11px] sm:text-xs font-semibold text-slate-700 dark:text-slate-200 group-hover:text-purple-600 truncate">
-                Take Attendance
+                {t('attendance.markAttendance', 'Take Attendance')}
               </span>
             </Link>
 
@@ -382,57 +396,57 @@ export default function AdminExecutiveDashboard({
 
             {/* 4 Summary Stats row directly under title */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-4 pt-1 pb-3 border-b border-slate-100 dark:border-slate-800">
-              <div className="flex items-center gap-2">
+              <Link href="/dashboard/students" className="flex items-center gap-2 group hover:opacity-80 transition-opacity">
                 <div className="w-7 h-7 rounded-lg bg-blue-50 text-[#0050CB] flex items-center justify-center shrink-0">
                   <Users className="w-3.5 h-3.5" />
                 </div>
                 <div>
-                  <p className="text-[10px] text-slate-400 font-medium">Total Students</p>
+                  <p className="text-[10px] text-slate-400 font-medium group-hover:text-[#0050CB] transition-colors">Total Students</p>
                   <p className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1">
                     {stats?.totalStudents ? stats.totalStudents.toLocaleString('en-IN') : '1,248'}{' '}
                     <span className="text-[9px] text-emerald-600">↑ 8.4%</span>
                   </p>
                 </div>
-              </div>
+              </Link>
 
-              <div className="flex items-center gap-2">
+              <Link href="/dashboard/teachers" className="flex items-center gap-2 group hover:opacity-80 transition-opacity">
                 <div className="w-7 h-7 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
                   <GraduationCap className="w-3.5 h-3.5" />
                 </div>
                 <div>
-                  <p className="text-[10px] text-slate-400 font-medium">Total Teachers</p>
+                  <p className="text-[10px] text-slate-400 font-medium group-hover:text-purple-600 transition-colors">Total Teachers</p>
                   <p className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1">
                     {stats?.totalStaff ? stats.totalStaff.toLocaleString('en-IN') : '86'}{' '}
                     <span className="text-[9px] text-emerald-600">↑ 3.1%</span>
                   </p>
                 </div>
-              </div>
+              </Link>
 
-              <div className="flex items-center gap-2">
+              <Link href="/dashboard/teachers" className="flex items-center gap-2 group hover:opacity-80 transition-opacity">
                 <div className="w-7 h-7 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center shrink-0">
                   <UserCheck className="w-3.5 h-3.5" />
                 </div>
                 <div>
-                  <p className="text-[10px] text-slate-400 font-medium">Total Staff</p>
+                  <p className="text-[10px] text-slate-400 font-medium group-hover:text-teal-600 transition-colors">Total Staff</p>
                   <p className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1">
                     {stats?.attendanceSummary?.staffTotal ?? 24}{' '}
                     <span className="text-[9px] text-emerald-600">↑ 2.5%</span>
                   </p>
                 </div>
-              </div>
+              </Link>
 
-              <div className="flex items-center gap-2">
+              <Link href="/dashboard/parents" className="flex items-center gap-2 group hover:opacity-80 transition-opacity">
                 <div className="w-7 h-7 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center shrink-0">
                   <Users className="w-3.5 h-3.5" />
                 </div>
                 <div>
-                  <p className="text-[10px] text-slate-400 font-medium">Total Parents</p>
+                  <p className="text-[10px] text-slate-400 font-medium group-hover:text-sky-600 transition-colors">Total Parents</p>
                   <p className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1">
                     {stats?.totalParents ?? '1,012'}{' '}
                     <span className="text-[9px] text-emerald-600">↑ 6.8%</span>
                   </p>
                 </div>
-              </div>
+              </Link>
             </div>
 
             {/* Legend & Multi-Line Area Chart */}

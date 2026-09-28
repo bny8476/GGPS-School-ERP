@@ -3,6 +3,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 import {
   Home,
   Users,
@@ -88,6 +89,7 @@ import {
   Minimize2
 } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
+import { useTheme } from '@/context/ThemeContext';
 import NotificationDrawer from '@/components/ui/NotificationDrawer';
 import AnimatedNumber from '@/components/ui/AnimatedNumber';
 import SpotlightCard from './SpotlightCard';
@@ -1104,10 +1106,11 @@ interface TeacherWorkspaceProps {
   user?: any;
   stats?: any;
   onRefresh?: () => void;
+  initialTab?: TeacherTab;
 }
 
-export default function TeacherWorkspace({ user, stats }: TeacherWorkspaceProps) {
-  const [activeTab, setActiveTab] = useState<TeacherTab>('HOME');
+export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }: TeacherWorkspaceProps) {
+  const [activeTab, setActiveTab] = useState<TeacherTab>(initialTab || 'HOME');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
@@ -1117,6 +1120,67 @@ export default function TeacherWorkspace({ user, stats }: TeacherWorkspaceProps)
   const [searchQuery, setSearchQuery] = useState('');
   const [students, setStudents] = useState<StudentCardData[]>(mockStudentsList);
   const [selectedStudent, setSelectedStudent] = useState<StudentCardData | null>(null);
+
+  useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
+
+  // Load real students from backend database
+  useEffect(() => {
+    const fetchRealStudents = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const baseUrl = getApiBaseUrl();
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const res = await fetch(`${baseUrl}/api/v1/students`, { headers });
+        if (res.ok) {
+          const apiStudents = await res.json();
+          if (Array.isArray(apiStudents) && apiStudents.length > 0) {
+            const mappedStudents: StudentCardData[] = apiStudents.map((s: any, idx: number) => {
+              const p = s.parentId || {};
+              return {
+                id: String(s._id),
+                rollNo: s.rollNumber || String(idx + 1).padStart(2, '0'),
+                admissionNo: s.studentId || s.admissionNumber || `GGPS2026LKG${String(idx + 1).padStart(3, '0')}`,
+                name: `${s.firstName} ${s.lastName || ''}`.trim(),
+                photo: s.studentPhoto || (idx % 2 === 0 ? 'https://images.unsplash.com/photo-1543332164-6e82f355badc?w=150&auto=format&fit=crop&q=80' : 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80'),
+                status: 'Present',
+                age: s.age || '4 years',
+                dob: s.dob ? new Date(s.dob).toLocaleDateString() : '12 Jul 2022',
+                gender: (s.gender === 'Female' ? 'Female' : 'Male') as 'Male' | 'Female',
+                bloodGroup: s.bloodGroup || 'O+',
+                allergies: s.medicalNotes || 'None',
+                dietaryNote: 'Regular',
+                address: s.address || 'GGPS School Campus Area',
+                emergencyContactName: p.fatherName || p.motherName || 'Parent Guardian',
+                emergencyContactPhone: p.fatherContact || p.motherContact || '+91 98765 00007',
+                authorizedPickupPerson: p.motherName || p.fatherName || 'Parent Guardian',
+                authorizedPickupRelation: 'Parent',
+                parentLabel: p.motherName ? 'Mother' : 'Parent',
+                parentName: p.motherName || p.fatherName || 'Paul Parent',
+                phone: p.motherContact || p.fatherContact || '+91 98765 00007',
+                attendanceRate: 98,
+              };
+            });
+
+            // Merge real students at the front of the list
+            setStudents((prev) => {
+              const realIds = new Set(mappedStudents.map((r) => r.id));
+              const remainingMock = prev.filter((m) => !realIds.has(m.id));
+              return [...mappedStudents, ...remainingMock];
+            });
+          }
+        }
+      } catch (err) {
+        console.warn('Real students load notice:', err);
+      }
+    };
+    fetchRealStudents();
+  }, []);
 
   // Attendance Screen State
   const [attendanceSubTab, setAttendanceSubTab] = useState<'MARK' | 'ABSENT' | 'LATE' | 'HISTORY'>('MARK');
@@ -2843,22 +2907,8 @@ export default function TeacherWorkspace({ user, stats }: TeacherWorkspaceProps)
   };
 
   // Header & Theme
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const { theme, toggleTheme } = useTheme();
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
-
-  const toggleTheme = () => {
-    const next = theme === 'light' ? 'dark' : 'light';
-    setTheme(next);
-    if (typeof document !== 'undefined') {
-      if (next === 'dark') {
-        document.documentElement.classList.add('dark');
-        localStorage.setItem('theme', 'dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-        localStorage.setItem('theme', 'light');
-      }
-    }
-  };
 
   const handleLogout = async () => {
     try {
@@ -3361,6 +3411,9 @@ export default function TeacherWorkspace({ user, stats }: TeacherWorkspaceProps)
                 2
               </span>
             </Link>
+
+            {/* Language Switcher */}
+            <LanguageSwitcher />
 
             {/* Theme Toggle */}
             <button

@@ -21,6 +21,7 @@ import {
 
 export interface StudentProfileData {
   id: string;
+  studentId?: string;
   rollNo: string;
   name: string;
   photo: string;
@@ -174,8 +175,8 @@ export default function ChildProfileDrawer({
                       <span className="font-bold text-slate-800 dark:text-white">{student.gender}</span>
                     </div>
                     <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 space-y-1">
-                      <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Admission No.</span>
-                      <span className="font-bold text-slate-800 dark:text-white">GGPS-2026-LKG-{student.rollNo}</span>
+                      <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Student ID</span>
+                      <span className="font-bold text-slate-800 dark:text-white font-mono">{student.studentId || `GGPS2026LKG${String(student.rollNo || '1').padStart(3, '0')}`}</span>
                     </div>
                     <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 space-y-1">
                       <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Blood Group</span>

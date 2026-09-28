@@ -4,12 +4,12 @@ import { protect, authorize } from '../middleware/auth';
 
 const router = express.Router();
 
+router.get('/', getAll);
+
 router.use(protect);
 const staffAuth = authorize('SuperAdmin', 'Admin', 'Principal', 'Teacher');
 
-router.route('/')
-  .get(getAll)
-  .post(staffAuth, create);
+router.post('/', staffAuth, create);
 
 router.route('/:id')
   .put(staffAuth, update)

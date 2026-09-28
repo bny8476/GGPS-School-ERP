@@ -8,6 +8,7 @@ import {
   Printer, Share2, UploadCloud, FileCheck, Sparkles, AlertCircle
 } from "lucide-react";
 import ReportCardModal from "@/components/parent/ReportCardModal";
+import IdCardParentModal from "@/components/parent/IdCardParentModal";
 import { useParent } from "@/context/ParentContext";
 import toast from "react-hot-toast";
 
@@ -31,6 +32,7 @@ export default function DocumentVaultPage() {
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "name" | "size">("newest");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [isIdCardModalOpen, setIsIdCardModalOpen] = useState(false);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [selectedDocDetails, setSelectedDocDetails] = useState<DocumentRecord | null>(null);
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
@@ -179,12 +181,18 @@ export default function DocumentVaultPage() {
       setIsReportModalOpen(true);
       return;
     }
+    if (doc.iconType === "idcard" || doc.id === "doc-6") {
+      setIsIdCardModalOpen(true);
+      return;
+    }
     toast.success(`Downloading verified "${doc.title}"...`);
   };
 
   const handleViewDetails = (doc: DocumentRecord) => {
     if (doc.category === "Report Cards") {
       setIsReportModalOpen(true);
+    } else if (doc.iconType === "idcard" || doc.id === "doc-6") {
+      setIsIdCardModalOpen(true);
     } else {
       setSelectedDocDetails(doc);
     }
@@ -920,6 +928,13 @@ export default function DocumentVaultPage() {
       <ReportCardModal
         isOpen={isReportModalOpen}
         onClose={() => setIsReportModalOpen(false)}
+        child={child as any}
+      />
+
+      {/* Official Interactive ID Card Modal */}
+      <IdCardParentModal
+        isOpen={isIdCardModalOpen}
+        onClose={() => setIsIdCardModalOpen(false)}
         child={child as any}
       />
     </div>

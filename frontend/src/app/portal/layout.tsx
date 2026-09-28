@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { ThemeProvider, useTheme } from '@/context/ThemeContext';
 import NotificationDrawer from '@/components/ui/NotificationDrawer';
 import AcademyLogo from '@/components/AcademyLogo';
@@ -67,11 +68,11 @@ function PortalLayoutContent({ children }: { children: React.ReactNode }) {
   const roleStr = user?.role || 'Parent';
 
   const navItems = [
-    { label: 'Portal Overview', href: '/portal', icon: LayoutDashboard },
-    { label: 'Daily Diary', href: '/portal/diary', icon: CalendarHeart },
-    { label: 'Attendance', href: '/portal/attendance', icon: UserCheck },
-    { label: 'Fees & Finance', href: '/portal/finance', icon: WalletCards },
-    { label: 'Portal Settings', href: '/portal/settings', icon: Settings },
+    { label: t('nav.portalOverview', 'Portal Overview'), href: '/portal', icon: LayoutDashboard },
+    { label: t('nav.dailyDiary', 'Daily Diary'), href: '/portal/diary', icon: CalendarHeart },
+    { label: t('nav.attendance', 'Attendance'), href: '/portal/attendance', icon: UserCheck },
+    { label: t('nav.finance', 'Fees & Finance'), href: '/portal/finance', icon: WalletCards },
+    { label: t('nav.portalSettings', 'Portal Settings'), href: '/portal/settings', icon: Settings },
   ];
 
   return (
@@ -316,6 +317,9 @@ function PortalLayoutContent({ children }: { children: React.ReactNode }) {
             {/* Notification Drawer */}
             <NotificationDrawer />
 
+            {/* Language Switcher */}
+            <LanguageSwitcher />
+
             {/* Theme Toggle Button */}
             <button
               onClick={toggleTheme}
@@ -374,9 +378,5 @@ function PortalLayoutContent({ children }: { children: React.ReactNode }) {
 }
 
 export default function PortalLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <ThemeProvider>
-      <PortalLayoutContent>{children}</PortalLayoutContent>
-    </ThemeProvider>
-  );
+  return <PortalLayoutContent>{children}</PortalLayoutContent>;
 }

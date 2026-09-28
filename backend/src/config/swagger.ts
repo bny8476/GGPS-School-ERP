@@ -49,8 +49,8 @@ export const swaggerDocument = {
         type: 'object',
         properties: {
           _id: { type: 'string' },
-          studentId: { type: 'string', example: 'GGPS-2026-LKG-001' },
-          admissionNumber: { type: 'string', example: 'GGPS-2026Admin-001' },
+          studentId: { type: 'string', example: 'GGPS2026LKG001' },
+          admissionNumber: { type: 'string', example: 'GGPS2026Admin001' },
           firstName: { type: 'string' },
           lastName: { type: 'string' },
           grade: { type: 'string' },

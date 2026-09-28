@@ -42,7 +42,12 @@ export default function AdmissionKanban({
   return (
     <div className="flex gap-4 overflow-x-auto pb-4 pt-1 custom-scrollbar min-w-full items-start">
       {COLUMNS.map((col) => {
-        const columnApps = applications.filter((app) => app.status === col.id);
+        const columnApps = applications.filter((app) => {
+          if (col.id === 'New Inquiry') {
+            return app.status === 'New Inquiry' || app.status === 'New';
+          }
+          return app.status === col.id;
+        });
 
         return (
           <div

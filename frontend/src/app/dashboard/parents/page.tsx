@@ -26,7 +26,7 @@ interface ParentRecord {
   primaryEmail: string;
   address: string;
   whatsappNumber?: string;
-  students?: Array<{ _id: string; firstName: string; lastName: string; grade: string; section?: string; admissionNumber?: string }>;
+  students?: Array<{ _id: string; firstName: string; lastName: string; grade: string; section?: string; studentId?: string; admissionNumber?: string }>;
 }
 
 interface CommLog {
@@ -158,7 +158,7 @@ function ParentsPageContent() {
             whatsappNumber: '+91 98765 43210',
             address: '42 Orchid Villa, Bandra West, Mumbai',
             students: [
-              { _id: 'std_01', firstName: 'Aarav', lastName: 'Sharma', grade: 'LKG', section: 'A', admissionNumber: 'GGPS-2026-LKG-001' }
+              { _id: 'std_01', firstName: 'Aarav', lastName: 'Sharma', grade: 'LKG', section: 'A', studentId: 'GGPS2026LKG001', admissionNumber: 'GGPS2026Admin001' }
             ]
           },
           {
@@ -173,7 +173,7 @@ function ParentsPageContent() {
             whatsappNumber: '+91 98111 22334',
             address: '15 Silver Palm Residences, Andheri East, Mumbai',
             students: [
-              { _id: 'std_02', firstName: 'Diya', lastName: 'Patel', grade: 'UKG', section: 'B', admissionNumber: 'GGPS-2026-UKG-014' }
+              { _id: 'std_02', firstName: 'Diya', lastName: 'Patel', grade: 'UKG', section: 'B', studentId: 'GGPS2026UKG001', admissionNumber: 'GGPS2026Admin002' }
             ]
           },
           {
@@ -188,7 +188,7 @@ function ParentsPageContent() {
             whatsappNumber: '+91 97234 56789',
             address: '88 Green Meadows Enclave, Powai, Mumbai',
             students: [
-              { _id: 'std_03', firstName: 'Vihaan', lastName: 'Verma', grade: 'UKG', section: 'A', admissionNumber: 'GGPS-2026-UKG-022' }
+              { _id: 'std_03', firstName: 'Vihaan', lastName: 'Verma', grade: 'UKG', section: 'A', studentId: 'GGPS2026UKG002', admissionNumber: 'GGPS2026Admin003' }
             ]
           },
           {
@@ -203,7 +203,7 @@ function ParentsPageContent() {
             whatsappNumber: '+91 94440 12345',
             address: 'Flat 402, Lotus Heights, Thane West',
             students: [
-              { _id: 'std_04', firstName: 'Ananya', lastName: 'Iyer', grade: 'Pre-KG', section: 'Lotus', admissionNumber: 'GGPS-2026-PKG-003' }
+              { _id: 'std_04', firstName: 'Ananya', lastName: 'Iyer', grade: 'PreKG', section: 'Lotus', studentId: 'GGPS2026PREKG001', admissionNumber: 'GGPS2026Admin004' }
             ]
           },
           {
@@ -218,7 +218,7 @@ function ParentsPageContent() {
             whatsappNumber: '+91 99887 76655',
             address: 'B-12 Hill View Towers, Malabar Hill, Mumbai',
             students: [
-              { _id: 'std_05', firstName: 'Ishaan', lastName: 'Gupta', grade: 'LKG', section: 'B', admissionNumber: 'GGPS-2026-LKG-045' }
+              { _id: 'std_05', firstName: 'Ishaan', lastName: 'Gupta', grade: 'LKG', section: 'B', studentId: 'GGPS2026LKG002', admissionNumber: 'GGPS2026Admin005' }
             ]
           }
         ];
@@ -226,11 +226,11 @@ function ParentsPageContent() {
 
       setParents(loadedParents);
       setStudentsList(loadedStudents.length > 0 ? loadedStudents : [
-        { _id: 'std_01', firstName: 'Aarav', lastName: 'Sharma', grade: 'LKG', admissionNumber: 'GGPS-2026-LKG-001' },
-        { _id: 'std_02', firstName: 'Diya', lastName: 'Patel', grade: 'UKG', admissionNumber: 'GGPS-2026-UKG-014' },
-        { _id: 'std_03', firstName: 'Vihaan', lastName: 'Verma', grade: 'UKG', admissionNumber: 'GGPS-2026-UKG-022' },
-        { _id: 'std_04', firstName: 'Ananya', lastName: 'Iyer', grade: 'Pre-KG', admissionNumber: 'GGPS-2026-PKG-003' },
-        { _id: 'std_05', firstName: 'Ishaan', lastName: 'Gupta', grade: 'LKG', admissionNumber: 'GGPS-2026-LKG-045' },
+        { _id: 'std_01', firstName: 'Aarav', lastName: 'Sharma', grade: 'LKG', studentId: 'GGPS2026LKG001', admissionNumber: 'GGPS2026Admin001' },
+        { _id: 'std_02', firstName: 'Diya', lastName: 'Patel', grade: 'UKG', studentId: 'GGPS2026UKG001', admissionNumber: 'GGPS2026Admin002' },
+        { _id: 'std_03', firstName: 'Vihaan', lastName: 'Verma', grade: 'UKG', studentId: 'GGPS2026UKG002', admissionNumber: 'GGPS2026Admin003' },
+        { _id: 'std_04', firstName: 'Ananya', lastName: 'Iyer', grade: 'PreKG', studentId: 'GGPS2026PREKG001', admissionNumber: 'GGPS2026Admin004' },
+        { _id: 'std_05', firstName: 'Ishaan', lastName: 'Gupta', grade: 'LKG', studentId: 'GGPS2026LKG002', admissionNumber: 'GGPS2026Admin005' },
       ]);
     } catch (error) {
       console.error(error);
@@ -342,7 +342,8 @@ function ParentsPageContent() {
             firstName: targetStudent.firstName,
             lastName: targetStudent.lastName,
             grade: targetStudent.grade || 'LKG',
-            admissionNumber: targetStudent.admissionNumber || 'GGPS-2026'
+            studentId: targetStudent.studentId || 'GGPS2026LKG001',
+            admissionNumber: targetStudent.admissionNumber || 'GGPS2026Admin001'
           }]
         };
       }
@@ -685,7 +686,7 @@ function ParentsPageContent() {
                     <td className="py-3.5 px-4 font-bold text-[#000E28] dark:text-white">
                       {student.firstName} {student.lastName}
                       <span className="block text-[11px] font-normal text-slate-500 font-mono">
-                        {student.admissionNumber || 'GGPS-2026'}
+                        {student.studentId || student.admissionNumber || 'GGPS2026LKG001'}
                       </span>
                     </td>
                     <td className="py-3.5 px-3">

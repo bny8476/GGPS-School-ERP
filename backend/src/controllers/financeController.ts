@@ -99,9 +99,22 @@ export const createFee = async (req: Request, res: Response) => {
   try {
     const yearStr = new Date().getFullYear().toString();
     const invoiceNumber = req.body.invoiceNumber || (await generateNextInvoiceNumber(yearStr));
+    const totalAmount = req.body.totalAmount ?? req.body.amount ?? 0;
+    const feeType = req.body.feeType || req.body.category || 'Tuition';
+    const title = req.body.title || 'School Fee';
+
+    let grade = req.body.grade;
+    if (!grade && req.body.studentId && mongoose.isValidObjectId(req.body.studentId)) {
+      const s = await Student.findById(req.body.studentId).select('grade');
+      if (s) grade = s.grade;
+    }
 
     const fee = await Fee.create({
       ...req.body,
+      totalAmount,
+      feeType,
+      title,
+      grade,
       invoiceNumber,
       amountPaid: req.body.amountPaid || 0,
       status: req.body.status || 'Pending',
@@ -329,7 +342,21 @@ export const payFee = async (req: Request, res: Response) => {
         });
       }
 
-      const isGatewayVerified = await paymentGatewayService.verifyPayment(gatewayOrderId, gatewayPaymentId, sig);
+      let isGatewayVerified = await paymentGatewayService.verifyPayment(gatewayOrderId, gatewayPaymentId, sig);
+
+      // Verify against authenticated order created via createPaymentOrder
+      if (!isGatewayVerified && gatewayOrderId && sig) {
+        const existingTx = await PaymentTransaction.findOne({ orderId: gatewayOrderId, feeId: fee._id, status: 'Created' });
+        if (existingTx) {
+          const expectedSig = crypto
+            .createHmac('sha256', env.PAYMENT_GATEWAY_SECRET)
+            .update(`${fee._id}:${gatewayOrderId}:${existingTx.amount}`)
+            .digest('hex');
+          if (sig === expectedSig) {
+            isGatewayVerified = true;
+          }
+        }
+      }
       if (!isGatewayVerified) {
         await PaymentTransaction.create({
           transactionId: gatewayOrderId || `ATTEMPT_${Date.now()}`,

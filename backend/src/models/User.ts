@@ -12,6 +12,7 @@ export interface IUser extends Document {
   schoolId?: mongoose.Types.ObjectId;
   campusId?: mongoose.Types.ObjectId;
   phoneNumber?: string;
+  preferredLanguage?: 'en' | 'ta' | 'hi' | 'ml' | 'te' | 'kn' | 'bn' | 'mr' | 'ar' | 'es' | 'fr' | 'de';
   salary?: number;
   designation?: string;
   qualification?: string;
@@ -83,6 +84,11 @@ const UserSchema: Schema = new Schema(
     phoneNumber: {
       type: String,
       trim: true,
+    },
+    preferredLanguage: {
+      type: String,
+      enum: ['en', 'ta', 'hi', 'ml', 'te', 'kn', 'bn', 'mr', 'ar', 'es', 'fr', 'de'],
+      default: 'en',
     },
     salary: {
       type: Number,

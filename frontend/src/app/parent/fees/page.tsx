@@ -25,28 +25,31 @@ export default function ParentFeesPage() {
     grade: "LKG",
   };
 
-  useEffect(() => {
-    async function fetchFees() {
-      try {
-        const token = localStorage.getItem("token");
-        const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
-        const res = await fetch(`${apiBase}/api/v1/finance/fees`, {
-          headers: {
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data) && data.length > 0) {
-            setFeesData(data);
-          }
+  const fetchFees = React.useCallback(async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+      const res = await fetch(`${apiBase}/api/v1/finance/fees`, {
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        credentials: "include",
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          setFeesData(data);
         }
-      } catch (_) {}
-    }
-    fetchFees();
-  }, [child]);
+      }
+    } catch (_) {}
+  }, []);
 
-  const invoices = [
+  useEffect(() => {
+    fetchFees();
+  }, [fetchFees, child]);
+
+  const defaultInvoices = [
     {
       id: "inv-01",
       title: "Term 2 Tuition & Digital Learning Fee",
@@ -81,7 +84,28 @@ export default function ParentFeesPage() {
     },
   ];
 
-  const paymentHistory = [
+  const invoices = React.useMemo(() => {
+    if (feesData.length > 0) {
+      return feesData.map((f: any, idx: number) => ({
+        id: String(f._id),
+        title: f.title || `${f.feeType || "Tuition"} Fee`,
+        category: f.feeType || "Tuition",
+        dueDate: f.dueDate ? new Date(f.dueDate).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "30 Sep 2026",
+        amount: f.totalAmount || f.amount || 4500,
+        amountPaid: f.amountPaid || 0,
+        status: f.status || "Pending",
+        invoiceNumber: f.invoiceNumber || `INV-2026-${String(idx + 1).padStart(4, "0")}`,
+        receiptNumber: f.receiptNumber || (f.status === "Paid" ? `GGPS-REC-${Date.now().toString().slice(-6)}` : undefined),
+      }));
+    }
+    return defaultInvoices;
+  }, [feesData]);
+
+  const totalAnnualFees = React.useMemo(() => invoices.reduce((acc, i) => acc + (i.amount || 0), 0), [invoices]);
+  const totalPaid = React.useMemo(() => invoices.filter((i) => i.status === "Paid").reduce((acc, i) => acc + (i.amount || 0), 0), [invoices]);
+  const totalPending = Math.max(0, totalAnnualFees - totalPaid);
+
+  const defaultPaymentHistory = [
     {
       receiptNo: "GGPS-RCP-902811",
       date: "28 Jun 2026",
@@ -100,13 +124,44 @@ export default function ParentFeesPage() {
     },
   ];
 
+  const paymentHistory = React.useMemo(() => {
+    const paidFees = feesData.filter((f) => f.status === "Paid" || (f.amountPaid && f.amountPaid > 0));
+    if (paidFees.length > 0) {
+      return paidFees.map((f, i) => ({
+        receiptNo: f.receiptNumber || `GGPS-RCP-${String(100000 + i)}`,
+        date: f.paidAt ? new Date(f.paidAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "28 Jun 2026",
+        description: f.title || `${f.feeType} Fee`,
+        amount: f.amountPaid || f.totalAmount || 18500,
+        mode: f.paymentMethod || "UPI / Online Gateway",
+        status: "Successful",
+      }));
+    }
+    return defaultPaymentHistory;
+  }, [feesData]);
+
   const openPayModal = (inv: any) => {
-    setSelectedInvoice(inv);
+    setSelectedInvoice(inv || invoices[0]);
     setIsPaymentModalOpen(true);
   };
 
   const handleDownloadReceipt = (receiptNo: string, amount: number) => {
-    toast.success(`Downloading Receipt ${receiptNo} for ₹${amount.toLocaleString()}`);
+    const receiptContent = `GGPS SCHOOL ERP - OFFICIAL FEE RECEIPT
+------------------------------------------------
+Receipt Number: ${receiptNo}
+Student Name:   ${child.firstName} ${child.lastName}
+Grade & Section:${child.grade}
+Amount Paid:    ₹${amount.toLocaleString()}
+Payment Status: SUCCESSFUL / VERIFIED
+Authorized By:  GGPS Directorate of Finance
+------------------------------------------------`;
+    const blob = new Blob([receiptContent], { type: "text/plain" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Receipt_${receiptNo}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    toast.success(`Downloaded Receipt ${receiptNo}`);
   };
 
   return (
@@ -126,11 +181,11 @@ export default function ParentFeesPage() {
         </div>
 
         <button
-          onClick={() => openPayModal(invoices[0])}
+          onClick={() => openPayModal(invoices.find((i) => i.status === "Pending") || invoices[0])}
           className="px-5 py-2.5 rounded-xl bg-[#0050CB] hover:bg-[#0040A5] text-white text-xs font-bold flex items-center gap-2 transition-all shadow-md shrink-0 cursor-pointer"
         >
           <CreditCard className="w-4 h-4" />
-          Pay Pending Fees (₹8,500)
+          Pay Pending Fees (₹{totalPending.toLocaleString("en-IN")})
         </button>
       </div>
 
@@ -155,7 +210,7 @@ export default function ParentFeesPage() {
 
           <div className="relative z-10 mt-3 min-w-0">
             <div className="text-[28px] sm:text-[32px] font-black text-[#000E28] dark:text-white tracking-tight leading-none font-sans">
-              ₹32,000
+              ₹{totalAnnualFees.toLocaleString("en-IN")}
             </div>
             <div className="text-[15px] sm:text-[16px] font-bold text-[#001D4A] dark:text-blue-100 tracking-tight leading-tight mt-1.5 whitespace-nowrap">
               Total Annual Fees
@@ -188,7 +243,7 @@ export default function ParentFeesPage() {
 
           <div className="relative z-10 mt-3 min-w-0">
             <div className="text-[28px] sm:text-[32px] font-black text-[#059669] dark:text-emerald-400 tracking-tight leading-none font-sans">
-              ₹23,500
+              ₹{totalPaid.toLocaleString("en-IN")}
             </div>
             <div className="text-[15px] sm:text-[16px] font-bold text-[#001D4A] dark:text-blue-100 tracking-tight leading-tight mt-1.5 whitespace-nowrap">
               Total Paid
@@ -206,7 +261,7 @@ export default function ParentFeesPage() {
         <motion.div
           whileHover={{ y: -3, scale: 1.008 }}
           whileTap={{ scale: 0.99 }}
-          onClick={() => openPayModal(invoices[0])}
+          onClick={() => openPayModal(invoices.find((i) => i.status === "Pending") || invoices[0])}
           transition={{ duration: 0.25, ease: "easeOut" }}
           className="relative overflow-hidden rounded-[24px] p-5 bg-gradient-to-br from-white via-white to-[#FFF7ED]/70 dark:from-[#07142F] dark:via-[#221609] dark:to-[#361E0A] border border-amber-100/90 dark:border-white/10 shadow-[0_4px_20px_rgba(249,115,22,0.05)] hover:shadow-[0_12px_28px_-6px_rgba(249,115,22,0.14)] transition-all duration-300 min-h-[148px] flex flex-col justify-between group cursor-pointer"
         >
@@ -222,7 +277,7 @@ export default function ParentFeesPage() {
 
           <div className="relative z-10 mt-3 min-w-0">
             <div className="text-[28px] sm:text-[32px] font-black text-[#EA580C] dark:text-orange-400 tracking-tight leading-none font-sans">
-              ₹8,500
+              ₹{totalPending.toLocaleString("en-IN")}
             </div>
             <div className="text-[15px] sm:text-[16px] font-bold text-[#001D4A] dark:text-blue-100 tracking-tight leading-tight mt-1.5 whitespace-nowrap">
               Pending Dues
@@ -380,6 +435,9 @@ export default function ParentFeesPage() {
         onClose={() => setIsPaymentModalOpen(false)}
         defaultInvoice={selectedInvoice}
         childName={`${child.firstName} ${child.lastName}`}
+        onPaymentSuccess={() => {
+          fetchFees();
+        }}
       />
     </div>
   );

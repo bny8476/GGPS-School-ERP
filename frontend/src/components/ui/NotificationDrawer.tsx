@@ -132,7 +132,7 @@ export default function NotificationDrawer({ onNavigateTab }: NotificationDrawer
         signal: controller.signal,
       }).catch(() => null);
 
-      if (!res || !res.ok) {
+      if (!res || res.status === 404) {
         res = await fetch(`${apiBase}/api/notifications`, {
           headers,
           credentials: 'include',

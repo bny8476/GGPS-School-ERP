@@ -243,6 +243,7 @@ export const seedDatabase = async () => {
         firstName: 'Sammy',
         lastName: 'Student',
         admissionNumber: 'GGPS-2026-LKG-001',
+        studentId: 'GGPS2026LKG001',
         grade: 'LKG',
         parentId: parentProfile._id,
         status: 'Active',
@@ -252,13 +253,47 @@ export const seedDatabase = async () => {
       options
     );
 
-    // StudentParent link
+    // Student (Aarav Sharma - TS-2026-0112)
+    const aaravStudent = await Student.findOneAndUpdate(
+      { admissionNumber: 'TS-2026-0112' },
+      {
+        firstName: 'Aarav',
+        lastName: 'Sharma',
+        admissionNumber: 'TS-2026-0112',
+        studentId: 'TS-2026-0112',
+        grade: 'LKG',
+        section: 'A',
+        parentId: parentProfile._id,
+        status: 'Active',
+        bloodGroup: 'O+',
+        dateOfBirth: new Date('2021-04-15'),
+        photoUrl: '/aarav-hero-student.jpg',
+        emergencyContact: '+91 98765 43210',
+        address: '123 Meadow Lane, Green Park, City',
+        medicalNotes: 'No known allergies.',
+      },
+      options
+    );
+
+    // StudentParent links
     await StudentParent.findOneAndUpdate(
       { studentId: student._id, parentId: parentProfile._id },
       {
         studentId: student._id,
         parentId: parentProfile._id,
         relationship: 'Mother',
+        isPrimary: true,
+        canPickup: true,
+      },
+      options
+    );
+
+    await StudentParent.findOneAndUpdate(
+      { studentId: aaravStudent._id, parentId: parentProfile._id },
+      {
+        studentId: aaravStudent._id,
+        parentId: parentProfile._id,
+        relationship: 'Father',
         isPrimary: true,
         canPickup: true,
       },

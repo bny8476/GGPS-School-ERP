@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-@variant dark (&:where(.dark, .dark *));
+@variant dark (&:where(.dark, .dark *, [data-theme="dark"], [data-theme="dark"] *));
 
 @theme {
   --font-sans: var(--font-outfit), 'Outfit', sans-serif;
@@ -88,7 +88,8 @@
     --text-label: 0.75rem;
   }
 
-  .dark {
+  .dark,
+  [data-theme="dark"] {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
     --color-background-start: #030A17;

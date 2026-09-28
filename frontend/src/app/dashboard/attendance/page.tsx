@@ -99,14 +99,14 @@ function AttendanceContent() {
       if (!loadedEntities || loadedEntities.length === 0) {
         if (!isStaffTab) {
           loadedEntities = [
-            { _id: 'std_01', firstName: 'Aarav', lastName: 'Sharma', grade: selectedClass, admissionNumber: 'GGPS-2026-LKG-001', section: 'A' },
-            { _id: 'std_02', firstName: 'Diya', lastName: 'Patel', grade: selectedClass, admissionNumber: 'GGPS-2026-LKG-002', section: 'A' },
-            { _id: 'std_03', firstName: 'Vihaan', lastName: 'Verma', grade: selectedClass, admissionNumber: 'GGPS-2026-LKG-003', section: 'A' },
-            { _id: 'std_04', firstName: 'Ananya', lastName: 'Iyer', grade: selectedClass, admissionNumber: 'GGPS-2026-LKG-004', section: 'A' },
-            { _id: 'std_05', firstName: 'Ishaan', lastName: 'Gupta', grade: selectedClass, admissionNumber: 'GGPS-2026-LKG-005', section: 'B' },
-            { _id: 'std_06', firstName: 'Sanya', lastName: 'Malhotra', grade: selectedClass, admissionNumber: 'GGPS-2026-LKG-006', section: 'B' },
-            { _id: 'std_07', firstName: 'Kabir', lastName: 'Deshmukh', grade: selectedClass, admissionNumber: 'GGPS-2026-LKG-007', section: 'B' },
-            { _id: 'std_08', firstName: 'Meera', lastName: 'Nambiar', grade: selectedClass, admissionNumber: 'GGPS-2026-LKG-008', section: 'A' },
+            { _id: 'std_01', firstName: 'Aarav', lastName: 'Sharma', grade: selectedClass, studentId: 'GGPS2026LKG001', admissionNumber: 'GGPS2026Admin001', section: 'A' },
+            { _id: 'std_02', firstName: 'Diya', lastName: 'Patel', grade: selectedClass, studentId: 'GGPS2026LKG002', admissionNumber: 'GGPS2026Admin002', section: 'A' },
+            { _id: 'std_03', firstName: 'Vihaan', lastName: 'Verma', grade: selectedClass, studentId: 'GGPS2026LKG003', admissionNumber: 'GGPS2026Admin003', section: 'A' },
+            { _id: 'std_04', firstName: 'Ananya', lastName: 'Iyer', grade: selectedClass, studentId: 'GGPS2026LKG004', admissionNumber: 'GGPS2026Admin004', section: 'A' },
+            { _id: 'std_05', firstName: 'Ishaan', lastName: 'Gupta', grade: selectedClass, studentId: 'GGPS2026LKG005', admissionNumber: 'GGPS2026Admin005', section: 'B' },
+            { _id: 'std_06', firstName: 'Sanya', lastName: 'Malhotra', grade: selectedClass, studentId: 'GGPS2026LKG006', admissionNumber: 'GGPS2026Admin006', section: 'B' },
+            { _id: 'std_07', firstName: 'Kabir', lastName: 'Deshmukh', grade: selectedClass, studentId: 'GGPS2026LKG007', admissionNumber: 'GGPS2026Admin007', section: 'B' },
+            { _id: 'std_08', firstName: 'Meera', lastName: 'Nambiar', grade: selectedClass, studentId: 'GGPS2026LKG008', admissionNumber: 'GGPS2026Admin008', section: 'A' },
           ];
         } else {
           loadedEntities = [
@@ -214,6 +214,7 @@ function AttendanceContent() {
     const lowerQ = searchQuery.toLowerCase();
     return currentList.filter(item => 
       (item.firstName + ' ' + item.lastName).toLowerCase().includes(lowerQ) ||
+      (item.studentId || '').toLowerCase().includes(lowerQ) ||
       (item.admissionNumber || '').toLowerCase().includes(lowerQ)
     );
   }, [currentList, searchQuery]);
@@ -462,7 +463,7 @@ function AttendanceContent() {
                                 {item.firstName} {item.lastName}
                               </span>
                               <span className="text-[10px] font-mono text-slate-400">
-                                {item.admissionNumber || item.role || 'Staff Member'}
+                                {item.studentId || item.admissionNumber || item.role || 'Staff Member'}
                               </span>
                             </div>
                           </div>

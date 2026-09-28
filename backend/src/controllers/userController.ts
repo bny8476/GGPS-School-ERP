@@ -167,3 +167,61 @@ export const deleteUser = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Server Error', error });
   }
 };
+
+// @desc    Get current user's preferences (e.g. preferredLanguage)
+// @route   GET /api/v1/users/me/preferences
+export const getUserPreferences = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?._id || (req as any).user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'Not authenticated' });
+    }
+
+    const user = await User.findById(userId).select('preferredLanguage firstName lastName email');
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    res.status(200).json({
+      success: true,
+      preferredLanguage: user.preferredLanguage || 'en',
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Error retrieving preferences', error });
+  }
+};
+
+// @desc    Update current user's preferences (e.g. preferredLanguage)
+// @route   PATCH /api/v1/users/me/preferences
+export const updateUserPreferences = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?._id || (req as any).user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'Not authenticated' });
+    }
+
+    const { preferredLanguage } = req.body;
+    const supported = ['en', 'ta', 'hi', 'ml', 'te', 'kn', 'bn', 'mr', 'ar', 'es', 'fr', 'de'];
+    if (!preferredLanguage || !supported.includes(preferredLanguage)) {
+      return res.status(400).json({
+        success: false,
+        message: `Unsupported language. Must be one of: ${supported.join(', ')}`,
+      });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { preferredLanguage },
+      { new: true, runValidators: true }
+    ).select('preferredLanguage firstName lastName email');
+
+    res.status(200).json({
+      success: true,
+      message: 'Preferences updated successfully',
+      preferredLanguage: user?.preferredLanguage || 'en',
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Error updating preferences', error });
+  }
+};
+

@@ -19,6 +19,7 @@ interface StudentRecord {
   _id: string;
   firstName: string;
   lastName: string;
+  studentId?: string;
   admissionNumber?: string;
   grade?: string;
   section?: string;
@@ -58,25 +59,26 @@ function StudentsDirectoryContent() {
       const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
       
       const [studentsRes, parentsRes] = await Promise.all([
-        fetch(`${apiBase}/api/students`, { headers }).catch(() => null),
-        fetch(`${apiBase}/api/parents`, { headers }).catch(() => null)
+        fetch(`${apiBase}/api/v1/students`, { headers }).catch(() => null),
+        fetch(`${apiBase}/api/v1/parents`, { headers }).catch(() => null)
       ]);
 
       let loadedStudents: StudentRecord[] = [];
       if (studentsRes && studentsRes.ok) {
-        loadedStudents = await studentsRes.json();
+        const json = await studentsRes.json();
+        loadedStudents = Array.isArray(json) ? json : json.data || [];
       }
 
       if (!loadedStudents || loadedStudents.length === 0) {
         loadedStudents = [
-          { _id: 'std_01', firstName: 'Aarav', lastName: 'Sharma', admissionNumber: 'GGPS-2026-LKG-001', grade: 'LKG', section: 'A', gender: 'Male', status: 'Active', bloodGroup: 'O+', attendanceRate: 98, emergencyContact: '+91 98765 43210', parentName: 'Rajesh Sharma', parentPhone: '+91 98765 43210', feeStatus: 'Paid', busRoute: 'Route 4' },
-          { _id: 'std_02', firstName: 'Diya', lastName: 'Patel', admissionNumber: 'GGPS-2026-UKG-014', grade: 'UKG', section: 'B', gender: 'Female', status: 'Active', bloodGroup: 'B+', attendanceRate: 94, emergencyContact: '+91 98111 22334', parentName: 'Sanjay Patel', parentPhone: '+91 98111 22334', feeStatus: 'Paid', busRoute: 'Route 2' },
-          { _id: 'std_03', firstName: 'Vihaan', lastName: 'Verma', admissionNumber: 'GGPS-2026-UKG-022', grade: 'UKG', section: 'A', gender: 'Male', status: 'Active', bloodGroup: 'A+', attendanceRate: 92, emergencyContact: '+91 97234 56789', parentName: 'Ananya Verma', parentPhone: '+91 97234 56789', feeStatus: 'Pending', busRoute: 'Route 4' },
-          { _id: 'std_04', firstName: 'Ananya', lastName: 'Iyer', admissionNumber: 'GGPS-2026-PKG-003', grade: 'Pre-KG', section: 'A', gender: 'Female', status: 'Active', bloodGroup: 'AB+', attendanceRate: 88, emergencyContact: '+91 94440 12345', parentName: 'Karthik Iyer', parentPhone: '+91 94440 12345', feeStatus: 'Paid', busRoute: 'Self' },
-          { _id: 'std_05', firstName: 'Ishaan', lastName: 'Gupta', admissionNumber: 'GGPS-2026-LKG-045', grade: 'LKG', section: 'B', gender: 'Male', status: 'Active', bloodGroup: 'O-', attendanceRate: 96, emergencyContact: '+91 99887 76655', parentName: 'Meera Gupta', parentPhone: '+91 99887 76655', feeStatus: 'Overdue', busRoute: 'Route 1' },
-          { _id: 'std_06', firstName: 'Sanya', lastName: 'Malhotra', admissionNumber: 'GGPS-2026-PKG-019', grade: 'Pre-KG', section: 'B', gender: 'Female', status: 'Active', bloodGroup: 'B-', attendanceRate: 95, emergencyContact: '+91 98223 34455', parentName: 'Vikram Malhotra', parentPhone: '+91 98223 34455', feeStatus: 'Paid', busRoute: 'Route 3' },
-          { _id: 'std_07', firstName: 'Kabir', lastName: 'Deshmukh', admissionNumber: 'GGPS-2026-UKG-033', grade: 'UKG', section: 'A', gender: 'Male', status: 'Inactive', bloodGroup: 'A-', attendanceRate: 74, emergencyContact: '+91 98334 45566', parentName: 'Sunil Deshmukh', parentPhone: '+91 98334 45566', feeStatus: 'Pending', busRoute: 'Route 2' },
-          { _id: 'std_08', firstName: 'Meera', lastName: 'Nambiar', admissionNumber: 'GGPS-2026-LKG-008', grade: 'LKG', section: 'A', gender: 'Female', status: 'Active', bloodGroup: 'O+', attendanceRate: 99, emergencyContact: '+91 98770 11223', parentName: 'Gopal Nambiar', parentPhone: '+91 98770 11223', feeStatus: 'Paid', busRoute: 'Self' },
+          { _id: 'std_01', firstName: 'Aarav', lastName: 'Sharma', studentId: 'GGPS2026LKG001', admissionNumber: 'GGPS2026Admin001', grade: 'LKG', section: 'A', gender: 'Male', status: 'Active', bloodGroup: 'O+', attendanceRate: 98, emergencyContact: '+91 98765 43210', parentName: 'Rajesh Sharma', parentPhone: '+91 98765 43210', feeStatus: 'Paid', busRoute: 'Route 4' },
+          { _id: 'std_02', firstName: 'Diya', lastName: 'Patel', studentId: 'GGPS2026UKG001', admissionNumber: 'GGPS2026Admin002', grade: 'UKG', section: 'B', gender: 'Female', status: 'Active', bloodGroup: 'B+', attendanceRate: 94, emergencyContact: '+91 98111 22334', parentName: 'Sanjay Patel', parentPhone: '+91 98111 22334', feeStatus: 'Paid', busRoute: 'Route 2' },
+          { _id: 'std_03', firstName: 'Vihaan', lastName: 'Verma', studentId: 'GGPS2026UKG002', admissionNumber: 'GGPS2026Admin003', grade: 'UKG', section: 'A', gender: 'Male', status: 'Active', bloodGroup: 'A+', attendanceRate: 92, emergencyContact: '+91 97234 56789', parentName: 'Ananya Verma', parentPhone: '+91 97234 56789', feeStatus: 'Pending', busRoute: 'Route 4' },
+          { _id: 'std_04', firstName: 'Ananya', lastName: 'Iyer', studentId: 'GGPS2026PREKG001', admissionNumber: 'GGPS2026Admin004', grade: 'PreKG', section: 'A', gender: 'Female', status: 'Active', bloodGroup: 'AB+', attendanceRate: 88, emergencyContact: '+91 94440 12345', parentName: 'Karthik Iyer', parentPhone: '+91 94440 12345', feeStatus: 'Paid', busRoute: 'Self' },
+          { _id: 'std_05', firstName: 'Ishaan', lastName: 'Gupta', studentId: 'GGPS2026LKG002', admissionNumber: 'GGPS2026Admin005', grade: 'LKG', section: 'B', gender: 'Male', status: 'Active', bloodGroup: 'O-', attendanceRate: 96, emergencyContact: '+91 99887 76655', parentName: 'Meera Gupta', parentPhone: '+91 99887 76655', feeStatus: 'Overdue', busRoute: 'Route 1' },
+          { _id: 'std_06', firstName: 'Sanya', lastName: 'Malhotra', studentId: 'GGPS2026PREKG002', admissionNumber: 'GGPS2026Admin006', grade: 'PreKG', section: 'B', gender: 'Female', status: 'Active', bloodGroup: 'B-', attendanceRate: 95, emergencyContact: '+91 98223 34455', parentName: 'Vikram Malhotra', parentPhone: '+91 98223 34455', feeStatus: 'Paid', busRoute: 'Route 3' },
+          { _id: 'std_07', firstName: 'Kabir', lastName: 'Deshmukh', studentId: 'GGPS2026UKG003', admissionNumber: 'GGPS2026Admin007', grade: 'UKG', section: 'A', gender: 'Male', status: 'Inactive', bloodGroup: 'A-', attendanceRate: 74, emergencyContact: '+91 98334 45566', parentName: 'Sunil Deshmukh', parentPhone: '+91 98334 45566', feeStatus: 'Pending', busRoute: 'Route 2' },
+          { _id: 'std_08', firstName: 'Meera', lastName: 'Nambiar', studentId: 'GGPS2026LKG003', admissionNumber: 'GGPS2026Admin008', grade: 'LKG', section: 'A', gender: 'Female', status: 'Active', bloodGroup: 'O+', attendanceRate: 99, emergencyContact: '+91 98770 11223', parentName: 'Gopal Nambiar', parentPhone: '+91 98770 11223', feeStatus: 'Paid', busRoute: 'Self' },
         ];
       }
 
@@ -165,9 +167,14 @@ function StudentsDirectoryContent() {
               {row.firstName} {row.lastName}
             </Link>
             <div className="flex items-center gap-2 mt-0.5">
-              <span className="font-mono text-[11px] text-slate-500 dark:text-slate-400">
-                {row.admissionNumber || 'GGPS-2026-000'}
+              <span className="font-mono text-[11px] font-bold text-[#0050CB] dark:text-[#38BDF8]">
+                {row.studentId || row.admissionNumber || 'GGPS2026LKG001'}
               </span>
+              {row.admissionNumber && row.studentId && row.admissionNumber !== row.studentId && (
+                <span className="font-mono text-[10px] text-slate-400">
+                  ({row.admissionNumber})
+                </span>
+              )}
               {row.bloodGroup && (
                 <span className="px-1.5 py-0.2 rounded bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 text-[10px] font-bold">
                   {row.bloodGroup}

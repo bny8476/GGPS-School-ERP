@@ -12,11 +12,15 @@ import StudentParent from '../models/StudentParent';
 import User from '../models/User';
 import Role from '../models/Role';
 import Notification from '../models/Notification';
+import AdmissionEnquiry from '../models/AdmissionEnquiry';
+import AuditLog from '../models/AuditLog';
 import {
   generateNextAdmissionNumber,
+  generateNextEnquiryNumber,
   generateNextStudentID,
   generateNextRollNumber,
 } from '../services/sequenceService';
+import { emailService } from '../services/emailService';
 import { emitToRole, emitToUser, broadcastEvent } from '../socket';
 
 // @desc    Get all admissions (with search, filter, pagination)
@@ -36,6 +40,7 @@ export const getAdmissions = async (req: Request, res: Response) => {
         { childLastName: searchRegex },
         { parentName: searchRegex },
         { applicationNumber: searchRegex },
+        { enquiryReference: searchRegex },
         { email: searchRegex },
         { contactNumber: searchRegex },
       ];
@@ -69,80 +74,136 @@ export const getAdmissions = async (req: Request, res: Response) => {
 };
 
 // @desc    Create an enquiry/admission (Supports both flat and nested { student, parent } payloads)
-// @route   POST /api/admissions
+// @route   POST /api/admissions or POST /api/v1/admissions/enquiries
 export const createAdmission = async (req: Request, res: Response) => {
   try {
     const body = req.body || {};
 
-    // Normalize nested payload from public enquiry form if provided
-    let childFirstName = body.childFirstName;
-    let childLastName = body.childLastName;
-    let dateOfBirth = body.dateOfBirth;
-    let gender = body.gender;
-    let gradeAppliedFor = body.gradeAppliedFor;
-    let parentName = body.parentName;
-    let email = body.email || body.parentEmail;
-    let contactNumber = body.contactNumber || body.parentPhone;
-    let address = body.address;
+    // Normalize payload
+    let parentName = String(body.parentName || body.parent?.name || '').trim();
+    let contactNumber = String(body.phone || body.contactNumber || body.parentPhone || body.parent?.contactNumber || body.parent?.phone || '').trim();
+    let email = String(body.email || body.parentEmail || body.parent?.email || '').trim().toLowerCase();
+    let relationship = String(body.relationship || body.parentRelationship || 'Parent').trim();
 
-    if (body.student) {
-      childFirstName = childFirstName || body.student.firstName;
-      childLastName = childLastName || body.student.lastName;
-      dateOfBirth = dateOfBirth || body.student.dateOfBirth;
-      gender = gender || body.student.gender;
-      gradeAppliedFor = gradeAppliedFor || body.student.gradeAppliedFor;
+    let childFirstName = String(body.childFirstName || body.student?.firstName || '').trim();
+    let childLastName = String(body.childLastName || body.student?.lastName || '').trim();
+    if (!childFirstName && body.childName) {
+      const parts = String(body.childName).trim().split(/\s+/);
+      childFirstName = parts[0] || '';
+      childLastName = parts.slice(1).join(' ') || '-';
     }
 
-    if (body.parent) {
-      parentName = parentName || body.parent.name;
-      email = email || body.parent.email;
-      contactNumber = contactNumber || body.parent.contactNumber || body.parent.phone;
-      address = address || body.parent.address;
-    }
+    let dateOfBirth = body.dateOfBirth || body.student?.dateOfBirth;
+    let gender = body.gender || body.student?.gender || 'Other';
+    let gradeAppliedFor = String(body.classApplied || body.gradeAppliedFor || body.student?.gradeAppliedFor || body.class || '').trim();
+    let academicYear = String(body.academicYear || '2026–2027').trim();
+    let preferredContactMethod = String(body.preferredContactMethod || 'Phone').trim();
+    let message = String(body.message || body.notes || '').trim();
 
-    if (!childFirstName || !childLastName || !parentName || !contactNumber || !email || !gradeAppliedFor) {
+    if (!parentName || !contactNumber || !childFirstName || !gradeAppliedFor) {
       return res.status(400).json({
         success: false,
-        message: 'Missing required admission fields (childFirstName, childLastName, parentName, contactNumber, email, gradeAppliedFor)',
+        message: 'Missing required admission fields (parentName, phone, childName, classApplied)',
       });
     }
 
-    const yearStr = new Date().getFullYear().toString();
-    const applicationNumber = body.applicationNumber || (await generateNextAdmissionNumber(yearStr, gradeAppliedFor));
+    // Generate unique official enquiry reference (e.g. GGPS-ENQ-2026-001)
+    const enquiryReference = body.applicationNumber || (await generateNextEnquiryNumber(academicYear));
 
     const admission = await Admission.create({
-      applicationNumber,
+      applicationNumber: enquiryReference,
+      enquiryReference,
       childFirstName,
-      childLastName,
+      childLastName: childLastName || '-',
       dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
-      gender: gender || 'Other',
+      gender: ['Male', 'Female', 'Other'].includes(gender) ? gender : 'Other',
       parentName,
+      relationship,
       contactNumber,
       parentPhone: contactNumber,
-      email: email.trim().toLowerCase(),
-      parentEmail: email.trim().toLowerCase(),
-      address: address || '',
+      email: email || undefined,
+      parentEmail: email || undefined,
+      address: body.address || '',
       gradeAppliedFor,
-      status: body.status || 'New Inquiry',
-      stage: body.stage || 'Application',
-      notes: body.notes || '',
+      academicYear,
+      preferredContactMethod,
+      status: body.status || 'New',
+      stage: body.stage || 'Enquiry',
+      notes: message,
       documents: body.documents || [],
     });
 
-    // Notify administrators
+    // Notify administrators via realtime socket
     emitToRole('Admin', 'admission:new', admission);
     broadcastEvent('notification:new', {
       type: 'admission',
-      message: `New admission enquiry received for ${childFirstName} ${childLastName} (${gradeAppliedFor})`,
+      title: 'New Admission Enquiry Received',
+      message: `New admission enquiry ${enquiryReference} received for ${childFirstName} ${childLastName !== '-' ? childLastName : ''} (${gradeAppliedFor})`,
+      enquiryReference,
     });
+
+    // Create persistent Notification in database for Admin role
+    await Notification.create({
+      title: 'New Admission Enquiry Received',
+      message: `New admission enquiry ${enquiryReference} received for ${childFirstName} ${childLastName !== '-' ? childLastName : ''} (${gradeAppliedFor}) from ${parentName} (${contactNumber})`,
+      type: 'admission',
+      targetRole: 'Admin',
+      priority: 'high',
+      read: false,
+      deliveryStatus: 'Delivered',
+      link: '/dashboard/admissions?tab=pipeline',
+      metadata: {
+        admissionId: admission._id,
+        applicationNumber: enquiryReference,
+        enquiryReference,
+        childName: `${childFirstName} ${childLastName !== '-' ? childLastName : ''}`.trim(),
+        gradeAppliedFor,
+        parentName,
+        phone: contactNumber,
+      },
+    }).catch((err) => console.warn('Admin notification create notice:', err));
+
+    // Send parent acknowledgement email when email is provided
+    if (email && email.includes('@')) {
+      emailService.sendEmail({
+        to: email,
+        subject: 'GGPS School — Admission Enquiry Received',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #E5EEFF; border-radius: 16px; background-color: #ffffff;">
+            <div style="text-align: center; margin-bottom: 24px;">
+              <h1 style="color: #0757D5; margin: 0; font-size: 24px;">GGPS School</h1>
+              <p style="color: #61708A; font-size: 14px; margin-top: 4px;">Excellence in Early Childhood &amp; Elementary Education</p>
+            </div>
+            <div style="padding: 20px; background-color: #F8FAFF; border-radius: 12px; margin-bottom: 20px; border: 1px solid #E2E8F0;">
+              <h2 style="color: #07152F; font-size: 18px; margin-top: 0;">Admission Enquiry Received</h2>
+              <p style="color: #0B1833; font-size: 15px; line-height: 1.6;">Dear <strong>${parentName}</strong>,</p>
+              <p style="color: #0B1833; font-size: 15px; line-height: 1.6;">
+                Thank you for contacting <strong>GGPS School</strong>. We have received your admission enquiry for <strong>${childFirstName} ${childLastName !== '-' ? childLastName : ''}</strong> (${gradeAppliedFor}, Academic Year ${academicYear}) and our admissions team will contact you shortly via <strong>${preferredContactMethod}</strong>.
+              </p>
+              <div style="margin: 20px 0; padding: 12px 16px; background: #E5EEFF; border-radius: 8px; font-weight: bold; color: #0757D5; font-size: 15px;">
+                Enquiry Reference: ${enquiryReference}
+              </div>
+            </div>
+            <p style="color: #61708A; font-size: 13px;">If you have any questions, feel free to reply directly or contact our admissions office at <a href="mailto:admissions@ggps.edu" style="color: #0757D5;">admissions@ggps.edu</a>.</p>
+            <div style="border-top: 1px solid #E5EEFF; margin-top: 24px; padding-top: 16px; text-align: center; color: #94A3B8; font-size: 12px;">
+              &copy; ${new Date().getFullYear()} GGPS School. All rights reserved.
+            </div>
+          </div>
+        `,
+        text: `Thank you for contacting GGPS School. We have received your admission enquiry (${enquiryReference}) and our admissions team will contact you shortly.`,
+      }).catch((err) => console.warn('Parent acknowledgement email notice:', err));
+    }
 
     res.status(201).json({
       success: true,
       message: 'Admission enquiry submitted successfully',
+      enquiryReference,
+      applicationNumber: enquiryReference,
+      data: admission,
       admission,
-      applicationNumber: admission.applicationNumber,
     });
   } catch (error) {
+    console.error('Create admission error:', error);
     res.status(400).json({ success: false, message: 'Invalid admission data', error });
   }
 };
@@ -390,3 +451,823 @@ export const updateAdmission = async (req: Request, res: Response) => {
     res.status(400).json({ success: false, message: 'Invalid update data', error });
   }
 };
+
+// =========================================================================
+// ENQUIRY WORKFLOW (Public Website → Admin Workspace)
+// =========================================================================
+
+// @desc    Public submission of admission enquiry with duplicate detection and atomic sequence ID
+// @route   POST /api/v1/admissions/enquiries
+export const createEnquiry = async (req: Request, res: Response) => {
+  try {
+    const body = req.body || {};
+
+    const parentName = String(body.parentName || body.parent?.name || '').trim();
+    const phone = String(body.phone || body.contactNumber || body.parent?.phone || '').trim();
+    const email = String(body.email || body.parent?.email || '').trim().toLowerCase();
+    const relationship = String(body.relationship || body.parent?.relationship || 'Parent').trim();
+
+    let childName = String(body.childName || body.child?.name || '').trim();
+    if (!childName && (body.childFirstName || body.student?.firstName)) {
+      const first = String(body.childFirstName || body.student?.firstName || '').trim();
+      const last = String(body.childLastName || body.student?.lastName || '').trim();
+      childName = `${first} ${last}`.trim();
+    }
+
+    const dateOfBirth = body.dateOfBirth || body.child?.dateOfBirth;
+    const gender = body.gender || body.child?.gender || 'Other';
+    const classApplied = String(body.classApplied || body.gradeAppliedFor || body.child?.classApplied || 'LKG').trim();
+    const academicYear = String(body.academicYear || '2026–2027').trim();
+    const preferredContactMethod = String(body.preferredContactMethod || 'Phone').trim();
+    const message = String(body.message || body.notes || '').trim();
+    const preferredVisitDate = body.preferredVisitDate ? new Date(body.preferredVisitDate) : undefined;
+    const source = String(body.source || 'Website').trim();
+
+    // Server-side validation
+    if (!parentName || !phone || !childName || !classApplied) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required admission enquiry fields (parentName, phone, childName, classApplied)',
+      });
+    }
+
+    // 1. DUPLICATE ENQUIRY DETECTION (Same phone + child name + academic year OR email + child name + academic year)
+    const childRegex = new RegExp(`^${childName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
+    const duplicateQuery: any = {
+      academicYear,
+      'child.name': childRegex,
+      $or: [
+        { 'parent.phone': phone },
+        ...(email ? [{ 'parent.email': email }] : []),
+      ],
+    };
+
+    const existingEnquiry = await AdmissionEnquiry.findOne(duplicateQuery);
+    if (existingEnquiry) {
+      return res.status(409).json({
+        success: false,
+        isDuplicate: true,
+        message: 'An enquiry for this child may already exist. Our admissions team will review it.',
+        enquiryId: existingEnquiry.enquiryId,
+        data: existingEnquiry,
+      });
+    }
+
+    // 2. Concurrency-safe atomic sequence generation: GGPS-ENQ-{YEAR}-{0001}
+    const enquiryId = await generateNextEnquiryNumber(academicYear);
+
+    // 3. Persist in MongoDB
+    const validContactMethod = ['Phone', 'WhatsApp', 'Email'].includes(preferredContactMethod)
+      ? (preferredContactMethod as 'Phone' | 'WhatsApp' | 'Email')
+      : 'Phone';
+    const validSource = ['Website', 'Home Page', 'Admission Page', 'Referral', 'Other'].includes(source)
+      ? (source as 'Website' | 'Home Page' | 'Admission Page' | 'Referral' | 'Other')
+      : 'Website';
+
+    const enquiry = await AdmissionEnquiry.create({
+      enquiryId,
+      academicYear,
+      parent: {
+        name: parentName,
+        email,
+        phone,
+        relationship: relationship || 'Parent',
+      },
+      child: {
+        name: childName,
+        dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
+        classApplied,
+        gender: ['Male', 'Female', 'Other'].includes(gender) ? gender : 'Other',
+      },
+      preferredContactMethod: validContactMethod,
+      message,
+      preferredVisitDate,
+      source: validSource,
+      status: 'NEW',
+      followUps: [],
+      notes: [],
+    });
+
+    // Also sync to Admission collection for pipeline compatibility
+    const nameParts = childName.split(/\s+/);
+    await Admission.create({
+      applicationNumber: enquiryId,
+      enquiryReference: enquiryId,
+      childFirstName: nameParts[0] || 'Child',
+      childLastName: nameParts.slice(1).join(' ') || '-',
+      dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
+      gender: ['Male', 'Female', 'Other'].includes(gender) ? gender : 'Other',
+      parentName,
+      relationship,
+      contactNumber: phone,
+      parentPhone: phone,
+      email: email || undefined,
+      parentEmail: email || undefined,
+      gradeAppliedFor: classApplied,
+      academicYear,
+      preferredContactMethod: validContactMethod,
+      status: 'New',
+      stage: 'Enquiry',
+      notes: message,
+    }).catch((err) => console.warn('Sync Admission record notice:', err));
+
+    // 4. Audit Log
+    await AuditLog.create({
+      action: 'ENQUIRY_CREATED',
+      module: 'ADMISSION_ENQUIRY',
+      targetId: enquiryId,
+      details: `Admission enquiry ${enquiryId} submitted for ${childName} (${classApplied}) by ${parentName}`,
+      ipAddress: req.ip || req.headers['x-forwarded-for'] || '',
+    }).catch((err) => console.warn('AuditLog error:', err));
+
+    // 5. Emit Real-time Socket.IO notification to Admin console
+    emitToRole('Admin', 'admission:enquiry:new', enquiry);
+    emitToRole('Admin', 'admission:new', enquiry);
+    broadcastEvent('notification:new', {
+      type: 'admission',
+      title: 'New Admission Enquiry',
+      message: `New enquiry received from ${parentName} for ${childName} (${classApplied})`,
+      enquiryId,
+      link: '/dashboard/admissions?tab=inquiries',
+    });
+
+    // 6. Create in-app Notification for Admin role
+    await Notification.create({
+      title: 'New Admission Enquiry Received',
+      message: `New enquiry ${enquiryId} received from ${parentName} for ${childName} (${classApplied})`,
+      type: 'admission',
+      targetRole: 'Admin',
+      priority: 'high',
+      read: false,
+      deliveryStatus: 'Delivered',
+      link: '/dashboard/admissions?tab=inquiries',
+      metadata: {
+        enquiryId,
+        parentName,
+        childName,
+        classApplied,
+        phone,
+      },
+    }).catch((err) => console.warn('Notification create notice:', err));
+
+    // 7. Parent Email Acknowledgement
+    if (email && email.includes('@')) {
+      emailService.sendEmail({
+        to: email,
+        subject: 'GGPS School — Admission Enquiry Received',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #E5EEFF; border-radius: 16px; background-color: #ffffff;">
+            <div style="text-align: center; margin-bottom: 24px;">
+              <h1 style="color: #0050CB; margin: 0; font-size: 24px;">GGPS School</h1>
+              <p style="color: #61708A; font-size: 14px; margin-top: 4px;">Excellence in Early Childhood &amp; Elementary Education</p>
+            </div>
+            <div style="padding: 20px; background-color: #F8FAFF; border-radius: 12px; margin-bottom: 20px; border: 1px solid #E2E8F0;">
+              <h2 style="color: #000E28; font-size: 18px; margin-top: 0;">Enquiry Submitted Successfully</h2>
+              <p style="color: #0B1833; font-size: 15px; line-height: 1.6;">Dear <strong>${parentName}</strong>,</p>
+              <p style="color: #0B1833; font-size: 15px; line-height: 1.6;">
+                Thank you for contacting <strong>GGPS School</strong>. We have received your admission enquiry for <strong>${childName}</strong> (${classApplied}, Academic Year ${academicYear}) and our admissions team will contact you shortly via <strong>${validContactMethod}</strong>.
+              </p>
+              <div style="margin: 20px 0; padding: 12px 16px; background: #E5EEFF; border-radius: 8px; font-weight: bold; color: #0050CB; font-size: 15px;">
+                Your Enquiry ID: ${enquiryId}
+              </div>
+            </div>
+            <p style="color: #61708A; font-size: 13px;">If you have any questions, reply to this email or reach us at <a href="mailto:admissions@ggps.edu" style="color: #0050CB;">admissions@ggps.edu</a>.</p>
+            <div style="border-top: 1px solid #E5EEFF; margin-top: 24px; padding-top: 16px; text-align: center; color: #94A3B8; font-size: 12px;">
+              &copy; ${new Date().getFullYear()} GGPS School. All rights reserved.
+            </div>
+          </div>
+        `,
+        text: `Thank you for contacting GGPS School. We have received your admission enquiry (${enquiryId}) and our admissions team will contact you shortly.`,
+      }).catch((err) => console.warn('Parent email notice:', err));
+    }
+
+    res.status(201).json({
+      success: true,
+      message: 'Enquiry submitted successfully',
+      enquiryId,
+      enquiryReference: enquiryId,
+      applicationNumber: enquiryId,
+      data: enquiry,
+    });
+  } catch (error) {
+    console.error('Create enquiry error:', error);
+    res.status(400).json({ success: false, message: 'Invalid enquiry data', error });
+  }
+};
+
+// @desc    Get enquiry by enquiryId (Public tracking or staff verification)
+// @route   GET /api/v1/admissions/enquiries/:enquiryId
+export const getEnquiryById = async (req: Request, res: Response) => {
+  try {
+    const { enquiryId } = req.params;
+    const cleanId = String(enquiryId || '').trim();
+    const enquiry = await AdmissionEnquiry.findOne({
+      $or: [
+        { enquiryId: cleanId },
+        { _id: mongoose.isValidObjectId(cleanId) ? cleanId : null },
+      ],
+    });
+
+    if (!enquiry) {
+      return res.status(404).json({ success: false, message: 'Enquiry record not found' });
+    }
+
+    res.status(200).json({ success: true, data: enquiry });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error retrieving enquiry', error });
+  }
+};
+
+// @desc    Admin list enquiries with KPI counts, server-side search, filters, pagination
+// @route   GET /api/v1/admissions/enquiries
+export const getEnquiries = async (req: Request, res: Response) => {
+  try {
+    const { status, classApplied, academicYear, source, assignedTo, search, page, limit, startDate, endDate } = req.query;
+    const filter: Record<string, any> = {};
+
+    if (status && status !== 'ALL') {
+      filter.status = status;
+    }
+    if (classApplied && classApplied !== 'ALL') {
+      filter['child.classApplied'] = classApplied;
+    }
+    if (academicYear && academicYear !== 'ALL') {
+      filter.academicYear = academicYear;
+    }
+    if (source && source !== 'ALL') {
+      filter.source = source;
+    }
+    if (assignedTo && assignedTo !== 'ALL') {
+      if (assignedTo === 'UNASSIGNED') {
+        filter['assignedTo.id'] = { $exists: false };
+      } else {
+        filter['assignedTo.id'] = assignedTo;
+      }
+    }
+    if (startDate || endDate) {
+      filter.createdAt = {};
+      if (startDate) filter.createdAt.$gte = new Date(String(startDate));
+      if (endDate) {
+        const end = new Date(String(endDate));
+        end.setHours(23, 59, 59, 999);
+        filter.createdAt.$lte = end;
+      }
+    }
+
+    if (search) {
+      const q = String(search).trim();
+      const searchRegex = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+      filter.$or = [
+        { enquiryId: searchRegex },
+        { 'parent.name': searchRegex },
+        { 'parent.phone': searchRegex },
+        { 'parent.email': searchRegex },
+        { 'child.name': searchRegex },
+      ];
+    }
+
+    const pageNum = Math.max(1, Number(page) || 1);
+    const limitNum = Math.max(1, Math.min(100, Number(limit) || 10));
+    const skip = (pageNum - 1) * limitNum;
+
+    // Auto-seed initial enquiries if collection is completely empty
+    const countCheck = await AdmissionEnquiry.countDocuments({});
+    if (countCheck === 0) {
+      const seedYear = '2026–2027';
+      await AdmissionEnquiry.create([
+        {
+          enquiryId: 'GGPS-ENQ-2026-0001',
+          academicYear: seedYear,
+          parent: { name: 'Rahul Kumar', email: 'rahul.kumar@gmail.com', phone: '+91 98401 22334', relationship: 'Father' },
+          child: { name: 'Arun Kumar', classApplied: 'LKG', dateOfBirth: new Date('2022-04-15'), gender: 'Male' },
+          preferredContactMethod: 'Phone',
+          message: 'Interested in LKG admission for AY 2026-27. Inquiring about school bus transport and timing.',
+          source: 'Website',
+          status: 'NEW',
+          followUps: [],
+          notes: [],
+        },
+        {
+          enquiryId: 'GGPS-ENQ-2026-0002',
+          academicYear: seedYear,
+          parent: { name: 'Pooja Chopra', email: 'pooja.c@example.com', phone: '+91 98223 99881', relationship: 'Mother' },
+          child: { name: 'Reyansh Chopra', classApplied: 'PreKG', dateOfBirth: new Date('2023-08-10'), gender: 'Male' },
+          preferredContactMethod: 'WhatsApp',
+          message: 'Would like to visit the campus on Saturday morning.',
+          source: 'Home Page',
+          status: 'CONTACTED',
+          lastContactAt: new Date(Date.now() - 86400000),
+          lastContactMethod: 'WhatsApp',
+          followUps: [],
+          notes: [{ text: 'Called parent; very receptive. Invited to campus tour.', createdAt: new Date() }],
+        },
+        {
+          enquiryId: 'GGPS-ENQ-2026-0003',
+          academicYear: seedYear,
+          parent: { name: 'Amit Bhasin', email: 'amit.bhasin@example.com', phone: '+91 99114 77665', relationship: 'Father' },
+          child: { name: 'Samaira Bhasin', classApplied: 'UKG', dateOfBirth: new Date('2021-01-20'), gender: 'Female' },
+          preferredContactMethod: 'Phone',
+          message: 'Transfer from Bangalore. Requesting curriculum details.',
+          source: 'Admission Page',
+          status: 'FOLLOW_UP',
+          nextFollowUpDate: new Date(Date.now() + 86400000 * 2),
+          followUps: [{ date: new Date(), type: 'Phone', notes: 'Scheduled demo class on Friday', createdAt: new Date() }],
+          notes: [],
+        },
+        {
+          enquiryId: 'GGPS-ENQ-2026-0004',
+          academicYear: seedYear,
+          parent: { name: 'Farhan Siddiqui', email: 'farhan.s@example.com', phone: '+91 97110 55443', relationship: 'Father' },
+          child: { name: 'Zoya Siddiqui', classApplied: 'PreKG', dateOfBirth: new Date('2023-05-18'), gender: 'Female' },
+          preferredContactMethod: 'Email',
+          message: 'Confirmed admission application documents submitted.',
+          source: 'Referral',
+          status: 'CONVERTED',
+          conversion: { applicationNumber: 'APP-2026-0001', convertedAt: new Date() },
+          followUps: [],
+          notes: [],
+        },
+      ]);
+    }
+
+    const [enquiries, total, totalAll, newCount, contactedCount, followUpCount, convertedCount, closedCount] = await Promise.all([
+      AdmissionEnquiry.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limitNum),
+      AdmissionEnquiry.countDocuments(filter),
+      AdmissionEnquiry.countDocuments({}),
+      AdmissionEnquiry.countDocuments({ status: 'NEW' }),
+      AdmissionEnquiry.countDocuments({ status: 'CONTACTED' }),
+      AdmissionEnquiry.countDocuments({ status: 'FOLLOW_UP' }),
+      AdmissionEnquiry.countDocuments({ status: 'CONVERTED' }),
+      AdmissionEnquiry.countDocuments({ status: 'CLOSED' }),
+    ]);
+
+    const kpiData = {
+      total: totalAll,
+      new: newCount,
+      contacted: contactedCount,
+      followUp: followUpCount,
+      converted: convertedCount,
+      closed: closedCount,
+    };
+
+    res.status(200).json({
+      success: true,
+      data: enquiries,
+      total,
+      page: pageNum,
+      limit: limitNum,
+      totalPages: Math.ceil(total / limitNum),
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        pages: Math.ceil(total / limitNum),
+      },
+      kpis: kpiData,
+      metrics: kpiData,
+    });
+  } catch (error) {
+    console.error('Fetch enquiries error:', error);
+    res.status(500).json({ success: false, message: 'Server error fetching enquiries', error });
+  }
+};
+
+// @desc    Admin detail view of a single enquiry
+// @route   GET /api/v1/admissions/enquiries/detail/:id
+export const getEnquiryDetail = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const enquiry = await AdmissionEnquiry.findOne({
+      $or: [
+        { _id: mongoose.isValidObjectId(id) ? id : null },
+        { enquiryId: id },
+      ],
+    });
+
+    if (!enquiry) {
+      return res.status(404).json({ success: false, message: 'Enquiry record not found' });
+    }
+
+    const userObj = (req as any).user;
+    await AuditLog.create({
+      userId: userObj?._id,
+      userName: `${userObj?.firstName || 'Admin'} ${userObj?.lastName || ''}`.trim(),
+      userRole: userObj?.role?.name || userObj?.role || 'Admin',
+      action: 'ENQUIRY_VIEWED',
+      module: 'ADMISSION_ENQUIRY',
+      targetId: enquiry.enquiryId,
+      details: `Enquiry ${enquiry.enquiryId} viewed by staff`,
+    }).catch(() => {});
+
+    res.status(200).json({ success: true, data: enquiry });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error retrieving enquiry detail', error });
+  }
+};
+
+// @desc    Admin update enquiry fields
+// @route   PATCH /api/v1/admissions/enquiries/:id
+export const updateEnquiry = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const body = req.body || {};
+
+    const allowedUpdates: Record<string, any> = {};
+    if (body.parentName) allowedUpdates['parent.name'] = body.parentName.trim();
+    if (body.phone) allowedUpdates['parent.phone'] = body.phone.trim();
+    if (body.email) allowedUpdates['parent.email'] = body.email.trim().toLowerCase();
+    if (body.relationship) allowedUpdates['parent.relationship'] = body.relationship.trim();
+
+    if (body.childName) allowedUpdates['child.name'] = body.childName.trim();
+    if (body.classApplied) allowedUpdates['child.classApplied'] = body.classApplied.trim();
+    if (body.dateOfBirth) allowedUpdates['child.dateOfBirth'] = new Date(body.dateOfBirth);
+    if (body.gender) allowedUpdates['child.gender'] = body.gender;
+
+    if (body.preferredContactMethod) allowedUpdates.preferredContactMethod = body.preferredContactMethod;
+    if (body.preferredVisitDate) allowedUpdates.preferredVisitDate = new Date(body.preferredVisitDate);
+    if (body.message !== undefined) allowedUpdates.message = body.message.trim();
+    if (body.source) allowedUpdates.source = body.source;
+
+    const enquiry = await AdmissionEnquiry.findOneAndUpdate(
+      { $or: [{ _id: mongoose.isValidObjectId(id) ? id : null }, { enquiryId: id }] },
+      { $set: allowedUpdates },
+      { new: true, runValidators: true }
+    );
+
+    if (!enquiry) {
+      return res.status(404).json({ success: false, message: 'Enquiry record not found' });
+    }
+
+    const userObj = (req as any).user;
+    await AuditLog.create({
+      userId: userObj?._id,
+      userName: `${userObj?.firstName || 'Admin'} ${userObj?.lastName || ''}`.trim(),
+      userRole: userObj?.role?.name || userObj?.role || 'Admin',
+      action: 'ENQUIRY_UPDATED',
+      module: 'ADMISSION_ENQUIRY',
+      targetId: enquiry.enquiryId,
+      details: `Enquiry ${enquiry.enquiryId} updated`,
+    }).catch(() => {});
+
+    emitToRole('Admin', 'admission:enquiry:updated', enquiry);
+
+    res.status(200).json({ success: true, message: 'Enquiry updated successfully', data: enquiry });
+  } catch (error) {
+    res.status(400).json({ success: false, message: 'Invalid enquiry update data', error });
+  }
+};
+
+// @desc    Admin update enquiry status (NEW → CONTACTED → FOLLOW_UP → CONVERTED / CLOSED)
+// @route   PATCH /api/v1/admissions/enquiries/:id/status
+export const updateEnquiryStatus = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { status, contactMethod } = req.body;
+
+    const validStatuses = ['NEW', 'CONTACTED', 'FOLLOW_UP', 'CONVERTED', 'CLOSED', 'LOST'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ success: false, message: `Invalid status: ${status}` });
+    }
+
+    const enquiry = await AdmissionEnquiry.findOne({
+      $or: [{ _id: mongoose.isValidObjectId(id) ? id : null }, { enquiryId: id }],
+    });
+
+    if (!enquiry) {
+      return res.status(404).json({ success: false, message: 'Enquiry record not found' });
+    }
+
+    const oldStatus = enquiry.status;
+    enquiry.status = status;
+
+    if (status === 'CONTACTED') {
+      enquiry.lastContactAt = new Date();
+      enquiry.lastContactMethod = contactMethod || enquiry.preferredContactMethod || 'Phone';
+    }
+
+    await enquiry.save();
+
+    const userObj = (req as any).user;
+    await AuditLog.create({
+      userId: userObj?._id,
+      userName: `${userObj?.firstName || 'Admin'} ${userObj?.lastName || ''}`.trim(),
+      userRole: userObj?.role?.name || userObj?.role || 'Admin',
+      action: 'STATUS_CHANGED',
+      module: 'ADMISSION_ENQUIRY',
+      targetId: enquiry.enquiryId,
+      details: `Status changed from ${oldStatus} to ${status}`,
+    }).catch(() => {});
+
+    emitToRole('Admin', 'admission:enquiry:status-changed', { enquiryId: enquiry.enquiryId, status, oldStatus, enquiry });
+    broadcastEvent('admission:enquiry:status-changed', { enquiryId: enquiry.enquiryId, status });
+
+    res.status(200).json({ success: true, message: `Status updated to ${status}`, data: enquiry });
+  } catch (error) {
+    res.status(400).json({ success: false, message: 'Error updating status', error });
+  }
+};
+
+// @desc    Admin assign staff to enquiry
+// @route   PATCH /api/v1/admissions/enquiries/:id/assignment
+export const assignEnquiry = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { userId, name, email, role } = req.body;
+
+    if (!userId || !name) {
+      return res.status(400).json({ success: false, message: 'Staff userId and name are required' });
+    }
+
+    const enquiry = await AdmissionEnquiry.findOne({
+      $or: [{ _id: mongoose.isValidObjectId(id) ? id : null }, { enquiryId: id }],
+    });
+
+    if (!enquiry) {
+      return res.status(404).json({ success: false, message: 'Enquiry record not found' });
+    }
+
+    enquiry.assignedTo = {
+      id: new mongoose.Types.ObjectId(userId),
+      name: String(name).trim(),
+      email: String(email || '').trim(),
+      role: String(role || 'Admissions Staff').trim(),
+    };
+    await enquiry.save();
+
+    const userObj = (req as any).user;
+    await AuditLog.create({
+      userId: userObj?._id,
+      userName: `${userObj?.firstName || 'Admin'} ${userObj?.lastName || ''}`.trim(),
+      userRole: userObj?.role?.name || userObj?.role || 'Admin',
+      action: 'ENQUIRY_ASSIGNED',
+      module: 'ADMISSION_ENQUIRY',
+      targetId: enquiry.enquiryId,
+      details: `Enquiry ${enquiry.enquiryId} assigned to ${name}`,
+    }).catch(() => {});
+
+    emitToRole('Admin', 'admission:enquiry:assigned', { enquiryId: enquiry.enquiryId, assignedTo: enquiry.assignedTo });
+    broadcastEvent('admission:enquiry:assigned', { enquiryId: enquiry.enquiryId, assignedTo: enquiry.assignedTo });
+
+    res.status(200).json({ success: true, message: `Assigned to ${name}`, data: enquiry });
+  } catch (error) {
+    res.status(400).json({ success: false, message: 'Error assigning staff', error });
+  }
+};
+
+// @desc    Admin record follow-up on enquiry
+// @route   POST /api/v1/admissions/enquiries/:id/follow-ups
+export const addEnquiryFollowUp = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { date, time, type, notes } = req.body;
+
+    if (!date || !notes) {
+      return res.status(400).json({ success: false, message: 'Follow-up date and notes are required' });
+    }
+
+    const enquiry = await AdmissionEnquiry.findOne({
+      $or: [{ _id: mongoose.isValidObjectId(id) ? id : null }, { enquiryId: id }],
+    });
+
+    if (!enquiry) {
+      return res.status(404).json({ success: false, message: 'Enquiry record not found' });
+    }
+
+    const userObj = (req as any).user;
+    const followUpDate = new Date(date);
+
+    enquiry.followUps.push({
+      date: followUpDate,
+      time: time || undefined,
+      type: ['Phone', 'WhatsApp', 'Email', 'Visit', 'Other'].includes(type) ? type : 'Phone',
+      notes: String(notes).trim(),
+      createdBy: {
+        id: userObj?._id,
+        name: `${userObj?.firstName || 'Admin'} ${userObj?.lastName || ''}`.trim(),
+        email: userObj?.email,
+      },
+      createdAt: new Date(),
+    });
+
+    enquiry.nextFollowUpDate = followUpDate;
+    if (enquiry.status === 'NEW' || enquiry.status === 'CONTACTED') {
+      enquiry.status = 'FOLLOW_UP';
+    }
+
+    await enquiry.save();
+
+    await AuditLog.create({
+      userId: userObj?._id,
+      userName: `${userObj?.firstName || 'Admin'} ${userObj?.lastName || ''}`.trim(),
+      userRole: userObj?.role?.name || userObj?.role || 'Admin',
+      action: 'FOLLOW_UP_CREATED',
+      module: 'ADMISSION_ENQUIRY',
+      targetId: enquiry.enquiryId,
+      details: `Follow-up scheduled for ${followUpDate.toLocaleDateString()}: ${notes}`,
+    }).catch(() => {});
+
+    emitToRole('Admin', 'admission:enquiry:follow-up-created', { enquiryId: enquiry.enquiryId, enquiry });
+
+    res.status(201).json({ success: true, message: 'Follow-up scheduled successfully', data: enquiry });
+  } catch (error) {
+    res.status(400).json({ success: false, message: 'Error adding follow-up', error });
+  }
+};
+
+// @desc    Admin add internal note to enquiry
+// @route   POST /api/v1/admissions/enquiries/:id/notes
+export const addEnquiryNote = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { text } = req.body;
+
+    if (!text || !String(text).trim()) {
+      return res.status(400).json({ success: false, message: 'Note text cannot be empty' });
+    }
+
+    const enquiry = await AdmissionEnquiry.findOne({
+      $or: [{ _id: mongoose.isValidObjectId(id) ? id : null }, { enquiryId: id }],
+    });
+
+    if (!enquiry) {
+      return res.status(404).json({ success: false, message: 'Enquiry record not found' });
+    }
+
+    const userObj = (req as any).user;
+    enquiry.notes.push({
+      text: String(text).trim(),
+      createdBy: {
+        id: userObj?._id,
+        name: `${userObj?.firstName || 'Admin'} ${userObj?.lastName || ''}`.trim(),
+        email: userObj?.email,
+      },
+      createdAt: new Date(),
+    });
+
+    await enquiry.save();
+
+    await AuditLog.create({
+      userId: userObj?._id,
+      userName: `${userObj?.firstName || 'Admin'} ${userObj?.lastName || ''}`.trim(),
+      userRole: userObj?.role?.name || userObj?.role || 'Admin',
+      action: 'NOTE_ADDED',
+      module: 'ADMISSION_ENQUIRY',
+      targetId: enquiry.enquiryId,
+      details: `Internal note added to enquiry ${enquiry.enquiryId}`,
+    }).catch(() => {});
+
+    res.status(201).json({ success: true, message: 'Note added successfully', data: enquiry });
+  } catch (error) {
+    res.status(400).json({ success: false, message: 'Error adding note', error });
+  }
+};
+
+// @desc    Convert Enquiry to formal Admission Application
+// @route   POST /api/v1/admissions/enquiries/:id/convert
+export const convertEnquiryToApplication = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const enquiry = await AdmissionEnquiry.findOne({
+      $or: [{ _id: mongoose.isValidObjectId(id) ? id : null }, { enquiryId: id }],
+    });
+
+    if (!enquiry) {
+      return res.status(404).json({ success: false, message: 'Enquiry record not found' });
+    }
+
+    if (enquiry.status === 'CONVERTED') {
+      return res.status(400).json({
+        success: false,
+        message: 'This enquiry has already been converted to an application.',
+        conversion: enquiry.conversion,
+      });
+    }
+
+    if (enquiry.status === 'CLOSED') {
+      return res.status(400).json({
+        success: false,
+        message: 'Closed enquiries cannot be converted. Please reopen enquiry first.',
+      });
+    }
+
+    const yearStr = enquiry.academicYear || '2026–2027';
+    const applicationNumber = await generateNextAdmissionNumber(yearStr, enquiry.child.classApplied);
+
+    const nameParts = enquiry.child.name.trim().split(/\s+/);
+    const childFirstName = nameParts[0] || 'Student';
+    const childLastName = nameParts.slice(1).join(' ') || '-';
+
+    // 1. Create formal Admission application record
+    const application = await Admission.create({
+      applicationNumber,
+      enquiryReference: enquiry.enquiryId,
+      childFirstName,
+      childLastName,
+      dateOfBirth: enquiry.child.dateOfBirth,
+      gender: enquiry.child.gender || 'Other',
+      parentName: enquiry.parent.name,
+      relationship: enquiry.parent.relationship || 'Parent',
+      contactNumber: enquiry.parent.phone,
+      parentPhone: enquiry.parent.phone,
+      email: enquiry.parent.email,
+      parentEmail: enquiry.parent.email,
+      gradeAppliedFor: enquiry.child.classApplied,
+      academicYear: enquiry.academicYear,
+      preferredContactMethod: enquiry.preferredContactMethod,
+      status: 'Application Received',
+      stage: 'Application',
+      notes: enquiry.message,
+    });
+
+    // 2. Mark enquiry as CONVERTED
+    const userObj = (req as any).user;
+    enquiry.status = 'CONVERTED';
+    enquiry.conversion = {
+      applicationId: application._id,
+      applicationNumber,
+      convertedAt: new Date(),
+      convertedBy: {
+        id: userObj?._id,
+        name: `${userObj?.firstName || 'Admin'} ${userObj?.lastName || ''}`.trim(),
+      },
+    };
+    await enquiry.save();
+
+    // 3. Audit Log
+    await AuditLog.create({
+      userId: userObj?._id,
+      userName: `${userObj?.firstName || 'Admin'} ${userObj?.lastName || ''}`.trim(),
+      userRole: userObj?.role?.name || userObj?.role || 'Admin',
+      action: 'CONVERTED_TO_APPLICATION',
+      module: 'ADMISSION_ENQUIRY',
+      targetId: enquiry.enquiryId,
+      details: `Enquiry ${enquiry.enquiryId} converted to formal application ${applicationNumber}`,
+    }).catch(() => {});
+
+    emitToRole('Admin', 'admission:enquiry:converted', { enquiry, application });
+    broadcastEvent('admission:enquiry:converted', { enquiryId: enquiry.enquiryId, applicationNumber });
+
+    res.status(200).json({
+      success: true,
+      message: 'Enquiry converted to application successfully',
+      enquiry,
+      application,
+      applicationNumber,
+    });
+  } catch (error) {
+    console.error('Convert enquiry error:', error);
+    res.status(500).json({ success: false, message: 'Server error converting enquiry to application', error });
+  }
+};
+
+// @desc    Close enquiry (parent not interested / lost / invalid)
+// @route   POST /api/v1/admissions/enquiries/:id/close
+export const closeEnquiry = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { reason } = req.body;
+
+    const enquiry = await AdmissionEnquiry.findOne({
+      $or: [{ _id: mongoose.isValidObjectId(id) ? id : null }, { enquiryId: id }],
+    });
+
+    if (!enquiry) {
+      return res.status(404).json({ success: false, message: 'Enquiry record not found' });
+    }
+
+    const oldStatus = enquiry.status;
+    enquiry.status = 'CLOSED';
+    if (reason) {
+      const userObj = (req as any).user;
+      enquiry.notes.push({
+        text: `Closure reason: ${String(reason).trim()}`,
+        createdBy: {
+          id: userObj?._id,
+          name: `${userObj?.firstName || 'Admin'} ${userObj?.lastName || ''}`.trim(),
+          email: userObj?.email,
+        },
+        createdAt: new Date(),
+      });
+    }
+
+    await enquiry.save();
+
+    const userObj = (req as any).user;
+    await AuditLog.create({
+      userId: userObj?._id,
+      userName: `${userObj?.firstName || 'Admin'} ${userObj?.lastName || ''}`.trim(),
+      userRole: userObj?.role?.name || userObj?.role || 'Admin',
+      action: 'ENQUIRY_CLOSED',
+      module: 'ADMISSION_ENQUIRY',
+      targetId: enquiry.enquiryId,
+      details: `Enquiry ${enquiry.enquiryId} closed. Old status: ${oldStatus}. Reason: ${reason || 'None provided'}`,
+    }).catch(() => {});
+
+    emitToRole('Admin', 'admission:enquiry:closed', { enquiryId: enquiry.enquiryId, enquiry });
+
+    res.status(200).json({ success: true, message: 'Enquiry closed successfully', data: enquiry });
+  } catch (error) {
+    res.status(400).json({ success: false, message: 'Error closing enquiry', error });
+  }
+};
+

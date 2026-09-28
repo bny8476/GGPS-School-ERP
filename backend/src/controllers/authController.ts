@@ -164,6 +164,7 @@ export const loginUser = async (req: Request, res: Response) => {
         lastName: user.lastName,
         email: user.email,
         role: roleName,
+        preferredLanguage: user.preferredLanguage || 'en',
         permissions,
         token,
         refreshToken,

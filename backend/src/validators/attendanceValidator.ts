@@ -3,7 +3,7 @@ import { z } from 'zod';
 export const markAttendanceSchema = z.object({
   body: z.object({
     date: z.string().or(z.date()),
-    classId: z.string().min(1, 'Class ID is required'),
+    classId: z.string().optional(),
     sectionId: z.string().optional(),
     className: z.string().optional(),
     sectionName: z.string().optional(),

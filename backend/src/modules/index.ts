@@ -9,6 +9,7 @@ import { parentRoutes } from './parents';
 import { userRoutes, payrollRoutes, leaveRoutes, recruitmentRoutes } from './hr';
 import { admissionRoutes } from './admissions';
 import enrollmentRoutes from '../routes/enrollmentRoutes';
+import idCardRoutes from '../routes/idCardRoutes';
 import { financeRoutes } from './finance';
 import {
   dailyDiaryRoutes,
@@ -40,6 +41,7 @@ import {
 import messageRoutes from '../routes/messageRoutes';
 import reportRoutes from '../routes/reportRoutes';
 import roleRoutes from '../routes/roleRoutes';
+import searchRoutes from '../routes/searchRoutes';
 import {
   healthRoutes,
   dashboardRoutes,
@@ -73,12 +75,14 @@ export function registerDomainModules(apiRouter: Router): void {
   apiRouter.use('/notes', noteRoutes);
   apiRouter.use('/documents', documentRoutes);
   apiRouter.use('/tickets', ticketRoutes);
+  apiRouter.use('/search', searchRoutes);
 
   // Authentication & Identity
   apiRouter.use('/auth', authRoutes);
 
   // Students & Academics
   apiRouter.use('/students', studentRoutes);
+  apiRouter.use('/id-cards', idCardRoutes);
   apiRouter.use('/enrollment', enrollmentRoutes);
   apiRouter.use('/academic', academicRoutes);
   apiRouter.use('/classes', classRoutes);

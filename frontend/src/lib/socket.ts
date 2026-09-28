@@ -83,6 +83,24 @@ export function getSocket(): Socket {
       qc.invalidateQueries({ queryKey: ["fees"] });
       qc.invalidateQueries({ queryKey: ["child-fees"] });
     });
+
+    // Admission Enquiry Real-time Events
+    const handleAdmissionEnquiryUpdate = () => {
+      const qc = getQueryClient();
+      qc.invalidateQueries({ queryKey: ["admissions-enquiries"] });
+      qc.invalidateQueries({ queryKey: ["admissions"] });
+      qc.invalidateQueries({ queryKey: ["notifications"] });
+      qc.invalidateQueries({ queryKey: ["admin-kpis"] });
+    };
+
+    socketInstance.on("admission:enquiry:new", handleAdmissionEnquiryUpdate);
+    socketInstance.on("admission:enquiry:updated", handleAdmissionEnquiryUpdate);
+    socketInstance.on("admission:enquiry:status-changed", handleAdmissionEnquiryUpdate);
+    socketInstance.on("admission:enquiry:assigned", handleAdmissionEnquiryUpdate);
+    socketInstance.on("admission:enquiry:follow-up-created", handleAdmissionEnquiryUpdate);
+    socketInstance.on("admission:enquiry:converted", handleAdmissionEnquiryUpdate);
+    socketInstance.on("admission:enquiry:closed", handleAdmissionEnquiryUpdate);
+    socketInstance.on("admission:new", handleAdmissionEnquiryUpdate);
   } else if (token && socketInstance.auth && (socketInstance.auth as any).token !== token) {
     (socketInstance.auth as any).token = token;
     if (!socketInstance.connected) {

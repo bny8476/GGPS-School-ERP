@@ -21,6 +21,7 @@ import {
   Sun, 
   Moon, 
   Search, 
+  Send,
   PanelLeftClose, 
   PanelLeft,
   Package, 
@@ -51,6 +52,7 @@ import {
   CalendarDays
 } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { ThemeProvider, useTheme } from '@/context/ThemeContext';
 import CommandPalette from '@/components/ui/CommandPalette';
 import NotificationDrawer from '@/components/ui/NotificationDrawer';
@@ -59,6 +61,7 @@ interface NavSubItem {
   href: string;
   label: string;
   badge?: string;
+  icon?: any;
 }
 
 interface NavItem {
@@ -150,6 +153,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   
   const isSuperAdmin = r === 'superadmin' || r === 'admin';
   const isPrincipal = r === 'principal' || isSuperAdmin;
+  const isReceptionist = r === 'receptionist' || isSuperAdmin;
   const isTeacher = r === 'teacher' || isSuperAdmin;
   const isAccountant = r === 'accountant' || isSuperAdmin;
 
@@ -157,114 +161,125 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   const navItems: NavItem[] = useMemo(() => [
     { 
       href: '/dashboard', 
-      label: 'Dashboard', 
+      label: t('nav.dashboard', 'Dashboard'), 
       icon: LayoutDashboard, 
       show: true 
     },
     { 
       href: '/dashboard/admissions', 
-      label: 'Admissions', 
+      label: t('nav.admissions', 'Admissions'), 
       icon: UserPlus, 
-      show: isSuperAdmin || isPrincipal,
+      show: isSuperAdmin || isPrincipal || isReceptionist,
       subItems: [
-        { href: '/dashboard/admissions?tab=inquiries', label: 'Enquiries' },
-        { href: '/dashboard/admissions?tab=applications', label: 'Application Forms' },
-        { href: '/dashboard/admissions?tab=documents', label: 'Document Verification' },
-        { href: '/dashboard/admissions?tab=pipeline', label: 'Admission Pipeline' },
-        { href: '/dashboard/admissions?tab=confirmed', label: 'Confirmed Admissions' },
+        { href: '/dashboard/admissions/enquiries', label: t('admissions.enquiries', 'Enquiries') },
+        { href: '/dashboard/admissions?tab=inquiries', label: t('admissions.enquiries', 'All Inquiries') },
+        { href: '/dashboard/admissions?tab=applications', label: t('admissions.applicationForms', 'Application Forms') },
+        { href: '/dashboard/admissions?tab=documents', label: t('admissions.documentVerification', 'Document Verification') },
+        { href: '/dashboard/admissions?tab=pipeline', label: t('admissions.pipeline', 'Admission Pipeline') },
+        { href: '/dashboard/admissions?tab=confirmed', label: t('admissions.confirmed', 'Confirmed Admissions') },
       ]
     },
     { 
       href: '/dashboard/students', 
-      label: 'Students', 
+      label: t('nav.students', 'Students'), 
       icon: GraduationCap, 
       show: true,
       subItems: [
-        { href: '/dashboard/students', label: 'Student Directory' },
-        { href: '/dashboard/students?action=new', label: 'Add Student' },
-        { href: '/dashboard/enrollment', label: 'Student Promotion / Roll-over' },
-        { href: '/dashboard/discipline', label: 'Behavioral & Discipline Logs' },
-        { href: '/dashboard/growth-profile', label: 'Growth Profiles' },
+        { href: '/dashboard/students', label: t('students.directory', 'Student Directory') },
+        { href: '/dashboard/students?action=new', label: t('students.addStudent', 'Add Student') },
+        { href: '/dashboard/id-cards', label: t('students.idCards', 'ID Card Generator') },
+        { href: '/dashboard/discipline', label: t('students.discipline', 'Behavioral & Discipline Logs') },
+        { href: '/dashboard/growth-profile', label: t('students.growthProfile', 'Growth Profiles') },
+      ]
+    },
+    { 
+      href: '/dashboard/enrollment', 
+      label: t('nav.enrollment', 'Enrollment'), 
+      icon: Layers, 
+      show: true,
+      subItems: [
+        { href: '/dashboard/enrollment', label: t('enrollment.overview', 'Enrollment & Roster') },
+        { href: '/dashboard/enrollment', label: t('enrollment.promotion', 'Student Promotion & Roll-over') },
       ]
     },
     { 
       href: '/dashboard/teachers', 
-      label: 'Teachers / Employees', 
+      label: t('nav.teachers', 'Teachers / Employees'), 
       icon: Briefcase, 
       show: isSuperAdmin || isPrincipal,
       subItems: [
-        { href: '/dashboard/teachers', label: 'Staff Directory' },
-        { href: '/dashboard/teachers?action=new', label: 'Add / Edit Employee' },
-        { href: '/dashboard/attendance?tab=teachers', label: 'Staff Attendance' },
-        { href: '/dashboard/leaves', label: 'Leaves & Permissions' },
+        { href: '/dashboard/teachers', label: t('teachers.directory', 'Staff Directory') },
+        { href: '/dashboard/teachers?action=new', label: t('teachers.addEmployee', 'Add / Edit Employee') },
+        { href: '/dashboard/attendance?tab=teachers', label: t('teachers.staffAttendance', 'Staff Attendance') },
+        { href: '/dashboard/leaves', label: t('teachers.leavesPermissions', 'Leaves & Permissions') },
       ]
     },
     { 
       href: '/dashboard/parents', 
-      label: 'Parents', 
+      label: t('nav.parents', 'Parents'), 
       icon: Users, 
       show: isSuperAdmin || isPrincipal,
       subItems: [
-        { href: '/dashboard/parents', label: 'Parent Directory' },
-        { href: '/dashboard/parents?tab=linked', label: 'Linked Students' },
-        { href: '/dashboard/parents?tab=logs', label: 'Communication Logs' },
-        { href: '/dashboard/parent-booking', label: 'Parent Meeting Requests' },
+        { href: '/dashboard/parents', label: t('parents.directory', 'Parent Directory') },
+        { href: '/dashboard/parents?tab=linked', label: t('parents.linkedStudents', 'Linked Students') },
+        { href: '/dashboard/parents?tab=logs', label: t('parents.communicationLogs', 'Communication Logs') },
+        { href: '/dashboard/parent-booking', label: t('parents.meetingRequests', 'Parent Meeting Requests') },
       ]
     },
     { 
       href: '/dashboard/academic', 
-      label: 'Academics', 
+      label: t('nav.academics', 'Academics'), 
       icon: BookOpen, 
       show: true,
       subItems: [
-        { href: '/dashboard/calendar', label: 'Academic Calendar' },
-        { href: '/dashboard/classes', label: 'Classes & Sections' },
-        { href: '/dashboard/academic?tab=subjects', label: 'Subjects' },
-        { href: '/dashboard/academic?tab=timetable', label: 'Timetable' },
-        { href: '/dashboard/curriculum', label: 'Curriculum' },
-        { href: '/dashboard/teachers?tab=assignments', label: 'Teacher Assignments' },
+        { href: '/dashboard/calendar', label: t('academics.calendar', 'Academic Calendar') },
+        { href: '/dashboard/classes', label: t('academics.classesSections', 'Classes & Sections') },
+        { href: '/dashboard/academic?tab=subjects', label: t('academics.subjects', 'Subjects') },
+        { href: '/dashboard/academic?tab=timetable', label: t('academics.timetable', 'Timetable') },
+        { href: '/dashboard/curriculum', label: t('academics.curriculum', 'Curriculum') },
+        { href: '/dashboard/teachers?tab=assignments', label: t('academics.teacherAssignments', 'Teacher Assignments') },
       ]
     },
     { 
       href: '/dashboard/attendance', 
-      label: 'Attendance', 
+      label: t('nav.attendance', 'Attendance'), 
       icon: CheckCircle2, 
       show: true,
       subItems: [
-        { href: '/dashboard/attendance', label: 'Daily Student Attendance' },
-        { href: '/dashboard/attendance?tab=teachers', label: 'Daily Teacher Attendance' },
-        { href: '/dashboard/attendance?tab=reports', label: 'Class Attendance Reports' },
-        { href: '/dashboard/leaves', label: 'Leave Applications' },
+        { href: '/dashboard/attendance', label: t('attendance.dailyStudentAttendance', 'Daily Student Attendance') },
+        { href: '/dashboard/attendance?tab=teachers', label: t('attendance.dailyTeacherAttendance', 'Daily Teacher Attendance') },
+        { href: '/dashboard/attendance?tab=reports', label: t('attendance.reports', 'Class Attendance Reports') },
+        { href: '/dashboard/leaves', label: t('attendance.leaveApplications', 'Leave Applications') },
       ]
     },
     { 
       href: '/dashboard/fees', 
-      label: 'Fees & Finance', 
+      label: t('nav.finance', 'Fees & Finance'), 
       icon: DollarSign, 
       show: isAccountant || isSuperAdmin,
       subItems: [
-        { href: '/dashboard/fees?tab=structure', label: 'Fee Structure Setup' },
-        { href: '/dashboard/fees?tab=invoices', label: 'Student Invoices' },
-        { href: '/dashboard/fees?tab=collect', label: 'Payment Collection' },
-        { href: '/dashboard/fees?tab=receipts', label: 'Fee Receipts' },
-        { href: '/dashboard/fees?tab=dues', label: 'Outstanding Dues' },
-        { href: '/dashboard/fees?tab=scholarships', label: 'Scholarships & Concessions' },
+        { href: '/dashboard/fees?tab=structure', label: t('finance.feeStructure', 'Fee Structure Setup') },
+        { href: '/dashboard/fees?tab=invoices', label: t('finance.invoices', 'Student Invoices') },
+        { href: '/dashboard/fees?tab=collect', label: t('finance.paymentCollection', 'Payment Collection') },
+        { href: '/dashboard/fees?tab=receipts', label: t('finance.receipts', 'Fee Receipts') },
+        { href: '/dashboard/fees?tab=dues', label: t('finance.outstandingDues', 'Outstanding Dues') },
+        { href: '/dashboard/fees?tab=scholarships', label: t('finance.scholarships', 'Scholarships & Concessions') },
       ]
     },
     { 
       href: '/dashboard/online-exams', 
-      label: 'Examinations', 
+      label: t('nav.examinations', 'Examinations'), 
       icon: FileSpreadsheet, 
       show: true,
       subItems: [
-        { href: '/dashboard/online-exams', label: 'Online Exams' },
-        { href: '/dashboard/assessments', label: 'Assessments & Marks' },
-        { href: '/dashboard/assessments?tab=reportcards', label: 'Report Cards' },
+        { href: '/dashboard/online-exams', label: t('examinations.onlineExams', 'Online Exams') },
+        { href: '/dashboard/assessments', label: t('examinations.assessmentsMarks', 'Assessments & Marks') },
+        { href: '/dashboard/assessments?tab=reportcards', label: t('examinations.reportCards', 'Report Cards') },
       ]
     },
     { 
       href: '/dashboard/events', 
-      label: 'Events & Gallery', 
+      label: t('nav.events', 'Events & Gallery'), 
       icon: CalendarDays, 
       show: true,
       subItems: [
@@ -274,28 +289,28 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     },
     { 
       href: '/dashboard/circulars', 
-      label: 'Communication', 
-      icon: Megaphone, 
+      label: t('nav.communication', 'Communication'), 
+      icon: Send, 
       show: true,
       subItems: [
         { href: '/dashboard/circulars', label: 'Circulars & Notices' },
-        { href: '/dashboard/chat', label: 'Staff Messages' },
+        { href: '/dashboard/chat', label: 'Messages', icon: MessageSquare },
       ]
     },
     { 
       href: '/dashboard/reports', 
-      label: 'Reports', 
+      label: t('nav.reports', 'Reports'), 
       icon: BarChart3, 
       show: true,
       subItems: [
-        { href: '/dashboard/reports?tab=academic', label: 'Academic Reports' },
-        { href: '/dashboard/reports?tab=attendance', label: 'Attendance Reports' },
-        { href: '/dashboard/reports?tab=finance', label: 'Financial Reports' },
+        { href: '/dashboard/reports?tab=academic', label: t('reports.academicReports', 'Academic Reports') },
+        { href: '/dashboard/reports?tab=attendance', label: t('reports.attendanceReports', 'Attendance Reports') },
+        { href: '/dashboard/reports?tab=finance', label: t('reports.financeReports', 'Financial Reports') },
       ]
     },
     { 
       href: '/dashboard/users', 
-      label: 'Users & Roles', 
+      label: t('nav.usersRoles', 'Users & Roles'), 
       icon: Shield, 
       show: isSuperAdmin,
       subItems: [
@@ -305,15 +320,15 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     },
     { 
       href: '/dashboard/settings', 
-      label: 'Settings / Audit', 
+      label: t('nav.settings', 'Settings / Audit'), 
       icon: Settings, 
       show: isSuperAdmin || isPrincipal,
       subItems: [
         { href: '/dashboard/settings', label: 'General Settings' },
-        { href: '/dashboard/audit-logs', label: 'System Audit Logs' },
+        { href: '/dashboard/audit-logs', label: t('nav.auditLogs', 'System Audit Logs') },
       ]
     },
-  ], [isSuperAdmin, isPrincipal, isAccountant]);
+  ], [isSuperAdmin, isPrincipal, isAccountant, t]);
 
   // Compute breadcrumb title from pathname
   const currentBreadcrumbs = useMemo(() => {
@@ -458,7 +473,18 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                                   : 'text-slate-400 hover:text-white hover:bg-white/5'
                               }`}
                             >
-                              <span>{sub.label}</span>
+                              <div className="flex items-center gap-2.5">
+                                {sub.icon ? (
+                                  <sub.icon className="w-3.5 h-3.5 text-current shrink-0" />
+                                ) : (
+                                  <span
+                                    className={`w-1.5 h-1.5 rounded-full ${
+                                      isSubActive ? 'bg-white' : 'bg-slate-500'
+                                    }`}
+                                  />
+                                )}
+                                <span>{sub.label}</span>
+                              </div>
                             </Link>
                           );
                         })}
@@ -610,11 +636,15 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                           }`}
                         >
                           <div className="flex items-center gap-2.5">
-                            <span
-                              className={`w-1.5 h-1.5 rounded-full ${
-                                isSubActive ? 'bg-white' : 'bg-slate-500'
-                              }`}
-                            />
+                            {sub.icon ? (
+                              <sub.icon className="w-3.5 h-3.5 text-current shrink-0" />
+                            ) : (
+                              <span
+                                className={`w-1.5 h-1.5 rounded-full ${
+                                  isSubActive ? 'bg-white' : 'bg-slate-500'
+                                }`}
+                              />
+                            )}
                             <span>{sub.label}</span>
                           </div>
                         </Link>
@@ -734,6 +764,9 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
               {theme === 'light' ? <Moon className="h-4 w-4 text-slate-500" /> : <Sun className="h-4 w-4 text-slate-300" />}
             </button>
 
+            {/* Language Switcher Pill */}
+            <LanguageSwitcher />
+
             {/* Date Picker / Current Date Button matching screenshot */}
             <Link
               href="/dashboard/calendar"
@@ -822,9 +855,5 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
 }
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <ThemeProvider>
-      <DashboardContent>{children}</DashboardContent>
-    </ThemeProvider>
-  );
+  return <DashboardContent>{children}</DashboardContent>;
 }

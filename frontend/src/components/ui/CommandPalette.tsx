@@ -22,7 +22,8 @@ import {
   Megaphone,
   BarChart3,
   Receipt,
-  UserCheck
+  UserCheck,
+  Briefcase
 } from 'lucide-react';
 
 interface SearchItem {
@@ -43,10 +44,10 @@ const GLOBAL_SEARCH_ITEMS: SearchItem[] = [
   { id: 'qa-5', title: 'Send Emergency Broadcast', subtitle: 'SMS and push notification to all parents', category: 'Quick Actions', href: '/dashboard/emergency-center', icon: Megaphone },
 
   // Students
-  { id: 'st-1', title: 'Aarav Sharma', subtitle: 'GGPS-2026-LKG-001 • Class LKG A', category: 'Students', href: '/dashboard/students', icon: GraduationCap },
-  { id: 'st-2', title: 'Ananya Patel', subtitle: 'GGPS-2026-PKG-002 • Class Pre-KG A', category: 'Students', href: '/dashboard/students', icon: GraduationCap },
-  { id: 'st-3', title: 'Rohan Verma', subtitle: 'GGPS-2026-UKG-003 • Class UKG A', category: 'Students', href: '/dashboard/students', icon: GraduationCap },
-  { id: 'st-4', title: 'Diya Sengupta', subtitle: 'GGPS-2026-LKG-004 • Class LKG B', category: 'Students', href: '/dashboard/students', icon: GraduationCap },
+  { id: 'st-1', title: 'Aarav Sharma', subtitle: 'GGPS2026LKG001 • Class LKG A', category: 'Students', href: '/dashboard/students', icon: GraduationCap },
+  { id: 'st-2', title: 'Ananya Patel', subtitle: 'GGPS2026PREKG001 • Class PreKG A', category: 'Students', href: '/dashboard/students', icon: GraduationCap },
+  { id: 'st-3', title: 'Rohan Verma', subtitle: 'GGPS2026UKG001 • Class UKG A', category: 'Students', href: '/dashboard/students', icon: GraduationCap },
+  { id: 'st-4', title: 'Diya Sengupta', subtitle: 'GGPS2026LKG002 • Class LKG B', category: 'Students', href: '/dashboard/students', icon: GraduationCap },
 
   // Admissions
   { id: 'adm-1', title: 'ADM-2026-089: Aarav Sharma', subtitle: 'Status: Admission Confirmed • LKG', category: 'Admissions', href: '/dashboard/admissions', icon: Sparkles },
@@ -71,22 +72,112 @@ const GLOBAL_SEARCH_ITEMS: SearchItem[] = [
   { id: 'mod-10', title: 'System Settings', subtitle: 'Campuses, security & configuration', category: 'Modules', href: '/dashboard/settings', icon: Settings },
 ];
 
+const ICON_MAP: Record<string, any> = {
+  GraduationCap,
+  Sparkles,
+  UserCheck,
+  Users,
+  Briefcase,
+  DollarSign,
+  Calendar,
+  Receipt,
+  PlusCircle,
+  Megaphone,
+  BarChart3,
+  BookOpen,
+  Settings,
+  Package,
+};
+
 export default function CommandPalette() {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
+  const [serverResults, setServerResults] = useState<SearchItem[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const router = useRouter();
+
+  // Fetch live search results from backend API when typing
+  useEffect(() => {
+    if (!query.trim() || query.trim().length < 2) {
+      setServerResults([]);
+      setIsSearching(false);
+      return;
+    }
+
+    setIsSearching(true);
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
+        const res = await fetch(`${apiBase}/api/v1/search?q=${encodeURIComponent(query.trim())}`, {
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          signal: controller.signal,
+        });
+
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success && Array.isArray(json.data)) {
+            const mapped: SearchItem[] = json.data.map((item: any) => ({
+              id: item.id,
+              title: item.title,
+              subtitle: item.subtitle,
+              category: item.category as any,
+              href: item.href,
+              icon: ICON_MAP[item.icon] || GraduationCap,
+            }));
+            setServerResults(mapped);
+          }
+        }
+      } catch (err: any) {
+        if (err.name !== 'AbortError') {
+          console.warn('Search query error:', err);
+        }
+      } finally {
+        setIsSearching(false);
+      }
+    }, 200);
+
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [query]);
 
   const filtered = useMemo(() => {
     if (!query.trim()) return GLOBAL_SEARCH_ITEMS.slice(0, 12);
     const q = query.toLowerCase();
-    return GLOBAL_SEARCH_ITEMS.filter(
+    const localFiltered = GLOBAL_SEARCH_ITEMS.filter(
       (item) =>
         item.title.toLowerCase().includes(q) ||
         (item.subtitle && item.subtitle.toLowerCase().includes(q)) ||
         item.category.toLowerCase().includes(q)
     );
-  }, [query]);
+
+    // Merge server results first, avoiding duplicate IDs
+    const seen = new Set<string>();
+    const combined: SearchItem[] = [];
+
+    serverResults.forEach((item) => {
+      if (!seen.has(item.id)) {
+        seen.add(item.id);
+        combined.push(item);
+      }
+    });
+
+    localFiltered.forEach((item) => {
+      if (!seen.has(item.id)) {
+        seen.add(item.id);
+        combined.push(item);
+      }
+    });
+
+    return combined;
+  }, [query, serverResults]);
 
   // Group filtered by category
   const grouped = useMemo(() => {

@@ -35,15 +35,28 @@ export function normalizeAcademicYear(rawYear?: string): string {
 
 /**
  * Normalizes a class/grade string into uppercase standard identifier
- * (e.g. "Pre-KG" -> "PREKG", "LKG - Section A" -> "LKG", "UKG" -> "UKG").
+ * Strictly normalized according to requirement 6:
+ * PreKG → PREKG
+ * LKG → LKG
+ * UKG → UKG
+ * No hyphens, spaces, dots or variations.
  */
 export function normalizeClassName(rawClass?: string): string {
   if (!rawClass) return 'LKG';
   const cleaned = rawClass
     .replace(/section\s+[a-z0-9]+/i, '')
-    .replace(/[^a-zA-Z0-9]/g, '')
-    .toUpperCase();
-  return cleaned || 'LKG';
+    .trim();
+  const upper = cleaned.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if (upper === 'PREKG' || upper === 'PRE' || upper === 'PLAYGROUP' || upper === 'NURSERY') {
+    return 'PREKG';
+  }
+  if (upper === 'LKG' || upper === 'LOWERKG') {
+    return 'LKG';
+  }
+  if (upper === 'UKG' || upper === 'UPPERKG') {
+    return 'UKG';
+  }
+  return upper || 'LKG';
 }
 
 /**
@@ -57,27 +70,46 @@ export function normalizeSectionName(rawSection?: string): string {
 
 /**
  * Concurrency-safe atomic generation of Student ID:
- * Format: GGPS-{ACADEMIC_YEAR}-{CLASS}-{SEQUENCE}
- * Example: GGPS-2026-LKG-001
+ * Format: GGPS{ACADEMIC_YEAR}{CLASS}{SEQUENCE} (NO hyphens, spaces, or special characters)
+ * Examples: GGPS2026LKG001, GGPS2026PREKG001, GGPS2026UKG001
+ * Sequence is guaranteed unique, verified against database and counter.
  */
 export async function generateNextStudentID(
-  rawYear?: string,
+  yearOrClass?: string,
   rawClass?: string,
   session?: mongoose.ClientSession
 ): Promise<string> {
-  const year = normalizeAcademicYear(rawYear);
-  const className = normalizeClassName(rawClass);
-  const key = `student_id:${year}:${className}`;
+  let year: string;
+  let className: string;
 
-  const seqNumber = await getNextSequence(key, session);
-  const seq = String(seqNumber).padStart(3, '0');
-  return `GGPS-${year}-${className}-${seq}`;
+  if (yearOrClass && !rawClass && !/^\d{4}/.test(yearOrClass.trim())) {
+    year = normalizeAcademicYear();
+    className = normalizeClassName(yearOrClass);
+  } else {
+    year = normalizeAcademicYear(yearOrClass);
+    className = normalizeClassName(rawClass);
+  }
+
+  const key = `student_id_v2:${year}:${className}`;
+
+  let seqNumber = await getNextSequence(key, session);
+  let candidateId = `GGPS${year}${className}${String(seqNumber).padStart(3, '0')}`;
+
+  if (mongoose.connection.readyState === 1) {
+    const StudentModel = mongoose.models.Student || mongoose.model('Student');
+    while (await StudentModel.exists({ studentId: candidateId })) {
+      seqNumber = await getNextSequence(key, session);
+      candidateId = `GGPS${year}${className}${String(seqNumber).padStart(3, '0')}`;
+    }
+  }
+
+  return candidateId;
 }
 
 /**
  * Concurrency-safe atomic generation of Admission Number:
- * Format: GGPS-{ACADEMIC_YEAR}Admin-{SEQUENCE}
- * Example: GGPS-2026Admin-001
+ * Format: GGPS{ACADEMIC_YEAR}Admin{SEQUENCE}
+ * Example: GGPS2026Admin001
  */
 export async function generateNextAdmissionNumber(
   rawYear?: string,
@@ -85,11 +117,37 @@ export async function generateNextAdmissionNumber(
   session?: mongoose.ClientSession
 ): Promise<string> {
   const year = normalizeAcademicYear(rawYear);
-  const key = `admission_no:${year}`;
+  const key = `admission_no_v2:${year}`;
+
+  let seqNumber = await getNextSequence(key, session);
+  let candidateAdm = `GGPS${year}Admin${String(seqNumber).padStart(3, '0')}`;
+
+  if (mongoose.connection.readyState === 1) {
+    const StudentModel = mongoose.models.Student || mongoose.model('Student');
+    while (await StudentModel.exists({ admissionNumber: candidateAdm })) {
+      seqNumber = await getNextSequence(key, session);
+      candidateAdm = `GGPS${year}Admin${String(seqNumber).padStart(3, '0')}`;
+    }
+  }
+
+  return candidateAdm;
+}
+
+/**
+ * Concurrency-safe atomic generation of Admission Enquiry Reference:
+ * Format: GGPS-ENQ-{ACADEMIC_YEAR}-{SEQUENCE}
+ * Example: GGPS-ENQ-2026-0001
+ */
+export async function generateNextEnquiryNumber(
+  rawYear?: string,
+  session?: mongoose.ClientSession
+): Promise<string> {
+  const year = normalizeAcademicYear(rawYear);
+  const key = `enquiry_no:${year}`;
 
   const seqNumber = await getNextSequence(key, session);
-  const seq = String(seqNumber).padStart(3, '0');
-  return `GGPS-${year}Admin-${seq}`;
+  const seq = String(seqNumber).padStart(4, '0');
+  return `GGPS-ENQ-${year}-${seq}`;
 }
 
 /**
@@ -188,26 +246,51 @@ export async function peekNextIdentifiers(
 
   if (mongoose.connection.readyState === 1) {
     const [admCounter, stuCounter, rollCounter] = await Promise.all([
-      Counter.findOne({ key: `admission_no:${year}` }),
-      Counter.findOne({ key: `student_id:${year}:${className}` }),
+      Counter.findOne({ key: `admission_no_v2:${year}` }),
+      Counter.findOne({ key: `student_id_v2:${year}:${className}` }),
       Counter.findOne({ key: `roll:${year}:${className}:${sectionName}` }),
     ]);
 
     admSeq = (admCounter?.sequence || 0) + 1;
     stuSeq = (stuCounter?.sequence || 0) + 1;
     rollSeq = (rollCounter?.sequence || 0) + 1;
+
+    // Verify candidate against existing records in Student collection
+    const StudentModel = mongoose.models.Student || mongoose.model('Student');
+    while (await StudentModel.exists({ studentId: `GGPS${year}${className}${String(stuSeq).padStart(3, '0')}` })) {
+      stuSeq++;
+    }
+    while (await StudentModel.exists({ admissionNumber: `GGPS${year}Admin${String(admSeq).padStart(3, '0')}` })) {
+      admSeq++;
+    }
   } else {
-    admSeq = (inMemoryCounters.get(`admission_no:${year}`) || 0) + 1;
-    stuSeq = (inMemoryCounters.get(`student_id:${year}:${className}`) || 0) + 1;
+    admSeq = (inMemoryCounters.get(`admission_no_v2:${year}`) || 0) + 1;
+    stuSeq = (inMemoryCounters.get(`student_id_v2:${year}:${className}`) || 0) + 1;
     rollSeq = (inMemoryCounters.get(`roll:${year}:${className}:${sectionName}`) || 0) + 1;
   }
 
   return {
-    previewAdmissionNumber: `GGPS-${year}Admin-${String(admSeq).padStart(3, '0')}`,
-    previewStudentID: `GGPS-${year}-${className}-${String(stuSeq).padStart(3, '0')}`,
+    previewAdmissionNumber: `GGPS${year}Admin${String(admSeq).padStart(3, '0')}`,
+    previewStudentID: `GGPS${year}${className}${String(stuSeq).padStart(3, '0')}`,
     previewRollNumber: String(rollSeq).padStart(3, '0'),
     normalizedYear: year,
     normalizedClass: className,
     normalizedSection: sectionName,
   };
 }
+
+/**
+ * Concurrency-safe atomic generation of Student ID Card Number:
+ * Format: GGPS-ID-{ACADEMIC_YEAR}-{SEQUENCE}
+ * Example: GGPS-ID-2026-0001
+ */
+export async function generateNextCardNumber(
+  rawAcademicYear?: string,
+  session?: mongoose.ClientSession
+): Promise<string> {
+  const year = normalizeAcademicYear(rawAcademicYear);
+  const key = `id_card:${year}`;
+  const seq = await getNextSequence(key, session);
+  return `GGPS-ID-${year}-${String(seq).padStart(4, '0')}`;
+}
+

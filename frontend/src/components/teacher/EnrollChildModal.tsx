@@ -138,7 +138,7 @@ export default function EnrollChildModal({
         const nextRoll = String(maxRoll + 1).padStart(3, '0');
 
         setPreviewRollNo(nextRoll);
-        setPreviewAdmissionNo(`GGPS-${cleanYear}-${cleanClass}-${nextRoll}`);
+        setPreviewAdmissionNo(`GGPS${cleanYear}${cleanClass}${nextRoll}`);
         setIsPreviewLoading(false);
       }
     };
@@ -193,7 +193,7 @@ export default function EnrollChildModal({
       grade: cleanClass,
     };
 
-    let finalAdmissionNo = previewAdmissionNo || `GGPS-${cleanYear}-${cleanClass}-001`;
+    let finalAdmissionNo = previewAdmissionNo || `GGPS${cleanYear}${cleanClass}001`;
     let finalRollNo = previewRollNo || '001';
     let studentId = `s-${Date.now()}`;
 
@@ -530,7 +530,7 @@ export default function EnrollChildModal({
                     className="flex items-center justify-between p-2.5 rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-white"
                   >
                     <span className="font-mono font-black text-xs sm:text-sm text-[#0050CB] dark:text-blue-400 tracking-wide">
-                      {isPreviewLoading ? 'Generating...' : previewAdmissionNo || 'GGPS-2026-LKG-001'}
+                      {isPreviewLoading ? 'Generating...' : previewAdmissionNo || 'GGPS2026LKG001'}
                     </span>
                     <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-orange-50 text-[#FF690C] dark:bg-orange-950/60 dark:text-orange-300">
                       System Authority

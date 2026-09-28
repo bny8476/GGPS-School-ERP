@@ -148,7 +148,7 @@ export default function ReportCardModal({ isOpen, onClose, child }: ReportCardMo
             </div>
             <div>
               <span className="text-[10px] uppercase font-bold text-slate-400">Admission No.</span>
-              <p className="text-xs sm:text-sm font-mono font-bold text-[#0050CB]">{child.admissionNumber || "GGPS-2026-001"}</p>
+              <p className="text-xs sm:text-sm font-mono font-bold text-[#0050CB]">{child.admissionNumber || "GGPS2026Admin001"}</p>
             </div>
             <div>
               <span className="text-[10px] uppercase font-bold text-slate-400">Class Instructor</span>

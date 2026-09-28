@@ -125,9 +125,9 @@ export default function ChildSwitcher({ variant = "header", className = "" }: Ch
             <div className="space-y-1">
               {children.map((child) => {
                 const isSelected = child._id === selectedChild._id;
-                const studentId = child.firstName.toLowerCase().includes("aarav")
-                  ? "GGPS-2026-LKG-001"
-                  : "GGPS-2026-CLS3-014";
+                const studentId = (child as any).studentId || child.admissionNumber || (child.firstName.toLowerCase().includes("aarav")
+                  ? "GGPS2026LKG001"
+                  : "GGPS2026LKG002");
 
                 return (
                   <button

@@ -2,17 +2,22 @@ import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IAdmission extends Document {
   applicationNumber: string;
+  enquiryReference?: string;
   childFirstName: string;
   childLastName: string;
+  childName?: string;
   dateOfBirth?: Date;
   gender?: 'Male' | 'Female' | 'Other';
   parentName: string;
+  relationship?: string;
   contactNumber: string;
   parentPhone?: string;
-  email: string;
+  email?: string;
   parentEmail?: string;
   address?: string;
   gradeAppliedFor: string;
+  academicYear?: string;
+  preferredContactMethod?: string;
   status: string;
   stage: string;
   interviewDate?: Date;
@@ -37,20 +42,29 @@ const AdmissionSchema: Schema = new Schema(
       trim: true,
       index: true,
     },
+    enquiryReference: {
+      type: String,
+      sparse: true,
+      trim: true,
+      index: true,
+    },
     childFirstName: { type: String, required: true, trim: true },
     childLastName: { type: String, required: true, trim: true },
     dateOfBirth: { type: Date },
     gender: { type: String, enum: ['Male', 'Female', 'Other'] },
     parentName: { type: String, required: true, trim: true },
+    relationship: { type: String, trim: true },
     contactNumber: { type: String, required: true, trim: true },
     parentPhone: { type: String, trim: true },
-    email: { type: String, required: true, trim: true, lowercase: true },
+    email: { type: String, trim: true, lowercase: true },
     parentEmail: { type: String, trim: true, lowercase: true },
     address: { type: String, trim: true },
     gradeAppliedFor: { type: String, required: true, trim: true },
+    academicYear: { type: String, trim: true },
+    preferredContactMethod: { type: String, trim: true },
     status: {
       type: String,
-      default: 'New Inquiry',
+      default: 'New',
       index: true,
     },
     stage: {

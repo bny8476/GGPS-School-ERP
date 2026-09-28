@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
 import { useLanguage } from "@/context/LanguageContext";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { getApiBaseUrl } from "@/lib/utils";
 import toast from "react-hot-toast";
 
@@ -262,9 +263,11 @@ export default function LoginPage() {
         localStorage.setItem("user", JSON.stringify(data));
 
         const roleStr = (data.role || "").toLowerCase();
-        // Students are data records only; only parents navigate to the Parent Portal
+        // Students are data records only; role-based portal routing
         if (roleStr === "parent") {
           router.push("/parent");
+        } else if (roleStr === "teacher") {
+          router.push("/teacher");
         } else {
           router.push("/dashboard");
         }
@@ -351,50 +354,7 @@ export default function LoginPage() {
           </div>
 
           {/* Interactive Language Selector Dropdown */}
-          <div className="relative" ref={langRef}>
-            <button
-              type="button"
-              onClick={() => setIsLangOpen(!isLangOpen)}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/90 dark:bg-[#001438]/90 backdrop-blur-sm border border-slate-200/80 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shadow-sm cursor-pointer"
-              aria-haspopup="true"
-              aria-expanded={isLangOpen}
-            >
-              <Globe className="w-3.5 h-3.5 text-[#0050CB] dark:text-[#38BDF8]" />
-              <span>{currentLanguage.nativeName}</span>
-              <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform duration-200 ${isLangOpen ? "rotate-180" : ""}`} />
-            </button>
-
-            {isLangOpen && (
-              <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-[#001438] border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl py-1.5 z-50 animate-in fade-in zoom-in-95 duration-150">
-                <div className="px-3.5 py-1 text-[10px] font-bold tracking-wider text-slate-400 uppercase">
-                  {t("nav.selectLanguage", "Select Language")}
-                </div>
-                {languages.map((lang) => (
-                  <button
-                    key={lang.code}
-                    type="button"
-                    onClick={() => {
-                      setLanguage(lang.code);
-                      setIsLangOpen(false);
-                    }}
-                    className={`w-full text-left px-3.5 py-2 text-xs font-semibold flex items-center justify-between hover:bg-[#E5EEFF] dark:hover:bg-[#0050CB]/25 hover:text-[#0050CB] dark:hover:text-blue-300 transition-colors cursor-pointer ${
-                      language === lang.code
-                        ? "text-[#0050CB] dark:text-blue-400 font-bold bg-[#E5EEFF]/60 dark:bg-[#0050CB]/20"
-                        : "text-slate-700 dark:text-slate-200"
-                    }`}
-                  >
-                    <div className="flex flex-col">
-                      <span>{lang.nativeName}</span>
-                      <span className="text-[10px] text-slate-400 font-normal">{lang.label}</span>
-                    </div>
-                    {language === lang.code && (
-                      <Check className="w-4 h-4 text-[#0050CB] dark:text-blue-400" strokeWidth={2.5} />
-                    )}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          <LanguageSwitcher />
 
         </div>
       </header>

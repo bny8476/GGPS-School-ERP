@@ -7,6 +7,7 @@ export const createStudentSchema = z.object({
     dob: z.string().or(z.date()).optional(),
     gender: z.enum(['Male', 'Female', 'Other']).optional(),
     admissionNumber: z.string().optional(),
+    studentId: z.string().regex(/^GGPS[0-9]{4}[A-Z]+[0-9]{3,}$/, 'Student ID must follow format GGPS{YEAR}{CLASS}{SEQUENCE}').optional(),
     rollNumber: z.string().optional(),
     classId: z.string().optional(),
     sectionId: z.string().optional(),
@@ -26,6 +27,7 @@ export const updateStudentSchema = z.object({
   body: z.object({
     firstName: z.string().min(1).optional(),
     lastName: z.string().min(1).optional(),
+    studentId: z.string().regex(/^GGPS[0-9]{4}[A-Z]+[0-9]{3,}$/, 'Student ID must follow format GGPS{YEAR}{CLASS}{SEQUENCE}').optional(),
     dob: z.string().or(z.date()).optional(),
     gender: z.enum(['Male', 'Female', 'Other']).optional(),
     classId: z.string().optional(),

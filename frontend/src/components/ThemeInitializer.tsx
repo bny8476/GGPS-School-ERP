@@ -10,11 +10,16 @@ export default function ThemeInitializer() {
         dangerouslySetInnerHTML={{
           __html: `
             try {
-              var stored = localStorage.getItem('theme');
-              if (stored === 'dark' || (!stored && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+              var stored = localStorage.getItem('theme') || localStorage.getItem('gi_theme');
+              var isDark = stored === 'dark' || (!stored && window.matchMedia('(prefers-color-scheme: dark)').matches);
+              if (isDark) {
                 document.documentElement.classList.add('dark');
+                document.documentElement.setAttribute('data-theme', 'dark');
+                document.documentElement.style.colorScheme = 'dark';
               } else {
                 document.documentElement.classList.remove('dark');
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
               }
               var storedLang = localStorage.getItem('language');
               if (storedLang) {

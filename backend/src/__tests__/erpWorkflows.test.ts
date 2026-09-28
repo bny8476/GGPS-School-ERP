@@ -9,12 +9,18 @@ import {
 describe('ERP Sequence ID Generation Engine', () => {
   it('should generate academic-year and class-aware student ID', async () => {
     const studentId = await generateNextStudentID('LKG');
-    expect(studentId).toMatch(/^GGPS-\d{4}-LKG-\d{3}$/);
+    expect(studentId).toMatch(/^GGPS\d{4}LKG\d{3}$/);
+
+    const prekgId = await generateNextStudentID('PreKG');
+    expect(prekgId).toMatch(/^GGPS\d{4}PREKG\d{3}$/);
+
+    const ukgId = await generateNextStudentID('UKG');
+    expect(ukgId).toMatch(/^GGPS\d{4}UKG\d{3}$/);
   });
 
   it('should generate valid admission number', async () => {
     const admissionNo = await generateNextAdmissionNumber();
-    expect(admissionNo).toMatch(/^GGPS-\d{4}Admin-\d{3}$/);
+    expect(admissionNo).toMatch(/^GGPS\d{4}Admin\d{3}$/);
   });
 
   it('should generate valid employee ID with role prefix', async () => {

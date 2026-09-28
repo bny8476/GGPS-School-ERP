@@ -44,7 +44,8 @@ export default function Student360Profile({ params }: { params: Promise<{ id: st
             _id: studentId,
             firstName: 'Aarav',
             lastName: 'Sharma',
-            admissionNumber: 'GGPS-2026-LKG-001',
+            studentId: 'GGPS2026LKG001',
+            admissionNumber: 'GGPS2026Admin001',
             grade: 'LKG',
             section: 'A',
             gender: 'Male',
@@ -185,7 +186,7 @@ export default function Student360Profile({ params }: { params: Promise<{ id: st
       {/* 1. Header with Breadcrumb & Quick Actions */}
       <AdminPageHeader
         title={`${student.firstName} ${student.lastName}`}
-        subtitle={`Student 360° Profile • ${student.admissionNumber || 'GGPS-2026-000'} • Class ${student.grade || 'Pre-KG'} ${student.section ? `(${student.section})` : ''}`}
+        subtitle={`Student 360° Profile • ${student.studentId || student.admissionNumber || 'GGPS2026LKG001'} • Class ${student.grade || 'Pre-KG'} ${student.section ? `(${student.section})` : ''}`}
         badge={student.status || 'Active'}
         badgeVariant="primary"
         breadcrumbs={[
@@ -244,7 +245,9 @@ export default function Student360Profile({ params }: { params: Promise<{ id: st
                 {student.firstName} {student.lastName}
               </h2>
               <div className="flex flex-wrap items-center gap-4 text-xs text-blue-100/80 mt-1.5 font-medium">
-                <span>Admission: <strong className="text-white font-mono">{student.admissionNumber || 'GGPS-2026-000'}</strong></span>
+                <span>Student ID: <strong className="text-white font-mono">{student.studentId || 'GGPS2026LKG001'}</strong></span>
+                <span>•</span>
+                <span>Admission: <strong className="text-white font-mono">{student.admissionNumber || 'GGPS2026Admin001'}</strong></span>
                 <span>•</span>
                 <span>DOB: <strong className="text-white">{student.dateOfBirth ? new Date(student.dateOfBirth).toLocaleDateString('en-GB') : '14 Apr 2022'}</strong></span>
                 <span>•</span>
@@ -325,8 +328,12 @@ export default function Student360Profile({ params }: { params: Promise<{ id: st
                 <span className="font-bold text-[#000E28] dark:text-white">{student.firstName} {student.lastName}</span>
               </div>
               <div className="flex justify-between py-2 border-b border-slate-100 dark:border-slate-800/60">
+                <span className="text-slate-500 font-semibold">Student ID</span>
+                <span className="font-mono font-bold text-[#0050CB] dark:text-[#38BDF8]">{student.studentId || 'GGPS2026LKG001'}</span>
+              </div>
+              <div className="flex justify-between py-2 border-b border-slate-100 dark:border-slate-800/60">
                 <span className="text-slate-500 font-semibold">Permanent Admission No.</span>
-                <span className="font-mono font-bold text-[#0050CB] dark:text-[#38BDF8]">{student.admissionNumber || 'GGPS-2026-000'}</span>
+                <span className="font-mono font-bold text-slate-700 dark:text-slate-300">{student.admissionNumber || 'GGPS2026Admin001'}</span>
               </div>
               <div className="flex justify-between py-2 border-b border-slate-100 dark:border-slate-800/60">
                 <span className="text-slate-500 font-semibold">Academic Class & Section</span>

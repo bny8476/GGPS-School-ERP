@@ -230,14 +230,14 @@ function FeesFinanceContent() {
 
       if (!loadedFees || loadedFees.length === 0) {
         loadedFees = [
-          { _id: 'f_01', studentId: { firstName: 'Aarav', lastName: 'Sharma', admissionNumber: 'GGPS-2026-LKG-001' }, grade: 'LKG', feeType: 'Term 1 Tuition & Phonics Kit', totalAmount: 26000, amountPaid: 26000, status: 'Paid', dueDate: '2026-06-15', invoiceNumber: 'GGPS-INV-2026-0101', receiptNumber: 'GGPS-REC-2026-0042', paymentMode: 'UPI', paymentDate: '2026-06-10' },
-          { _id: 'f_02', studentId: { firstName: 'Diya', lastName: 'Patel', admissionNumber: 'GGPS-2026-UKG-014' }, grade: 'UKG', feeType: 'Term 1 Tuition & Montessori Activities', totalAmount: 28000, amountPaid: 28000, status: 'Paid', dueDate: '2026-06-15', invoiceNumber: 'GGPS-INV-2026-0102', receiptNumber: 'GGPS-REC-2026-0043', paymentMode: 'Net Banking', paymentDate: '2026-06-12' },
-          { _id: 'f_03', studentId: { firstName: 'Vihaan', lastName: 'Verma', admissionNumber: 'GGPS-2026-UKG-022' }, grade: 'UKG', feeType: 'Term 1 Tuition', totalAmount: 28000, amountPaid: 14000, status: 'Partial', dueDate: '2026-07-01', invoiceNumber: 'GGPS-INV-2026-0103', receiptNumber: 'GGPS-REC-2026-0044', paymentMode: 'Cash', paymentDate: '2026-06-25' },
-          { _id: 'f_04', studentId: { firstName: 'Ishaan', lastName: 'Gupta', admissionNumber: 'GGPS-2026-LKG-045' }, grade: 'LKG', feeType: 'Annual Activity & Sensory Kit', totalAmount: 18000, amountPaid: 0, status: 'Overdue', dueDate: '2026-05-30', invoiceNumber: 'GGPS-INV-2026-0089' },
-          { _id: 'f_05', studentId: { firstName: 'Ananya', lastName: 'Iyer', admissionNumber: 'GGPS-2026-PKG-003' }, grade: 'Pre-KG', feeType: 'Term 1 Daycare & Pre-KG Tuition', totalAmount: 24000, amountPaid: 24000, status: 'Paid', dueDate: '2026-06-15', invoiceNumber: 'GGPS-INV-2026-0104', receiptNumber: 'GGPS-REC-2026-0045', paymentMode: 'UPI', paymentDate: '2026-06-14' },
-          { _id: 'f_06', studentId: { firstName: 'Sanya', lastName: 'Malhotra', admissionNumber: 'GGPS-2026-PKG-019' }, grade: 'Pre-KG', feeType: 'Term 1 Tuition & Playgroup Surcharge', totalAmount: 24000, amountPaid: 24000, status: 'Paid', dueDate: '2026-06-15', invoiceNumber: 'GGPS-INV-2026-0105', receiptNumber: 'GGPS-REC-2026-0046', paymentMode: 'Card (POS)', paymentDate: '2026-06-15' },
-          { _id: 'f_07', studentId: { firstName: 'Kabir', lastName: 'Deshmukh', admissionNumber: 'GGPS-2026-UKG-033' }, grade: 'UKG', feeType: 'Annual Sports & Rhyme Session', totalAmount: 28000, amountPaid: 14000, status: 'Partial', dueDate: '2026-07-15', invoiceNumber: 'GGPS-INV-2026-0106', receiptNumber: 'GGPS-REC-2026-0047', paymentMode: 'UPI', paymentDate: '2026-07-02' },
-          { _id: 'f_08', studentId: { firstName: 'Meera', lastName: 'Nambiar', admissionNumber: 'GGPS-2026-LKG-008' }, grade: 'LKG', feeType: 'Term 1 EVS & Activity Kit', totalAmount: 26000, amountPaid: 0, status: 'Overdue', dueDate: '2026-05-15', invoiceNumber: 'GGPS-INV-2026-0082' },
+          { _id: 'f_01', studentId: { firstName: 'Aarav', lastName: 'Sharma', admissionNumber: 'GGPS2026LKG001' }, grade: 'LKG', feeType: 'Term 1 Tuition & Phonics Kit', totalAmount: 26000, amountPaid: 26000, status: 'Paid', dueDate: '2026-06-15', invoiceNumber: 'GGPS-INV-2026-0101', receiptNumber: 'GGPS-REC-2026-0042', paymentMode: 'UPI', paymentDate: '2026-06-10' },
+          { _id: 'f_02', studentId: { firstName: 'Diya', lastName: 'Patel', admissionNumber: 'GGPS2026UKG001' }, grade: 'UKG', feeType: 'Term 1 Tuition & Montessori Activities', totalAmount: 28000, amountPaid: 28000, status: 'Paid', dueDate: '2026-06-15', invoiceNumber: 'GGPS-INV-2026-0102', receiptNumber: 'GGPS-REC-2026-0043', paymentMode: 'Net Banking', paymentDate: '2026-06-12' },
+          { _id: 'f_03', studentId: { firstName: 'Vihaan', lastName: 'Verma', admissionNumber: 'GGPS2026UKG002' }, grade: 'UKG', feeType: 'Term 1 Tuition', totalAmount: 28000, amountPaid: 14000, status: 'Partial', dueDate: '2026-07-01', invoiceNumber: 'GGPS-INV-2026-0103', receiptNumber: 'GGPS-REC-2026-0044', paymentMode: 'Cash', paymentDate: '2026-06-25' },
+          { _id: 'f_04', studentId: { firstName: 'Ishaan', lastName: 'Gupta', admissionNumber: 'GGPS2026LKG002' }, grade: 'LKG', feeType: 'Annual Activity & Sensory Kit', totalAmount: 18000, amountPaid: 0, status: 'Overdue', dueDate: '2026-05-30', invoiceNumber: 'GGPS-INV-2026-0089' },
+          { _id: 'f_05', studentId: { firstName: 'Ananya', lastName: 'Iyer', admissionNumber: 'GGPS2026PREKG001' }, grade: 'Pre-KG', feeType: 'Term 1 Daycare & Pre-KG Tuition', totalAmount: 24000, amountPaid: 24000, status: 'Paid', dueDate: '2026-06-15', invoiceNumber: 'GGPS-INV-2026-0104', receiptNumber: 'GGPS-REC-2026-0045', paymentMode: 'UPI', paymentDate: '2026-06-14' },
+          { _id: 'f_06', studentId: { firstName: 'Sanya', lastName: 'Malhotra', admissionNumber: 'GGPS2026PREKG002' }, grade: 'Pre-KG', feeType: 'Term 1 Tuition & Playgroup Surcharge', totalAmount: 24000, amountPaid: 24000, status: 'Paid', dueDate: '2026-06-15', invoiceNumber: 'GGPS-INV-2026-0105', receiptNumber: 'GGPS-REC-2026-0046', paymentMode: 'Card (POS)', paymentDate: '2026-06-15' },
+          { _id: 'f_07', studentId: { firstName: 'Kabir', lastName: 'Deshmukh', admissionNumber: 'GGPS2026UKG003' }, grade: 'UKG', feeType: 'Annual Sports & Rhyme Session', totalAmount: 28000, amountPaid: 14000, status: 'Partial', dueDate: '2026-07-15', invoiceNumber: 'GGPS-INV-2026-0106', receiptNumber: 'GGPS-REC-2026-0047', paymentMode: 'UPI', paymentDate: '2026-07-02' },
+          { _id: 'f_08', studentId: { firstName: 'Meera', lastName: 'Nambiar', admissionNumber: 'GGPS2026LKG003' }, grade: 'LKG', feeType: 'Term 1 EVS & Activity Kit', totalAmount: 26000, amountPaid: 0, status: 'Overdue', dueDate: '2026-05-15', invoiceNumber: 'GGPS-INV-2026-0082' },
         ];
       }
 
@@ -1686,7 +1686,7 @@ function FeesFinanceContent() {
               <div>
                 <span className="text-slate-500 block text-[10px]">Admission No:</span>
                 <span className="font-mono font-bold">
-                  {showReceiptModal.record.studentId?.admissionNumber || 'GGPS-2026-LKG-001'}
+                  {showReceiptModal.record.studentId?.studentId || showReceiptModal.record.studentId?.admissionNumber || 'GGPS2026LKG001'}
                 </span>
               </div>
               <div>

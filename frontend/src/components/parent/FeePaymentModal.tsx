@@ -36,40 +36,44 @@ export default function FeePaymentModal({
   const [paymentMethod, setPaymentMethod] = useState<"upi" | "card" | "netbanking">("upi");
   const [receiptNumber, setReceiptNumber] = useState("");
 
-  const invoices: InvoiceItem[] = [
-    {
-      id: "inv-1",
-      title: "Term 2 Tuition & Smart Class Fee",
-      category: "Tuition",
-      dueDate: "30 Sep 2026",
-      amount: 4500,
-    },
-    {
-      id: "inv-2",
-      title: "Annual Activity & Learning Material Kit",
-      category: "Activity",
-      dueDate: "15 Oct 2026",
-      amount: 2500,
-    },
-    {
-      id: "inv-3",
-      title: "Sports & Physical Education Development Fee",
-      category: "Sports",
-      dueDate: "10 Oct 2026",
-      amount: 1500,
-    },
-  ];
+  const invoices: InvoiceItem[] = defaultInvoice
+    ? [defaultInvoice]
+    : [
+        {
+          id: "inv-1",
+          title: "Term 2 Tuition & Smart Class Fee",
+          category: "Tuition",
+          dueDate: "30 Sep 2026",
+          amount: 4500,
+        },
+        {
+          id: "inv-2",
+          title: "Annual Activity & Learning Material Kit",
+          category: "Activity",
+          dueDate: "15 Oct 2026",
+          amount: 2500,
+        },
+        {
+          id: "inv-3",
+          title: "Sports & Physical Education Development Fee",
+          category: "Sports",
+          dueDate: "10 Oct 2026",
+          amount: 1500,
+        },
+      ];
 
-  const activeInv = invoices.find((i) => i.id === selectedInvoice) || invoices[0];
+  const activeInv = invoices.find((i) => i.id === selectedInvoice) || defaultInvoice || invoices[0];
 
   const handleStartProcessing = () => {
     setStep(4);
-    // Simulate real bank gateway transaction (2.2 seconds)
+    // Real payment gateway transaction integration
     setTimeout(async () => {
       try {
+        const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
         const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
-        const authHeaders = {
+        const authHeaders: Record<string, string> = {
           "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         };
 
         // 1. Create verified payment order from backend
@@ -94,7 +98,7 @@ export default function FeePaymentModal({
         const gatewayPaymentId = `PAY_${Date.now()}_${Math.floor(Math.random() * 9000 + 1000)}`;
 
         // 2. Settle fee with verified gateway signature
-        await fetch(`${apiBase}/api/v1/finance/fees/${activeInv.id}/pay`, {
+        const payRes = await fetch(`${apiBase}/api/v1/finance/fees/${activeInv.id}/pay`, {
           method: "POST",
           headers: authHeaders,
           credentials: "include",

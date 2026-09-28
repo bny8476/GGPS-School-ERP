@@ -13,6 +13,7 @@ import AdminStatCard from '@/components/admin/AdminStatCard';
 import AdmissionKanban, { AdmissionApplication } from '@/components/admin/AdmissionKanban';
 import AdminDataTable, { Column } from '@/components/admin/AdminDataTable';
 import AddStudentModal from '@/components/admin/AddStudentModal';
+import AdminEnquiriesManager from '@/components/admin/AdminEnquiriesManager';
 
 function AdmissionsContent() {
   const searchParams = useSearchParams();
@@ -67,22 +68,11 @@ function AdmissionsContent() {
 
       let loaded: any[] = [];
       if (res && res.ok) {
-        loaded = await res.json();
+        const raw = await res.json();
+        loaded = Array.isArray(raw) ? raw : (raw.data || []);
       }
 
-      if (!loaded || loaded.length === 0) {
-        loaded = [
-          { _id: 'app_1', childFirstName: 'Aanya', childLastName: 'Dixit', gradeAppliedFor: 'Pre-KG', parentName: 'Nitin Dixit', parentPhone: '+91 98110 44221', parentEmail: 'nitin.dixit@example.com', status: 'New Inquiry', createdAt: '2026-09-21' },
-          { _id: 'app_2', childFirstName: 'Reyansh', childLastName: 'Chopra', gradeAppliedFor: 'LKG', parentName: 'Pooja Chopra', parentPhone: '+91 98223 99881', parentEmail: 'pooja.c@example.com', status: 'Follow-up Pending', createdAt: '2026-09-20' },
-          { _id: 'app_3', childFirstName: 'Samaira', childLastName: 'Bhasin', gradeAppliedFor: 'UKG', parentName: 'Amit Bhasin', parentPhone: '+91 99114 77665', parentEmail: 'amit.bhasin@example.com', status: 'Demo Class Scheduled', createdAt: '2026-09-18' },
-          { _id: 'app_4', childFirstName: 'Arjun', childLastName: 'Rao', gradeAppliedFor: 'UKG', parentName: 'Kavita Rao', parentPhone: '+91 98332 11009', parentEmail: 'kavita.rao@example.com', status: 'Interested', createdAt: '2026-09-15' },
-          { _id: 'app_5', childFirstName: 'Zoya', childLastName: 'Siddiqui', gradeAppliedFor: 'Pre-KG', parentName: 'Farhan Siddiqui', parentPhone: '+91 97110 55443', parentEmail: 'farhan.s@example.com', status: 'Admission Confirmed', createdAt: '2026-09-12' },
-          { _id: 'app_6', childFirstName: 'Kavya', childLastName: 'Joshi', gradeAppliedFor: 'LKG', parentName: 'Deepak Joshi', parentPhone: '+91 98771 22334', parentEmail: 'deepak.j@example.com', status: 'Follow-up Pending', createdAt: '2026-09-19' },
-          { _id: 'app_7', childFirstName: 'Vivaan', childLastName: 'Aggarwal', gradeAppliedFor: 'Pre-KG', parentName: 'Ritu Aggarwal', parentPhone: '+91 99881 33445', parentEmail: 'ritu.a@example.com', status: 'Demo Class Scheduled', createdAt: '2026-09-17' },
-        ];
-      }
-
-      setApplications(loaded);
+      setApplications(loaded || []);
     } catch (error) {
       console.error('Failed to fetch admissions', error);
       toast.error('Failed to load admissions');
@@ -194,6 +184,7 @@ function AdmissionsContent() {
       sortable: true,
       cell: (row: AdmissionApplication) => {
         const stageColors: Record<string, string> = {
+          'New': 'bg-blue-50 text-blue-700 border-blue-200',
           'New Inquiry': 'bg-blue-50 text-blue-700 border-blue-200',
           'Follow-up Pending': 'bg-indigo-50 text-indigo-700 border-indigo-200',
           'Demo Class Scheduled': 'bg-amber-50 text-amber-700 border-amber-200',
@@ -212,7 +203,7 @@ function AdmissionsContent() {
       className: 'text-right',
       cell: (row: AdmissionApplication) => (
         <div className="flex items-center justify-end gap-1.5">
-          {row.status === 'New Inquiry' && (
+          {(row.status === 'New Inquiry' || row.status === 'New') && (
             <button
               onClick={() => updateStatus(row._id, 'Follow-up Pending')}
               className="px-3 py-1 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs transition-colors cursor-pointer"
@@ -412,17 +403,7 @@ function AdmissionsContent() {
       {/* 2. ENQUIRIES TAB */}
       {activeTab === 'inquiries' && (
         <div className="space-y-4">
-          <div className="p-4 bg-white dark:bg-[#07152F] rounded-2xl border border-slate-200 dark:border-slate-800">
-            <h3 className="font-bold text-sm text-slate-800 dark:text-slate-100">Prospective Enquiries</h3>
-            <p className="text-xs text-slate-500">Walk-in and online enquiries awaiting parent interview or follow-up phone call.</p>
-          </div>
-          <AdminDataTable<AdmissionApplication>
-            data={applications.filter(a => a.status === 'New Inquiry' || a.status === 'Follow-up Pending')}
-            columns={columns}
-            keyExtractor={(item) => item._id}
-            searchPlaceholder="Search prospective enquiries..."
-            isLoading={isLoading}
-          />
+          <AdminEnquiriesManager />
         </div>
       )}
 

@@ -301,6 +301,29 @@ export default function Home() {
               {t('hero.subtitle', 'GGPS School brings together students, parents, teachers and administrators with a powerful, easy-to-use school management system.')}
             </motion.p>
 
+            {/* Hero Admission Assistance Banner */}
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.65, ease: [0.16, 1, 0.3, 1] }}
+              className="flex items-center gap-3 p-2.5 sm:p-3 px-4 rounded-2xl bg-[#E5EEFF]/80 dark:bg-[#001D4D]/70 border border-blue-200/90 dark:border-blue-800/60 mb-6 max-w-lg shadow-xs"
+            >
+              <div className="w-8 h-8 rounded-full bg-[#0050CB] text-[#FFB703] flex items-center justify-center shrink-0 shadow-xs">
+                <Sparkles className="w-4 h-4" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-[#000E28] dark:text-white text-xs">Have questions about admission?</p>
+                <p className="text-[11px] text-slate-600 dark:text-blue-200">Talk to the GGPS School admissions team.</p>
+              </div>
+              <Link
+                href="/enquire"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#0050CB] hover:bg-[#0041A8] text-white text-xs font-bold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:shadow-[#0050CB]/25 shrink-0"
+              >
+                <span>Send an Enquiry</span>
+                <ArrowRight className="w-3 h-3" />
+              </Link>
+            </motion.div>
+
             {/* CTA Buttons: Staggered Entrance with Hover Micro-Interactions */}
             <motion.div
               initial={{ opacity: 0, y: 14 }}
@@ -308,28 +331,25 @@ export default function Home() {
               transition={{ duration: 0.55, delay: 0.7, ease: [0.16, 1, 0.3, 1] }}
               className="flex flex-wrap items-center gap-4 w-full mb-7"
             >
-              {/* Primary Pill Button with Shimmer Sweep & Icon Slide */}
+              {/* Primary Button: ✦ Enquire About Admission → */}
               <Link
-                href="/admissions"
-                className="group relative inline-flex items-center justify-center gap-2.5 px-8 py-3.5 rounded-full bg-[#0050CB] hover:bg-[#0041A8] text-white font-bold text-base shadow-lg shadow-[#0050CB]/30 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-[#0050CB]/40 active:scale-95 overflow-hidden"
+                href="/enquire"
+                className="group relative inline-flex items-center justify-center gap-2.5 px-8 py-3.5 rounded-full bg-[#0050CB] hover:bg-[#0041A8] text-white font-bold text-base shadow-lg shadow-[#0050CB]/30 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-[#0050CB]/40 active:scale-95 overflow-hidden"
               >
-                <span className="relative z-10">{t('nav.enrollNow', 'Enroll Now')}</span>
-                <ArrowRight className="w-5 h-5 relative z-10 transition-transform duration-300 group-hover:translate-x-1.5" strokeWidth={2.4} />
+                <span className="text-[#FFB703] text-sm">✦</span>
+                <span className="relative z-10 font-bold">{t('nav.enquireAboutAdmission', 'Enquire About Admission')}</span>
+                <ArrowRight className="w-5 h-5 relative z-10 transition-transform duration-200 group-hover:translate-x-1.5" strokeWidth={2.4} />
                 <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/25 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out" />
               </Link>
 
-              {/* Secondary Outline Pill Button with Pulsing Play Ring */}
-              <button
-                type="button"
-                onClick={() => setIsVideoModalOpen(true)}
-                className="group inline-flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-full bg-white dark:bg-slate-900 hover:bg-[#E5EEFF] dark:hover:bg-slate-800 border-2 border-blue-200 dark:border-slate-700 hover:border-[#0050CB] text-[#0050CB] dark:text-[#38BDF8] font-bold text-base transition-all duration-300 hover:-translate-y-0.5 active:scale-95 shadow-2xs cursor-pointer"
+              {/* Secondary CTA: Start Admission Enquiry */}
+              <Link
+                href="/enquire"
+                className="group inline-flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-full bg-white dark:bg-slate-900 hover:bg-[#E5EEFF] dark:hover:bg-slate-800 border-2 border-blue-200 dark:border-slate-700 hover:border-[#0050CB] text-[#0050CB] dark:text-[#38BDF8] font-bold text-base transition-all duration-200 hover:-translate-y-0.5 active:scale-95 shadow-2xs cursor-pointer"
               >
-                <div className="relative w-6 h-6 rounded-full bg-[#0050CB] text-white flex items-center justify-center text-[10px]">
-                  <span className="absolute inset-0 rounded-full bg-[#0050CB] opacity-75 animate-ping group-hover:animate-none" />
-                  <Play className="w-2.5 h-2.5 fill-current ml-0.5 relative z-10" />
-                </div>
-                <span>{t('hero.watchVideo', 'Watch Video')}</span>
-              </button>
+                <span>{t('hero.startAdmissionEnquiry', 'Start Admission Enquiry')}</span>
+                <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-1" />
+              </Link>
             </motion.div>
 
             {/* Trust Micro-Badges Row */}
@@ -374,15 +394,26 @@ export default function Home() {
               {/* Soft Atmospheric Ambient Backing Glow */}
               <div className="absolute -inset-8 sm:-inset-14 bg-gradient-to-tr from-[#0050CB]/20 via-sky-300/25 to-indigo-200/20 dark:from-blue-600/25 dark:via-sky-400/20 dark:to-indigo-500/20 rounded-full blur-3xl pointer-events-none -z-10" />
 
-              {/* Main Transparent Hero Artwork */}
+              {/* Main Transparent Hero Artwork - Theme-Adaptive (Light & Dark) */}
               <div className="relative w-full flex items-center justify-center">
+                {/* Light Theme Hero Banner */}
                 <Image
-                  src="/hero-banner.png"
+                  src="/hero-banner-light.jpg"
                   alt="GGPS School Modern Management Platform"
                   width={1600}
                   height={800}
                   priority
-                  className="w-full h-auto object-contain select-none pointer-events-none drop-shadow-lg"
+                  className="w-full h-auto object-contain select-none pointer-events-none drop-shadow-lg block dark:hidden"
+                />
+
+                {/* Dark Theme Hero Banner (Dedicated deep navy composition with GGPS School branding, neon glows, no white halo) */}
+                <Image
+                  src="/hero-banner-dark.jpg"
+                  alt="GGPS School Modern Management Platform"
+                  width={1600}
+                  height={800}
+                  priority
+                  className="w-full h-auto object-contain select-none pointer-events-none drop-shadow-[0_20px_50px_rgba(0,80,203,0.35)] hidden dark:block"
                 />
               </div>
 
@@ -775,13 +806,13 @@ export default function Home() {
               {/* Happy Students Floating Overlay */}
               <motion.div
                 whileHover={{ scale: 1.06 }}
-                className="absolute right-6 top-6 bottom-6 bg-[#FFFBEB] text-slate-800 rounded-2xl p-5 shadow-xl max-w-[170px] flex flex-col justify-center border border-amber-200"
+                className="absolute right-6 top-6 bottom-6 bg-[#FFFBEB] dark:bg-[#001438] text-slate-800 dark:text-white rounded-2xl p-5 shadow-xl max-w-[170px] flex flex-col justify-center border border-amber-200 dark:border-blue-900/50"
               >
-                <div className="w-9 h-9 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mb-2">
+                <div className="w-9 h-9 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center mb-2">
                   <Users className="w-5 h-5" />
                 </div>
-                <h4 className="font-extrabold text-slate-900 text-base mb-1">Happy Students</h4>
-                <p className="text-xs text-slate-600 font-medium">Confident learners, bright futures.</p>
+                <h4 className="font-extrabold text-slate-900 dark:text-white text-base mb-1">Happy Students</h4>
+                <p className="text-xs text-slate-600 dark:text-slate-300 font-medium">Confident learners, bright futures.</p>
               </motion.div>
             </motion.div>
 
@@ -955,13 +986,13 @@ export default function Home() {
                   {/* Soft Mint Curved Backdrop Shape */}
                   <div className="absolute inset-0 bg-gradient-to-tr from-emerald-100/80 via-emerald-50/60 to-teal-100/50 dark:from-emerald-950/40 dark:to-teal-950/30 rounded-2xl sm:rounded-3xl -z-10" />
 
-                  <div className="relative w-full h-[180px] sm:h-[195px]">
+                  <div className="relative w-full h-[180px] sm:h-[195px] rounded-2xl overflow-hidden">
                     <Image
                       src="/hero-girl-student.png"
                       alt="Intelligent Operations Student"
                       fill
                       sizes="(max-width: 768px) 40vw, 15vw"
-                      className="object-contain object-bottom group-hover:scale-105 transition-transform duration-500"
+                      className="object-cover object-top group-hover:scale-105 transition-transform duration-500"
                     />
                   </div>
                 </div>
@@ -1023,13 +1054,13 @@ export default function Home() {
                     A+
                   </motion.div>
 
-                  <div className="relative w-full h-[180px] sm:h-[195px]">
+                  <div className="relative w-full h-[180px] sm:h-[195px] rounded-2xl overflow-hidden">
                     <Image
                       src="/student-raising-hand.png"
                       alt="Performance & Rubrics Student"
                       fill
                       sizes="(max-width: 768px) 40vw, 15vw"
-                      className="object-contain object-bottom group-hover:scale-105 transition-transform duration-500"
+                      className="object-cover object-top group-hover:scale-105 transition-transform duration-500"
                     />
                   </div>
                 </div>
@@ -1091,13 +1122,13 @@ export default function Home() {
                     <ShieldCheck className="w-4 h-4" />
                   </motion.div>
 
-                  <div className="relative w-full h-[180px] sm:h-[195px]">
+                  <div className="relative w-full h-[180px] sm:h-[195px] rounded-2xl overflow-hidden">
                     <Image
                       src="/mother-daughter-study.png"
                       alt="Secure & Connected"
                       fill
                       sizes="(max-width: 768px) 40vw, 15vw"
-                      className="object-contain object-bottom group-hover:scale-105 transition-transform duration-500"
+                      className="object-cover object-center group-hover:scale-105 transition-transform duration-500"
                     />
                   </div>
                 </div>
