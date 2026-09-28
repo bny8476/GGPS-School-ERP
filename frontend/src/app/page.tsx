@@ -395,7 +395,7 @@ export default function Home() {
               <div className="absolute -inset-8 sm:-inset-14 bg-gradient-to-tr from-[#0050CB]/20 via-sky-300/25 to-indigo-200/20 dark:from-blue-600/25 dark:via-sky-400/20 dark:to-indigo-500/20 rounded-full blur-3xl pointer-events-none -z-10" />
 
               {/* Main Transparent Hero Artwork - Theme-Adaptive (Light & Dark) */}
-              <div className="relative w-full flex items-center justify-center">
+              <div className="relative w-full flex items-center justify-center [mask-image:radial-gradient(ellipse_at_center,black_82%,transparent_100%)] [-webkit-mask-image:radial-gradient(ellipse_at_center,black_82%,transparent_100%)]">
                 {/* Light Theme Hero Banner */}
                 <Image
                   src="/hero-banner-light.jpg"
@@ -403,17 +403,17 @@ export default function Home() {
                   width={1600}
                   height={800}
                   priority
-                  className="w-full h-auto object-contain select-none pointer-events-none drop-shadow-lg block dark:hidden"
+                  className="w-full h-auto object-contain select-none pointer-events-none mix-blend-multiply block dark:hidden"
                 />
 
-                {/* Dark Theme Hero Banner (Dedicated deep navy composition with GGPS School branding, neon glows, no white halo) */}
+                {/* Dark Theme Hero Banner */}
                 <Image
                   src="/hero-banner-dark.jpg"
                   alt="GGPS School Modern Management Platform"
                   width={1600}
                   height={800}
                   priority
-                  className="w-full h-auto object-contain select-none pointer-events-none drop-shadow-[0_20px_50px_rgba(0,80,203,0.35)] hidden dark:block"
+                  className="w-full h-auto object-contain select-none pointer-events-none hidden dark:block"
                 />
               </div>
 
