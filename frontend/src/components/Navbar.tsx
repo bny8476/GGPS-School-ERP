@@ -86,42 +86,6 @@ export default function Navbar() {
           <span className="text-slate-300 dark:text-slate-700 font-light text-sm select-none">|</span>
 
           <Link
-            href="/events"
-            className={`font-saas relative text-sm tracking-wide transition-all duration-200 py-1 hover-expand-spacing ${
-              pathname === '/events'
-                ? 'text-[#0050CB] dark:text-[#38BDF8] font-bold'
-                : 'text-slate-700 dark:text-slate-200 hover:text-[#0050CB] dark:hover:text-[#38BDF8] font-semibold'
-            }`}
-          >
-            <span>{t('nav.events', 'Events')}</span>
-            {pathname === '/events' ? (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#0050CB] dark:bg-[#38BDF8] rounded-full" />
-            ) : (
-              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#0050CB] dark:bg-[#38BDF8] rounded-full transition-all duration-200 hover:w-full" />
-            )}
-          </Link>
-
-          <span className="text-slate-300 dark:text-slate-700 font-light text-sm select-none">|</span>
-
-          <Link
-            href="/gallery"
-            className={`font-saas relative text-sm tracking-wide transition-all duration-200 py-1 hover-expand-spacing ${
-              pathname === '/gallery'
-                ? 'text-[#0050CB] dark:text-[#38BDF8] font-bold'
-                : 'text-slate-700 dark:text-slate-200 hover:text-[#0050CB] dark:hover:text-[#38BDF8] font-semibold'
-            }`}
-          >
-            <span>Gallery</span>
-            {pathname === '/gallery' ? (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#0050CB] dark:bg-[#38BDF8] rounded-full" />
-            ) : (
-              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#0050CB] dark:bg-[#38BDF8] rounded-full transition-all duration-200 hover:w-full" />
-            )}
-          </Link>
-
-          <span className="text-slate-300 dark:text-slate-700 font-light text-sm select-none">|</span>
-
-          <Link
             href="/contact"
             className={`font-saas relative text-sm tracking-wide transition-all duration-200 py-1 hover-expand-spacing ${
               pathname === '/contact'
@@ -224,20 +188,6 @@ export default function Navbar() {
             onClick={() => setIsOpen(false)}
           >
             {t('nav.admissions', 'Admissions')}
-          </Link>
-          <Link
-            href="/events"
-            className="text-slate-700 dark:text-slate-300 font-semibold py-2 hover:text-[#0050CB]"
-            onClick={() => setIsOpen(false)}
-          >
-            {t('nav.events', 'Events')}
-          </Link>
-          <Link
-            href="/gallery"
-            className="text-slate-700 dark:text-slate-300 font-semibold py-2 hover:text-[#0050CB]"
-            onClick={() => setIsOpen(false)}
-          >
-            Gallery
           </Link>
           <Link
             href="/contact"

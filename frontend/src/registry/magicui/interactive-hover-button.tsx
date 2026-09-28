@@ -28,7 +28,7 @@ export const InteractiveHoverButton = React.forwardRef<
   );
 
   const baseClasses = cn(
-    "group relative inline-flex items-center justify-center w-auto cursor-pointer overflow-hidden rounded-full border border-[#0050CB]/30 dark:border-slate-700 bg-white dark:bg-[#001438] py-2 px-6 text-center font-bold text-sm text-[#000E28] dark:text-white transition-all duration-300 shadow-xs hover:border-[#0050CB] hover:shadow-md select-none",
+    "group relative inline-flex items-center justify-center w-auto cursor-pointer overflow-hidden rounded-full border border-[#0050CB]/30 dark:border-slate-700 bg-white dark:bg-[#001438] h-9 px-4 sm:px-5 text-center font-bold text-xs sm:text-sm text-[#000E28] dark:text-white transition-all duration-300 shadow-xs hover:border-[#0050CB] hover:shadow-md select-none",
     className
   );
 
