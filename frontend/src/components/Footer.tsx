@@ -42,7 +42,14 @@ export default function Footer() {
 
   // Hide the public marketing footer on login and inside portal/dashboard views
   // (the dashboard has its own dedicated application footer)
-  if (pathname === '/login' || pathname?.startsWith('/dashboard') || pathname?.startsWith('/portal') || pathname?.startsWith('/parent')) {
+  if (
+    pathname === '/login' ||
+    pathname?.startsWith('/dashboard') ||
+    pathname?.startsWith('/portal') ||
+    pathname?.startsWith('/parent') ||
+    pathname?.startsWith('/teacher') ||
+    pathname?.startsWith('/admin')
+  ) {
     return null;
   }
 

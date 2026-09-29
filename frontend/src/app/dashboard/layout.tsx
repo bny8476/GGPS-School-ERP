@@ -172,7 +172,6 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
       show: isSuperAdmin || isPrincipal || isReceptionist,
       subItems: [
         { href: '/dashboard/admissions/enquiries', label: t('admissions.enquiries', 'Enquiries') },
-        { href: '/dashboard/admissions?tab=inquiries', label: t('admissions.enquiries', 'All Inquiries') },
         { href: '/dashboard/admissions?tab=applications', label: t('admissions.applicationForms', 'Application Forms') },
         { href: '/dashboard/admissions?tab=documents', label: t('admissions.documentVerification', 'Document Verification') },
         { href: '/dashboard/admissions?tab=pipeline', label: t('admissions.pipeline', 'Admission Pipeline') },
@@ -188,7 +187,6 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         { href: '/dashboard/students', label: t('students.directory', 'Student Directory') },
         { href: '/dashboard/students?action=new', label: t('students.addStudent', 'Add Student') },
         { href: '/dashboard/id-cards', label: t('students.idCards', 'ID Card Generator') },
-        { href: '/dashboard/discipline', label: t('students.discipline', 'Behavioral & Discipline Logs') },
         { href: '/dashboard/growth-profile', label: t('students.growthProfile', 'Growth Profiles') },
       ]
     },
@@ -199,7 +197,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
       show: true,
       subItems: [
         { href: '/dashboard/enrollment', label: t('enrollment.overview', 'Enrollment & Roster') },
-        { href: '/dashboard/enrollment', label: t('enrollment.promotion', 'Student Promotion & Roll-over') },
+        { href: '/dashboard/enrollment?tab=promotion', label: t('enrollment.promotion', 'Student Promotion & Roll-over') },
       ]
     },
     { 
@@ -211,7 +209,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         { href: '/dashboard/teachers', label: t('teachers.directory', 'Staff Directory') },
         { href: '/dashboard/teachers?action=new', label: t('teachers.addEmployee', 'Add / Edit Employee') },
         { href: '/dashboard/attendance?tab=teachers', label: t('teachers.staffAttendance', 'Staff Attendance') },
-        { href: '/dashboard/leaves', label: t('teachers.leavesPermissions', 'Leaves & Permissions') },
+        { href: '/dashboard/leaves', label: t('teachers.leavesApprovals', 'Staff Leave Approvals') },
       ]
     },
     { 
@@ -223,7 +221,6 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         { href: '/dashboard/parents', label: t('parents.directory', 'Parent Directory') },
         { href: '/dashboard/parents?tab=linked', label: t('parents.linkedStudents', 'Linked Students') },
         { href: '/dashboard/parents?tab=logs', label: t('parents.communicationLogs', 'Communication Logs') },
-        { href: '/dashboard/parent-booking', label: t('parents.meetingRequests', 'Parent Meeting Requests') },
       ]
     },
     { 
@@ -249,7 +246,6 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         { href: '/dashboard/attendance', label: t('attendance.dailyStudentAttendance', 'Daily Student Attendance') },
         { href: '/dashboard/attendance?tab=teachers', label: t('attendance.dailyTeacherAttendance', 'Daily Teacher Attendance') },
         { href: '/dashboard/attendance?tab=reports', label: t('attendance.reports', 'Class Attendance Reports') },
-        { href: '/dashboard/leaves', label: t('attendance.leaveApplications', 'Leave Applications') },
       ]
     },
     { 
@@ -464,7 +460,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                           const isSubActive = pathname === sub.href;
                           return (
                             <Link
-                              key={sub.href}
+                              key={`${sub.href}-${sub.label}`}
                               href={sub.href}
                               onClick={() => setIsMobileMenuOpen(false)}
                               className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs transition-colors ${
@@ -627,7 +623,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                       const isSubActive = pathname === sub.href;
                       return (
                         <Link
-                          key={sub.href}
+                          key={`${sub.href}-${sub.label}`}
                           href={sub.href}
                           className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs transition-colors ${
                             isSubActive

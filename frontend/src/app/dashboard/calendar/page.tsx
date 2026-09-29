@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { 
   Calendar as CalendarIcon, 
   ChevronLeft, 
@@ -17,7 +17,10 @@ import {
   Users, 
   Settings, 
   Heart,
-  ChevronDown
+  ChevronDown,
+  Lock,
+  CalendarCheck,
+  AlertCircle
 } from "lucide-react";
 import Link from "next/link";
 import toast from "react-hot-toast";
@@ -26,97 +29,535 @@ interface EventItem {
   id: string;
   title: string;
   type: "Event" | "Exam" | "Reminder" | "Meeting" | "Holiday";
-  date: string;
+  date: string; // YYYY-MM-DD
   time: string;
   location: string;
   badgeColor: string;
   badgeBg: string;
+  borderColor?: string;
+  icon?: string;
 }
 
+const MONTH_NAMES = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December"
+];
+
+const SHORT_MONTHS = [
+  "JAN", "FEB", "MAR", "APR", "MAY", "JUN",
+  "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"
+];
+
+// Seed institutional events
+const SEED_EVENTS: EventItem[] = [
+  // September 2026
+  {
+    id: "ev-sep-1",
+    title: "Teacher Meeting",
+    type: "Meeting",
+    date: "2026-09-01",
+    time: "08:30 AM - 10:00 AM",
+    location: "Staff Conference Room",
+    badgeColor: "text-[#059669]",
+    badgeBg: "bg-[#ECFDF5]",
+    borderColor: "border-[#A7F3D0]",
+    icon: "👤"
+  },
+  {
+    id: "ev-sep-2",
+    title: "Holiday (Ganesh Chaturthi)",
+    type: "Holiday",
+    date: "2026-09-02",
+    time: "All Day",
+    location: "School Closed",
+    badgeColor: "text-[#7C3AED]",
+    badgeBg: "bg-[#F3E8FF]",
+    borderColor: "border-[#DDD6FE]",
+    icon: "🎉"
+  },
+  {
+    id: "ev-sep-4",
+    title: "Phonics Check (LKG & UKG)",
+    type: "Exam",
+    date: "2026-09-04",
+    time: "09:30 AM - 11:30 AM",
+    location: "Primary Wing",
+    badgeColor: "text-[#2563EB]",
+    badgeBg: "bg-[#EFF6FF]",
+    borderColor: "border-[#BFDBFE]",
+    icon: "📝"
+  },
+  {
+    id: "ev-sep-7",
+    title: "Parent Teacher Meeting",
+    type: "Meeting",
+    date: "2026-09-07",
+    time: "09:00 AM - 01:00 PM",
+    location: "Classrooms",
+    badgeColor: "text-[#E11D48]",
+    badgeBg: "bg-[#FFF1F2]",
+    borderColor: "border-[#FECDD3]",
+    icon: "👥"
+  },
+  {
+    id: "ev-sep-9",
+    title: "Sports Day (Pre-KG to UKG)",
+    type: "Event",
+    date: "2026-09-09",
+    time: "08:00 AM - 12:00 PM",
+    location: "School Athletic Turf",
+    badgeColor: "text-[#EA580C]",
+    badgeBg: "bg-[#FFF7ED]",
+    borderColor: "border-[#FED7AA]",
+    icon: "🏆"
+  },
+  {
+    id: "ev-sep-11",
+    title: "Science Exhibition",
+    type: "Event",
+    date: "2026-09-11",
+    time: "10:00 AM - 02:00 PM",
+    location: "Science Labs & Hall",
+    badgeColor: "text-[#0D9488]",
+    badgeBg: "bg-[#F0FDFA]",
+    borderColor: "border-[#99F6E4]",
+    icon: "🔬"
+  },
+  {
+    id: "ev-sep-14",
+    title: "Rhyme Recitation (Pre-KG & LKG)",
+    type: "Event",
+    date: "2026-09-14",
+    time: "09:00 AM - 11:00 AM",
+    location: "Activity Hall",
+    badgeColor: "text-[#2563EB]",
+    badgeBg: "bg-[#EFF6FF]",
+    borderColor: "border-[#BFDBFE]",
+    icon: "📝"
+  },
+  {
+    id: "ev-sep-16",
+    title: "Workshop (Teachers)",
+    type: "Meeting",
+    date: "2026-09-16",
+    time: "02:00 PM - 04:30 PM",
+    location: "AV Seminar Hall",
+    badgeColor: "text-[#7C3AED]",
+    badgeBg: "bg-[#F3E8FF]",
+    borderColor: "border-[#DDD6FE]",
+    icon: "👥"
+  },
+  {
+    id: "ev-sep-18",
+    title: "Fee Due Date",
+    type: "Reminder",
+    date: "2026-09-18",
+    time: "End of Day",
+    location: "Accounts Office",
+    badgeColor: "text-[#E11D48]",
+    badgeBg: "bg-[#FFF1F2]",
+    borderColor: "border-[#FECDD3]",
+    icon: "💳"
+  },
+  {
+    id: "ev-sep-20",
+    title: "Holiday (Dussehra)",
+    type: "Holiday",
+    date: "2026-09-20",
+    time: "All Day",
+    location: "School Closed",
+    badgeColor: "text-[#0284C7]",
+    badgeBg: "bg-[#E0F2FE]",
+    borderColor: "border-[#BAE6FD]",
+    icon: "🎉"
+  },
+  {
+    id: "ev-sep-22",
+    title: "PTM Meeting",
+    type: "Meeting",
+    date: "2026-09-22",
+    time: "09:30 AM - 12:30 PM",
+    location: "Main Wing",
+    badgeColor: "text-[#059669]",
+    badgeBg: "bg-[#ECFDF5]",
+    borderColor: "border-[#A7F3D0]",
+    icon: "👥"
+  },
+  {
+    id: "ev-sep-24",
+    title: "Student Council Leadership",
+    type: "Event",
+    date: "2026-09-24",
+    time: "10:00 AM - 12:00 PM",
+    location: "Main Campus, Auditorium",
+    badgeColor: "text-white",
+    badgeBg: "bg-[#000E28]",
+    borderColor: "border-[#000E28]",
+    icon: "👥"
+  },
+  {
+    id: "ev-sep-25",
+    title: "UKG Early Numeracy & Phonics Term Assessment",
+    type: "Exam",
+    date: "2026-09-25",
+    time: "10:00 AM - 01:00 PM",
+    location: "Examination Hall A & B",
+    badgeColor: "text-[#7C3AED]",
+    badgeBg: "bg-[#F3E8FF]",
+    borderColor: "border-[#DDD6FE]",
+    icon: "📝"
+  },
+  {
+    id: "ev-sep-28",
+    title: "Inter-School Sports Track Trials & Athletic Heats",
+    type: "Event",
+    date: "2026-09-28",
+    time: "08:30 AM - 03:00 PM",
+    location: "Olympic Athletic Ground",
+    badgeColor: "text-[#2563EB]",
+    badgeBg: "bg-[#EFF6FF]",
+    borderColor: "border-[#BFDBFE]",
+    icon: "🏆"
+  },
+  {
+    id: "ev-sep-29",
+    title: "UKG Diagnostic Evaluation Catch-up",
+    type: "Exam",
+    date: "2026-09-29",
+    time: "10:00 AM - 12:00 PM",
+    location: "Examination Hall A",
+    badgeColor: "text-[#7C3AED]",
+    badgeBg: "bg-[#F3E8FF]",
+    borderColor: "border-[#DDD6FE]",
+    icon: "📝"
+  },
+  {
+    id: "ev-sep-30",
+    title: "Cultural Event & Art Exhibition",
+    type: "Event",
+    date: "2026-09-30",
+    time: "04:00 PM - 06:00 PM",
+    location: "Open Air Amphitheatre",
+    badgeColor: "text-[#D97706]",
+    badgeBg: "bg-[#FFFBEB]",
+    borderColor: "border-[#FDE68A]",
+    icon: "🎭"
+  },
+  // October 2026
+  {
+    id: "ev-oct-2",
+    title: "Term 1 Tuition Fee Reconciliation Deadline",
+    type: "Reminder",
+    date: "2026-10-02",
+    time: "All Day",
+    location: "Accounts Dept. & Online Portal",
+    badgeColor: "text-[#E11D48]",
+    badgeBg: "bg-[#FFF1F2]",
+    borderColor: "border-[#FECDD3]",
+    icon: "💳"
+  },
+  {
+    id: "ev-oct-2-hol",
+    title: "Holiday (Gandhi Jayanti)",
+    type: "Holiday",
+    date: "2026-10-02",
+    time: "All Day",
+    location: "School Closed",
+    badgeColor: "text-[#059669]",
+    badgeBg: "bg-[#ECFDF5]",
+    borderColor: "border-[#A7F3D0]",
+    icon: "🕊️"
+  },
+  {
+    id: "ev-oct-5",
+    title: "Annual Day Celebration",
+    type: "Event",
+    date: "2026-10-05",
+    time: "09:00 AM - 05:00 PM",
+    location: "School Ground",
+    badgeColor: "text-[#2563EB]",
+    badgeBg: "bg-[#EFF6FF]",
+    borderColor: "border-[#BFDBFE]",
+    icon: "🌟"
+  },
+  {
+    id: "ev-oct-12",
+    title: "Term 1 Mid-Term Assessments",
+    type: "Exam",
+    date: "2026-10-12",
+    time: "09:00 AM - 12:30 PM",
+    location: "Main Exam Hall",
+    badgeColor: "text-[#7C3AED]",
+    badgeBg: "bg-[#F3E8FF]",
+    borderColor: "border-[#DDD6FE]",
+    icon: "📝"
+  },
+  {
+    id: "ev-oct-24",
+    title: "Holiday (Diwali Festival)",
+    type: "Holiday",
+    date: "2026-10-24",
+    time: "All Day",
+    location: "School Closed",
+    badgeColor: "text-[#EA580C]",
+    badgeBg: "bg-[#FFF7ED]",
+    borderColor: "border-[#FED7AA]",
+    icon: "🪔"
+  },
+  // November 2026
+  {
+    id: "ev-nov-14",
+    title: "Children's Day Carnival",
+    type: "Event",
+    date: "2026-11-14",
+    time: "08:30 AM - 02:00 PM",
+    location: "School Athletic Turf",
+    badgeColor: "text-[#059669]",
+    badgeBg: "bg-[#ECFDF5]",
+    borderColor: "border-[#A7F3D0]",
+    icon: "🎈"
+  }
+];
+
 export default function AcademicCalendarPage() {
+  // Today's normalized date (Matches ERP system calendar date: 2026-09-29)
+  const today = useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, []);
+
+  const todayStr = useMemo(() => {
+    const y = today.getFullYear();
+    const m = String(today.getMonth() + 1).padStart(2, "0");
+    const d = String(today.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }, [today]);
+
+  // Current active view month/year (Defaults to current month: September 2026)
+  const [viewDate, setViewDate] = useState<Date>(() => new Date(today.getFullYear(), today.getMonth(), 1));
   const [currentView, setCurrentView] = useState<"Month" | "Week" | "Day">("Month");
-  const [selectedDay, setSelectedDay] = useState<number>(24);
+  const [selectedDateStr, setSelectedDateStr] = useState<string>(todayStr);
+  
+  // All Events State
+  const [events, setEvents] = useState<EventItem[]>(SEED_EVENTS);
+  
+  // Modal states
   const [showAddModal, setShowAddModal] = useState<boolean>(false);
-  const [selectedEventModal, setSelectedEventModal] = useState<any | null>(null);
+  const [selectedEventModal, setSelectedEventModal] = useState<EventItem | null>(null);
 
   // Form State for Add Event
   const [newEventTitle, setNewEventTitle] = useState("");
-  const [newEventType, setNewEventType] = useState("Event");
-  const [newEventDate, setNewEventDate] = useState("2026-09-24");
+  const [newEventType, setNewEventType] = useState<"Event" | "Exam" | "Reminder" | "Meeting" | "Holiday">("Event");
+  const [newEventDate, setNewEventDate] = useState(todayStr);
   const [newEventTime, setNewEventTime] = useState("10:00 AM - 12:00 PM");
   const [newEventLocation, setNewEventLocation] = useState("Main Campus, Auditorium");
 
-  const upcomingEvents: EventItem[] = [
-    {
-      id: "ev-1",
-      title: "Student Council Leadership",
-      type: "Event",
-      date: "SEP 24",
-      time: "10:00 AM - 12:00 PM",
-      location: "Main Campus, Auditorium",
-      badgeColor: "text-[#059669]",
-      badgeBg: "bg-[#ECFDF5]"
-    },
-    {
-      id: "ev-2",
-      title: "UKG Early Numeracy & Phonics Term Assessment",
-      type: "Exam",
-      date: "SEP 25",
-      time: "10:00 AM - 01:00 PM",
-      location: "Examination Hall A & B",
-      badgeColor: "text-[#7C3AED]",
-      badgeBg: "bg-[#F3E8FF]"
-    },
-    {
-      id: "ev-3",
-      title: "Inter-School Sports Track Trials & Athletic Heats",
-      type: "Event",
-      date: "SEP 28",
-      time: "08:30 AM - 03:00 PM",
-      location: "Olympic Athletic Ground",
-      badgeColor: "text-[#2563EB]",
-      badgeBg: "bg-[#EFF6FF]"
-    },
-    {
-      id: "ev-4",
-      title: "Term 1 Tuition Fee Reconciliation Deadline",
-      type: "Reminder",
-      date: "OCT 02",
-      time: "All Day",
-      location: "Accounts Dept. & Online Portal",
-      badgeColor: "text-[#E11D48]",
-      badgeBg: "bg-[#FFF1F2]"
-    },
-    {
-      id: "ev-5",
-      title: "Annual Day Celebration",
-      type: "Event",
-      date: "OCT 05",
-      time: "09:00 AM - 05:00 PM",
-      location: "School Ground",
-      badgeColor: "text-[#2563EB]",
-      badgeBg: "bg-[#EFF6FF]"
-    }
-  ];
+  // Navigation handlers
+  const handlePrevMonth = () => {
+    setViewDate((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+  };
 
+  const handleNextMonth = () => {
+    setViewDate((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+  };
+
+  const handleGoToToday = () => {
+    const now = new Date();
+    setViewDate(new Date(now.getFullYear(), now.getMonth(), 1));
+    setSelectedDateStr(todayStr);
+    toast.success("Navigated to today");
+  };
+
+  // Month information
+  const currentYear = viewDate.getFullYear();
+  const currentMonthIndex = viewDate.getMonth();
+  const currentMonthName = MONTH_NAMES[currentMonthIndex];
+  const academicYearLabel = currentMonthIndex >= 5 
+    ? `${currentYear} - ${currentYear + 1}` 
+    : `${currentYear - 1} - ${currentYear}`;
+
+  // Check if viewing an entire month that has already finished
+  const isEntireMonthPast = useMemo(() => {
+    const lastDayOfMonth = new Date(currentYear, currentMonthIndex + 1, 0);
+    lastDayOfMonth.setHours(23, 59, 59, 999);
+    return lastDayOfMonth < today;
+  }, [currentYear, currentMonthIndex, today]);
+
+  // Calendar Grid Calculation
+  const calendarCells = useMemo(() => {
+    const firstDayOfWeek = new Date(currentYear, currentMonthIndex, 1).getDay(); // 0 = Sun, 6 = Sat
+    const daysInMonth = new Date(currentYear, currentMonthIndex + 1, 0).getDate();
+    const daysInPrevMonth = new Date(currentYear, currentMonthIndex, 0).getDate();
+
+    const cells: {
+      dayNumber: number;
+      dateStr: string;
+      dateObj: Date;
+      isCurrentMonth: boolean;
+      isPast: boolean;
+      isToday: boolean;
+      events: EventItem[];
+    }[] = [];
+
+    // 1. Previous month trailing days
+    for (let i = firstDayOfWeek - 1; i >= 0; i--) {
+      const dayNum = daysInPrevMonth - i;
+      const d = new Date(currentYear, currentMonthIndex - 1, dayNum);
+      d.setHours(0, 0, 0, 0);
+      const dStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(dayNum).padStart(2, "0")}`;
+      cells.push({
+        dayNumber: dayNum,
+        dateStr: dStr,
+        dateObj: d,
+        isCurrentMonth: false,
+        isPast: d < today,
+        isToday: dStr === todayStr,
+        events: events.filter((e) => e.date === dStr),
+      });
+    }
+
+    // 2. Current month days
+    for (let dayNum = 1; dayNum <= daysInMonth; dayNum++) {
+      const d = new Date(currentYear, currentMonthIndex, dayNum);
+      d.setHours(0, 0, 0, 0);
+      const dStr = `${currentYear}-${String(currentMonthIndex + 1).padStart(2, "0")}-${String(dayNum).padStart(2, "0")}`;
+      cells.push({
+        dayNumber: dayNum,
+        dateStr: dStr,
+        dateObj: d,
+        isCurrentMonth: true,
+        isPast: d < today,
+        isToday: dStr === todayStr,
+        events: events.filter((e) => e.date === dStr),
+      });
+    }
+
+    // 3. Next month leading days (Fill 35 or 42 grid slots)
+    const targetSlots = cells.length <= 35 ? 35 : 42;
+    const remaining = targetSlots - cells.length;
+    for (let dayNum = 1; dayNum <= remaining; dayNum++) {
+      const d = new Date(currentYear, currentMonthIndex + 1, dayNum);
+      d.setHours(0, 0, 0, 0);
+      const dStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(dayNum).padStart(2, "0")}`;
+      cells.push({
+        dayNumber: dayNum,
+        dateStr: dStr,
+        dateObj: d,
+        isCurrentMonth: false,
+        isPast: d < today,
+        isToday: dStr === todayStr,
+        events: events.filter((e) => e.date === dStr),
+      });
+    }
+
+    return cells;
+  }, [currentYear, currentMonthIndex, today, todayStr, events]);
+
+  // Dynamic KPI Stats for the current viewed month
+  const monthStats = useMemo(() => {
+    const monthEvents = events.filter((ev) => {
+      const evDate = new Date(ev.date);
+      return evDate.getFullYear() === currentYear && evDate.getMonth() === currentMonthIndex;
+    });
+
+    const total = monthEvents.length;
+    const completed = monthEvents.filter((ev) => ev.date < todayStr).length;
+    const upcoming = monthEvents.filter((ev) => ev.date >= todayStr).length;
+    const holidays = monthEvents.filter((ev) => ev.type === "Holiday").length;
+
+    return { total, completed, upcoming, holidays };
+  }, [events, currentYear, currentMonthIndex, todayStr]);
+
+  // Sidebar Upcoming Events List (Filtered strictly for upcoming dates >= today)
+  const upcomingEventsList = useMemo(() => {
+    return events
+      .filter((ev) => ev.date >= todayStr)
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .slice(0, 6);
+  }, [events, todayStr]);
+
+  // Open Add Event modal for a specific enabled date
+  const handleOpenAddForDate = (dateStr: string) => {
+    if (dateStr < todayStr) {
+      toast.error("Cannot assign events to past dates. Please pick an upcoming date.", {
+        id: "past-date-blocked",
+      });
+      return;
+    }
+    setNewEventDate(dateStr);
+    setSelectedDateStr(dateStr);
+    setShowAddModal(true);
+  };
+
+  // Submit new event
   const handleCreateEvent = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newEventTitle.trim()) {
       toast.error("Please enter an event title");
       return;
     }
-    toast.success(`Event "${newEventTitle}" added successfully!`);
+
+    // Strict validation: Block past dates
+    if (newEventDate < todayStr) {
+      toast.error("This date has already passed. Only upcoming dates can be assigned an event.");
+      return;
+    }
+
+    let badgeColor = "text-[#2563EB]";
+    let badgeBg = "bg-[#EFF6FF]";
+    let borderColor = "border-[#BFDBFE]";
+    let icon = "📅";
+
+    if (newEventType === "Exam") {
+      badgeColor = "text-[#7C3AED]";
+      badgeBg = "bg-[#F3E8FF]";
+      borderColor = "border-[#DDD6FE]";
+      icon = "📝";
+    } else if (newEventType === "Meeting") {
+      badgeColor = "text-[#059669]";
+      badgeBg = "bg-[#ECFDF5]";
+      borderColor = "border-[#A7F3D0]";
+      icon = "👥";
+    } else if (newEventType === "Holiday") {
+      badgeColor = "text-[#E11D48]";
+      badgeBg = "bg-[#FFF1F2]";
+      borderColor = "border-[#FECDD3]";
+      icon = "🎉";
+    } else if (newEventType === "Reminder") {
+      badgeColor = "text-[#EA580C]";
+      badgeBg = "bg-[#FFF7ED]";
+      borderColor = "border-[#FED7AA]";
+      icon = "💳";
+    }
+
+    const created: EventItem = {
+      id: `ev-${Date.now()}`,
+      title: newEventTitle.trim(),
+      type: newEventType,
+      date: newEventDate,
+      time: newEventTime.trim() || "10:00 AM - 12:00 PM",
+      location: newEventLocation.trim() || "Main Campus",
+      badgeColor,
+      badgeBg,
+      borderColor,
+      icon,
+    };
+
+    setEvents((prev) => [...prev, created]);
+    toast.success(`Event "${created.title}" successfully scheduled!`);
     setShowAddModal(false);
     setNewEventTitle("");
   };
 
   return (
-    <div className="space-y-6 font-saas pb-8">
-      {/* 1. TOP HERO ROW (Left Hero Card + Right KPI Card) */}
+    <div className="space-y-6 font-sans pb-8 max-w-[1600px] mx-auto">
+      {/* ========================================================
+          1. TOP HERO ROW (Left Hero Card + Right KPI Card)
+      ======================================================== */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Hero Card */}
         <div className="lg:col-span-7 xl:col-span-8 relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#EFF5FF] via-[#F4F8FF] to-[#E5EEFF] border border-blue-100/90 p-6 md:p-7 shadow-xs flex flex-col justify-between">
-          {/* Decorative Campus Backdrop Overlay */}
           <div className="absolute right-0 top-0 bottom-0 w-1/2 opacity-25 lg:opacity-35 pointer-events-none overflow-hidden flex items-center justify-end">
             <img 
               src="/admin-hero-campus.jpg" 
@@ -143,7 +584,6 @@ export default function AcademicCalendarPage() {
               </div>
             </div>
 
-            {/* Floating Tag */}
             <div className="self-end mr-4">
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/90 backdrop-blur-xs border border-blue-100 text-xs font-bold text-[#0050CB] shadow-xs">
                 Learning Never Stops ✍️
@@ -161,25 +601,28 @@ export default function AcademicCalendarPage() {
               </div>
               <div>
                 <h2 className="text-base font-black text-[#000E28] leading-tight">
-                  September 2026
+                  {currentMonthName} {currentYear}
                 </h2>
                 <p className="text-[11px] text-slate-400 font-medium leading-tight mt-0.5">
-                  Current Academic Year<br />2025 - 2026
+                  Academic Year {academicYearLabel}
                 </p>
               </div>
             </div>
 
             <button
               type="button"
-              onClick={() => setShowAddModal(true)}
-              className="bg-[#0050CB] hover:bg-blue-700 text-white text-xs font-bold px-4 py-2 rounded-full shadow-sm flex items-center gap-1.5 transition-all cursor-pointer hover:shadow-md hover:scale-102"
+              onClick={() => {
+                setNewEventDate(todayStr);
+                setShowAddModal(true);
+              }}
+              className="bg-[#0050CB] hover:bg-blue-700 text-white text-xs font-bold px-4 py-2 rounded-full shadow-xs flex items-center gap-1.5 transition-all cursor-pointer hover:shadow-md hover:scale-102"
             >
               <Plus className="w-4 h-4" />
               <span>Add Event</span>
             </button>
           </div>
 
-          {/* 4 Stat Metric Badges */}
+          {/* 4 Stat Metric Badges for the Viewed Month */}
           <div className="grid grid-cols-4 gap-2.5 mt-5">
             {/* Total Events */}
             <div className="bg-[#EFF6FF] border border-blue-100/80 rounded-xl p-2.5 text-center flex flex-col items-center justify-center">
@@ -187,7 +630,7 @@ export default function AcademicCalendarPage() {
               <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider mt-1 truncate w-full">
                 Total Events
               </span>
-              <span className="text-xl font-black text-slate-900 mt-0.5">5</span>
+              <span className="text-xl font-black text-slate-900 mt-0.5">{monthStats.total}</span>
             </div>
 
             {/* Completed */}
@@ -196,7 +639,7 @@ export default function AcademicCalendarPage() {
               <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider mt-1 truncate w-full">
                 Completed
               </span>
-              <span className="text-xl font-black text-slate-900 mt-0.5">4</span>
+              <span className="text-xl font-black text-slate-900 mt-0.5">{monthStats.completed}</span>
             </div>
 
             {/* Upcoming */}
@@ -205,7 +648,7 @@ export default function AcademicCalendarPage() {
               <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider mt-1 truncate w-full">
                 Upcoming
               </span>
-              <span className="text-xl font-black text-slate-900 mt-0.5">12</span>
+              <span className="text-xl font-black text-slate-900 mt-0.5">{monthStats.upcoming}</span>
             </div>
 
             {/* Holidays */}
@@ -214,38 +657,53 @@ export default function AcademicCalendarPage() {
               <span className="text-[10px] font-bold text-rose-600 uppercase tracking-wider mt-1 truncate w-full">
                 Holidays
               </span>
-              <span className="text-xl font-black text-slate-900 mt-0.5">3</span>
+              <span className="text-xl font-black text-slate-900 mt-0.5">{monthStats.holidays}</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* 2. MAIN SECTION (Calendar Grid 68% + Right Column 32%) */}
+      {/* ========================================================
+          2. MAIN SECTION (Calendar Grid 68% + Right Column 32%)
+      ======================================================== */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left: Monthly Calendar View */}
         <div className="lg:col-span-8 space-y-3">
           {/* Calendar Navigation Bar */}
-          <div className="flex items-center justify-between px-1">
+          <div className="flex flex-wrap items-center justify-between gap-3 px-1">
             <div className="flex items-center gap-2">
+              {/* Previous Month Button */}
               <button
                 type="button"
-                onClick={() => toast("Navigating to August 2026")}
-                className="w-8 h-8 rounded-full border border-slate-200 bg-white flex items-center justify-center hover:bg-slate-50 text-slate-600 cursor-pointer shadow-2xs transition-colors"
-                title="Previous month"
+                onClick={handlePrevMonth}
+                className="w-8 h-8 rounded-full border border-slate-200 bg-white flex items-center justify-center hover:bg-slate-100 text-slate-700 cursor-pointer shadow-2xs transition-all active:scale-95"
+                title="Previous Month"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
+
+              {/* Next Month Button */}
               <button
                 type="button"
-                onClick={() => toast("Navigating to October 2026")}
-                className="w-8 h-8 rounded-full border border-slate-200 bg-white flex items-center justify-center hover:bg-slate-50 text-slate-600 cursor-pointer shadow-2xs transition-colors"
-                title="Next month"
+                onClick={handleNextMonth}
+                className="w-8 h-8 rounded-full border border-slate-200 bg-white flex items-center justify-center hover:bg-slate-100 text-slate-700 cursor-pointer shadow-2xs transition-all active:scale-95"
+                title="Next Month"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
+
               <h2 className="text-lg font-bold text-[#000E28] ml-2">
-                September 2026
+                {currentMonthName} {currentYear}
               </h2>
+
+              {/* Today Quick Jump */}
+              <button
+                type="button"
+                onClick={handleGoToToday}
+                className="ml-2 text-xs font-bold px-2.5 py-1 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 cursor-pointer transition-colors"
+              >
+                Today
+              </button>
             </div>
 
             {/* View Switcher Pill */}
@@ -286,6 +744,16 @@ export default function AcademicCalendarPage() {
             </div>
           </div>
 
+          {/* Past Month Notice Banner */}
+          {isEntireMonthPast && (
+            <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800">
+              <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+              <span>
+                <strong>Past Month:</strong> All dates in {currentMonthName} {currentYear} are finished and locked. New events can only be scheduled for upcoming dates.
+              </span>
+            </div>
+          )}
+
           {/* Calendar Table Grid */}
           <div className="bg-white border border-slate-200/90 rounded-2xl shadow-xs overflow-hidden">
             {/* Days of Week Header */}
@@ -297,296 +765,225 @@ export default function AcademicCalendarPage() {
               ))}
             </div>
 
-            {/* Grid Cells (5 Weeks x 7 Days) */}
-            <div className="grid grid-cols-7 divide-x divide-y divide-slate-100 text-xs">
-              {/* Row 1 */}
-              {/* 30 (Last Month) */}
-              <div className="min-h-[92px] p-2 bg-slate-50/30">
-                <span className="text-slate-300 font-semibold">30</span>
-                <span className="text-[10px] text-slate-300 font-normal ml-1">• (Last Month)</span>
-              </div>
-              {/* 31 (Last Month) */}
-              <div className="min-h-[92px] p-2 bg-slate-50/30">
-                <span className="text-slate-300 font-semibold">31</span>
-                <span className="text-[10px] text-slate-300 font-normal ml-1">• (Last Month)</span>
-              </div>
-              {/* Sep 1 */}
-              <div 
-                onClick={() => setSelectedDay(1)}
-                className={`min-h-[92px] p-2 hover:bg-blue-50/20 cursor-pointer transition-colors ${selectedDay === 1 ? 'bg-blue-50/30' : ''}`}
-              >
-                <span className="font-semibold text-slate-700">1</span>
-                <div className="mt-1 px-1.5 py-0.5 rounded-md bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0] text-[10px] font-semibold truncate">
-                  👤 Teacher Meeting
-                </div>
-              </div>
-              {/* Sep 2 */}
-              <div 
-                onClick={() => setSelectedDay(2)}
-                className={`min-h-[92px] p-2 hover:bg-blue-50/20 cursor-pointer transition-colors ${selectedDay === 2 ? 'bg-blue-50/30' : ''}`}
-              >
-                <span className="font-semibold text-slate-700">2</span>
-                <div className="mt-1 px-1.5 py-0.5 rounded-md bg-[#F3E8FF] text-[#7C3AED] border border-[#DDD6FE] text-[10px] font-semibold truncate">
-                  🎉 Holiday <span className="font-normal opacity-90">(Ganesh Chaturthi)</span>
-                </div>
-              </div>
-              {/* Sep 3 */}
-              <div 
-                onClick={() => setSelectedDay(3)}
-                className={`min-h-[92px] p-2 hover:bg-blue-50/20 cursor-pointer transition-colors ${selectedDay === 3 ? 'bg-blue-50/30' : ''}`}
-              >
-                <span className="font-semibold text-slate-700">3</span>
-              </div>
-              {/* Sep 4 */}
-              <div 
-                onClick={() => setSelectedDay(4)}
-                className={`min-h-[92px] p-2 hover:bg-blue-50/20 cursor-pointer transition-colors ${selectedDay === 4 ? 'bg-blue-50/30' : ''}`}
-              >
-                <span className="font-semibold text-slate-700">4</span>
-                <div className="mt-1 px-1.5 py-0.5 rounded-md bg-[#EFF6FF] text-[#2563EB] border border-[#BFDBFE] text-[10px] font-semibold truncate">
-                  📝 Phonics Check <span className="font-normal opacity-90">(LKG & UKG)</span>
-                </div>
-              </div>
-              {/* Sep 5 */}
-              <div 
-                onClick={() => setSelectedDay(5)}
-                className={`min-h-[92px] p-2 hover:bg-blue-50/20 cursor-pointer transition-colors ${selectedDay === 5 ? 'bg-blue-50/30' : ''}`}
-              >
-                <span className="font-semibold text-slate-700">5</span>
-              </div>
+            {/* MONTH VIEW */}
+            {currentView === "Month" && (
+              <div className="grid grid-cols-7 divide-x divide-y divide-slate-100 text-xs">
+                {calendarCells.map((cell, idx) => {
+                  const isPast = cell.isPast;
+                  const isToday = cell.isToday;
+                  const isSelected = cell.dateStr === selectedDateStr;
 
-              {/* Row 2 */}
-              {/* Sep 6 */}
-              <div 
-                onClick={() => setSelectedDay(6)}
-                className={`min-h-[92px] p-2 hover:bg-blue-50/20 cursor-pointer transition-colors ${selectedDay === 6 ? 'bg-blue-50/30' : ''}`}
-              >
-                <span className="font-semibold text-slate-700">6</span>
-              </div>
-              {/* Sep 7 */}
-              <div 
-                onClick={() => setSelectedDay(7)}
-                className={`min-h-[92px] p-2 hover:bg-blue-50/20 cursor-pointer transition-colors ${selectedDay === 7 ? 'bg-blue-50/30' : ''}`}
-              >
-                <span className="font-semibold text-slate-700">7</span>
-                <div className="mt-1 px-1.5 py-0.5 rounded-md bg-[#FFF1F2] text-[#E11D48] border border-[#FECDD3] text-[10px] font-semibold truncate">
-                  👥 Parent Teacher Meeting
-                </div>
-              </div>
-              {/* Sep 8 */}
-              <div 
-                onClick={() => setSelectedDay(8)}
-                className={`min-h-[92px] p-2 hover:bg-blue-50/20 cursor-pointer transition-colors ${selectedDay === 8 ? 'bg-blue-50/30' : ''}`}
-              >
-                <span className="font-semibold text-slate-700">8</span>
-              </div>
-              {/* Sep 9 */}
-              <div 
-                onClick={() => setSelectedDay(9)}
-                className={`min-h-[92px] p-2 hover:bg-blue-50/20 cursor-pointer transition-colors ${selectedDay === 9 ? 'bg-blue-50/30' : ''}`}
-              >
-                <span className="font-semibold text-slate-700">9</span>
-                <div className="mt-1 px-1.5 py-0.5 rounded-md bg-[#FFF7ED] text-[#EA580C] border border-[#FED7AA] text-[10px] font-semibold truncate">
-                  🏆 Sports Day <span className="font-normal opacity-90">(Pre-KG to UKG)</span>
-                </div>
-              </div>
-              {/* Sep 10 */}
-              <div 
-                onClick={() => setSelectedDay(10)}
-                className={`min-h-[92px] p-2 hover:bg-blue-50/20 cursor-pointer transition-colors ${selectedDay === 10 ? 'bg-blue-50/30' : ''}`}
-              >
-                <span className="font-semibold text-slate-700">10</span>
-              </div>
-              {/* Sep 11 */}
-              <div 
-                onClick={() => setSelectedDay(11)}
-                className={`min-h-[92px] p-2 hover:bg-blue-50/20 cursor-pointer transition-colors ${selectedDay === 11 ? 'bg-blue-50/30' : ''}`}
-              >
-                <span className="font-semibold text-slate-700">11</span>
-                <div className="mt-1 px-1.5 py-0.5 rounded-md bg-[#F0FDFA] text-[#0D9488] border border-[#99F6E4] text-[10px] font-semibold truncate">
-                  🔬 Science Exhibition
-                </div>
-              </div>
-              {/* Sep 12 */}
-              <div 
-                onClick={() => setSelectedDay(12)}
-                className={`min-h-[92px] p-2 hover:bg-blue-50/20 cursor-pointer transition-colors ${selectedDay === 12 ? 'bg-blue-50/30' : ''}`}
-              >
-                <span className="font-semibold text-slate-700">12</span>
-              </div>
+                  return (
+                    <div
+                      key={idx}
+                      onClick={() => {
+                        setSelectedDateStr(cell.dateStr);
+                        if (isPast) {
+                          toast("Past date: Event scheduling is locked.", {
+                            icon: "🔒",
+                            id: "locked-date",
+                          });
+                        } else {
+                          handleOpenAddForDate(cell.dateStr);
+                        }
+                      }}
+                      className={`min-h-[96px] p-2 flex flex-col justify-between transition-all relative group ${
+                        !cell.isCurrentMonth
+                          ? "bg-slate-50/30 text-slate-300"
+                          : isPast
+                          ? "bg-slate-50/60 text-slate-400 cursor-not-allowed opacity-75"
+                          : "bg-white hover:bg-[#E5EEFF]/40 cursor-pointer"
+                      } ${isSelected && !isPast ? "ring-2 ring-inset ring-[#0050CB] bg-blue-50/20" : ""}`}
+                    >
+                      {/* Top Header of the Day Cell */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1">
+                          {isToday ? (
+                            <span className="w-6 h-6 rounded-full bg-[#0050CB] text-white flex items-center justify-center font-bold text-xs shadow-xs">
+                              {cell.dayNumber}
+                            </span>
+                          ) : (
+                            <span className={`font-semibold ${
+                              !cell.isCurrentMonth 
+                                ? "text-slate-300" 
+                                : isPast 
+                                ? "text-slate-400" 
+                                : "text-slate-700"
+                            }`}>
+                              {cell.dayNumber}
+                            </span>
+                          )}
 
-              {/* Row 3 */}
-              {/* Sep 13 */}
-              <div 
-                onClick={() => setSelectedDay(13)}
-                className={`min-h-[92px] p-2 hover:bg-blue-50/20 cursor-pointer transition-colors ${selectedDay === 13 ? 'bg-blue-50/30' : ''}`}
-              >
-                <span className="font-semibold text-slate-700">13</span>
-              </div>
-              {/* Sep 14 */}
-              <div 
-                onClick={() => setSelectedDay(14)}
-                className={`min-h-[92px] p-2 hover:bg-blue-50/20 cursor-pointer transition-colors ${selectedDay === 14 ? 'bg-blue-50/30' : ''}`}
-              >
-                <span className="font-semibold text-slate-700">14</span>
-                <div className="mt-1 px-1.5 py-0.5 rounded-md bg-[#EFF6FF] text-[#2563EB] border border-[#BFDBFE] text-[10px] font-semibold truncate">
-                  📝 Rhyme Recitation <span className="font-normal opacity-90">(Pre-KG & LKG)</span>
-                </div>
-              </div>
-              {/* Sep 15 */}
-              <div 
-                onClick={() => setSelectedDay(15)}
-                className={`min-h-[92px] p-2 hover:bg-blue-50/20 cursor-pointer transition-colors ${selectedDay === 15 ? 'bg-blue-50/30' : ''}`}
-              >
-                <span className="font-semibold text-slate-700">15</span>
-              </div>
-              {/* Sep 16 */}
-              <div 
-                onClick={() => setSelectedDay(16)}
-                className={`min-h-[92px] p-2 hover:bg-blue-50/20 cursor-pointer transition-colors ${selectedDay === 16 ? 'bg-blue-50/30' : ''}`}
-              >
-                <span className="font-semibold text-slate-700">16</span>
-                <div className="mt-1 px-1.5 py-0.5 rounded-md bg-[#F3E8FF] text-[#7C3AED] border border-[#DDD6FE] text-[10px] font-semibold truncate">
-                  👥 Workshop <span className="font-normal opacity-90">(Teachers)</span>
-                </div>
-              </div>
-              {/* Sep 17 */}
-              <div 
-                onClick={() => setSelectedDay(17)}
-                className={`min-h-[92px] p-2 hover:bg-blue-50/20 cursor-pointer transition-colors ${selectedDay === 17 ? 'bg-blue-50/30' : ''}`}
-              >
-                <span className="font-semibold text-slate-700">17</span>
-              </div>
-              {/* Sep 18 */}
-              <div 
-                onClick={() => setSelectedDay(18)}
-                className={`min-h-[92px] p-2 hover:bg-blue-50/20 cursor-pointer transition-colors ${selectedDay === 18 ? 'bg-blue-50/30' : ''}`}
-              >
-                <span className="font-semibold text-slate-700">18</span>
-                <div className="mt-1 px-1.5 py-0.5 rounded-md bg-[#FFF1F2] text-[#E11D48] border border-[#FECDD3] text-[10px] font-semibold truncate">
-                  💳 Fee Due Date
-                </div>
-              </div>
-              {/* Sep 19 */}
-              <div 
-                onClick={() => setSelectedDay(19)}
-                className={`min-h-[92px] p-2 hover:bg-blue-50/20 cursor-pointer transition-colors ${selectedDay === 19 ? 'bg-blue-50/30' : ''}`}
-              >
-                <span className="font-semibold text-slate-700">19</span>
-              </div>
+                          {!cell.isCurrentMonth && (
+                            <span className="text-[10px] text-slate-300 font-normal">
+                              • {cell.dayNumber > 15 ? "(Prev)" : "(Next)"}
+                            </span>
+                          )}
 
-              {/* Row 4 */}
-              {/* Sep 20 */}
-              <div 
-                onClick={() => setSelectedDay(20)}
-                className={`min-h-[92px] p-2 hover:bg-blue-50/20 cursor-pointer transition-colors ${selectedDay === 20 ? 'bg-blue-50/30' : ''}`}
-              >
-                <span className="font-semibold text-slate-700">20</span>
-                <div className="mt-1 px-1.5 py-0.5 rounded-md bg-[#E0F2FE] text-[#0284C7] border border-[#BAE6FD] text-[10px] font-semibold truncate">
-                  🎉 Holiday <span className="font-normal opacity-90">(Dussehra)</span>
-                </div>
-              </div>
-              {/* Sep 21 */}
-              <div 
-                onClick={() => setSelectedDay(21)}
-                className={`min-h-[92px] p-2 hover:bg-blue-50/20 cursor-pointer transition-colors ${selectedDay === 21 ? 'bg-blue-50/30' : ''}`}
-              >
-                <span className="font-semibold text-slate-700">21</span>
-              </div>
-              {/* Sep 22 */}
-              <div 
-                onClick={() => setSelectedDay(22)}
-                className={`min-h-[92px] p-2 hover:bg-blue-50/20 cursor-pointer transition-colors ${selectedDay === 22 ? 'bg-blue-50/30' : ''}`}
-              >
-                <span className="font-semibold text-slate-700">22</span>
-                <div className="mt-1 px-1.5 py-0.5 rounded-md bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0] text-[10px] font-semibold truncate">
-                  👥 PTM Meeting
-                </div>
-              </div>
-              {/* Sep 23 */}
-              <div 
-                onClick={() => setSelectedDay(23)}
-                className={`min-h-[92px] p-2 hover:bg-blue-50/20 cursor-pointer transition-colors ${selectedDay === 23 ? 'bg-blue-50/30' : ''}`}
-              >
-                <span className="font-semibold text-slate-700">23</span>
-              </div>
-              {/* Sep 24 (ACTIVE DAY - Selected in screenshot) */}
-              <div 
-                onClick={() => setSelectedDay(24)}
-                className="min-h-[92px] p-2 bg-blue-50/40 border-2 border-[#0050CB]/40 rounded-lg cursor-pointer transition-all shadow-2xs"
-              >
-                <div className="flex items-center">
-                  <span className="w-6 h-6 rounded-full bg-[#0050CB] text-white flex items-center justify-center font-bold text-xs shadow-xs">
-                    24
-                  </span>
-                </div>
-                <div className="mt-1.5 px-2 py-1 rounded-md bg-[#000E28] text-white text-[10px] font-bold shadow-xs truncate block">
-                  👥 Student Council <span className="font-normal opacity-90">(10:00 AM)</span>
-                </div>
-              </div>
-              {/* Sep 25 */}
-              <div 
-                onClick={() => setSelectedDay(25)}
-                className={`min-h-[92px] p-2 hover:bg-blue-50/20 cursor-pointer transition-colors ${selectedDay === 25 ? 'bg-blue-50/30' : ''}`}
-              >
-                <span className="font-semibold text-slate-700">25</span>
-              </div>
-              {/* Sep 26 */}
-              <div 
-                onClick={() => setSelectedDay(26)}
-                className={`min-h-[92px] p-2 hover:bg-blue-50/20 cursor-pointer transition-colors ${selectedDay === 26 ? 'bg-blue-50/30' : ''}`}
-              >
-                <span className="font-semibold text-slate-700">26</span>
-              </div>
+                          {isToday && (
+                            <span className="text-[9px] font-black uppercase text-[#0050CB] bg-[#E5EEFF] px-1 py-0.2 rounded-sm">
+                              Today
+                            </span>
+                          )}
+                        </div>
 
-              {/* Row 5 */}
-              {/* Sep 27 */}
-              <div 
-                onClick={() => setSelectedDay(27)}
-                className={`min-h-[92px] p-2 hover:bg-blue-50/20 cursor-pointer transition-colors ${selectedDay === 27 ? 'bg-blue-50/30' : ''}`}
-              >
-                <span className="font-semibold text-slate-700">27</span>
+                        {/* Status Icon / Quick Add on Enabled Dates */}
+                        {isPast ? (
+                          <Lock className="w-3 h-3 text-slate-300" title="Date finished & locked" />
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOpenAddForDate(cell.dateStr);
+                            }}
+                            className="opacity-0 group-hover:opacity-100 p-0.5 rounded-md hover:bg-[#0050CB] hover:text-white text-[#0050CB] transition-all cursor-pointer"
+                            title={`Assign Event to ${cell.dateStr}`}
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Events listed in this cell */}
+                      <div className="mt-1 space-y-1 overflow-hidden">
+                        {cell.events.map((ev) => (
+                          <div
+                            key={ev.id}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedEventModal(ev);
+                            }}
+                            className={`px-1.5 py-0.5 rounded-md border text-[10px] font-semibold truncate cursor-pointer transition-transform hover:scale-101 ${
+                              ev.badgeBg
+                            } ${ev.badgeColor} ${ev.borderColor || "border-transparent"} ${
+                              isPast ? "opacity-60" : "shadow-2xs"
+                            }`}
+                            title={`${ev.title} (${ev.time})`}
+                          >
+                            <span>{ev.icon || "•"}</span> {ev.title}
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Bottom indicator for upcoming empty day */}
+                      {!isPast && cell.events.length === 0 && (
+                        <div className="opacity-0 group-hover:opacity-100 text-[10px] font-bold text-[#0050CB] mt-auto self-end flex items-center gap-0.5">
+                          <span>+ Assign</span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
-              {/* Sep 28 */}
-              <div 
-                onClick={() => setSelectedDay(28)}
-                className={`min-h-[92px] p-2 hover:bg-blue-50/20 cursor-pointer transition-colors ${selectedDay === 28 ? 'bg-blue-50/30' : ''}`}
-              >
-                <span className="font-semibold text-slate-700">28</span>
-                <div className="mt-1 px-1.5 py-0.5 rounded-md bg-[#F3E8FF] text-[#7C3AED] border border-[#DDD6FE] text-[10px] font-semibold truncate">
-                  🔢 Early Math Trail <span className="font-normal opacity-90">(Pre-KG - UKG)</span>
+            )}
+
+            {/* WEEK VIEW */}
+            {currentView === "Week" && (
+              <div className="p-4 space-y-3">
+                <div className="text-xs text-slate-500 font-medium">
+                  Showing 7-day schedule for the selected period ({currentMonthName} {currentYear}):
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-7 gap-2">
+                  {calendarCells.slice(0, 7).map((cell, idx) => (
+                    <div
+                      key={idx}
+                      onClick={() => !cell.isPast && handleOpenAddForDate(cell.dateStr)}
+                      className={`p-3 rounded-xl border text-xs min-h-[140px] flex flex-col justify-between ${
+                        cell.isPast
+                          ? "bg-slate-50/70 border-slate-200 text-slate-400 cursor-not-allowed"
+                          : "bg-white border-blue-200 hover:bg-blue-50/40 cursor-pointer shadow-2xs"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between border-b pb-1.5 border-slate-100">
+                        <span className="font-bold text-slate-700">
+                          {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][idx]} {cell.dayNumber}
+                        </span>
+                        {cell.isPast ? (
+                          <span className="text-[10px] text-slate-400 flex items-center gap-0.5">
+                            <Lock className="w-2.5 h-2.5" /> Locked
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-[#0050CB] font-bold">+ Add</span>
+                        )}
+                      </div>
+                      <div className="space-y-1 my-2">
+                        {cell.events.map((ev) => (
+                          <div
+                            key={ev.id}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedEventModal(ev);
+                            }}
+                            className={`p-1 rounded-md text-[10px] font-semibold truncate ${ev.badgeBg} ${ev.badgeColor}`}
+                          >
+                            {ev.title}
+                          </div>
+                        ))}
+                      </div>
+                      <div className="text-[10px] text-slate-400">
+                        {cell.events.length} event(s)
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
-              {/* Sep 29 */}
-              <div 
-                onClick={() => setSelectedDay(29)}
-                className={`min-h-[92px] p-2 hover:bg-blue-50/20 cursor-pointer transition-colors ${selectedDay === 29 ? 'bg-blue-50/30' : ''}`}
-              >
-                <span className="font-semibold text-slate-700">29</span>
-              </div>
-              {/* Sep 30 */}
-              <div 
-                onClick={() => setSelectedDay(30)}
-                className={`min-h-[92px] p-2 hover:bg-blue-50/20 cursor-pointer transition-colors ${selectedDay === 30 ? 'bg-blue-50/30' : ''}`}
-              >
-                <span className="font-semibold text-slate-700">30</span>
-                <div className="mt-1 px-1.5 py-0.5 rounded-md bg-[#FFFBEB] text-[#D97706] border border-[#FDE68A] text-[10px] font-semibold truncate">
-                  🎭 Cultural Event <span className="font-normal opacity-90">(4:00 PM)</span>
+            )}
+
+            {/* DAY VIEW */}
+            {currentView === "Day" && (
+              <div className="p-6 space-y-4">
+                <div className="flex items-center justify-between border-b pb-3">
+                  <div>
+                    <h3 className="text-base font-bold text-[#000E28]">
+                      Schedule for {selectedDateStr}
+                    </h3>
+                    <p className="text-xs text-slate-400">
+                      {selectedDateStr < todayStr ? "⚠️ Past Date — Event creation is disabled." : "Active upcoming date — You can assign academic events."}
+                    </p>
+                  </div>
+                  {selectedDateStr >= todayStr && (
+                    <button
+                      type="button"
+                      onClick={() => handleOpenAddForDate(selectedDateStr)}
+                      className="px-3.5 py-1.5 bg-[#0050CB] text-white text-xs font-bold rounded-xl shadow-xs hover:bg-blue-700 cursor-pointer flex items-center gap-1"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Assign Event to this Day</span>
+                    </button>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  {events.filter((e) => e.date === selectedDateStr).length === 0 ? (
+                    <div className="text-center py-10 text-slate-400 text-xs">
+                      No events scheduled for this day.
+                    </div>
+                  ) : (
+                    events
+                      .filter((e) => e.date === selectedDateStr)
+                      .map((ev) => (
+                        <div
+                          key={ev.id}
+                          onClick={() => setSelectedEventModal(ev)}
+                          className="p-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 cursor-pointer flex items-center justify-between"
+                        >
+                          <div className="flex items-center gap-3">
+                            <span className="text-xl">{ev.icon || "📅"}</span>
+                            <div>
+                              <h4 className="font-bold text-xs text-slate-800">{ev.title}</h4>
+                              <p className="text-[11px] text-slate-400">{ev.time} • {ev.location}</p>
+                            </div>
+                          </div>
+                          <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${ev.badgeBg} ${ev.badgeColor}`}>
+                            {ev.type}
+                          </span>
+                        </div>
+                      ))
+                  )}
                 </div>
               </div>
-              {/* Oct 1 */}
-              <div className="min-h-[92px] p-2 bg-slate-50/30">
-                <span className="text-slate-300 font-semibold">1</span>
-              </div>
-              {/* Oct 2 */}
-              <div className="min-h-[92px] p-2 bg-slate-50/30">
-                <span className="text-slate-300 font-semibold">2</span>
-              </div>
-              {/* Oct 3 */}
-              <div className="min-h-[92px] p-2 bg-slate-50/30">
-                <span className="text-slate-300 font-semibold">3</span>
-              </div>
-            </div>
+            )}
           </div>
         </div>
 
@@ -598,57 +995,60 @@ export default function AcademicCalendarPage() {
               <h3 className="text-sm font-bold text-[#000E28]">
                 Upcoming Events & Exams
               </h3>
-              <button
-                type="button"
-                onClick={() => toast("Displaying all 17 scheduled institutional events")}
-                className="text-xs font-semibold text-[#0050CB] hover:underline cursor-pointer"
-              >
-                View All
-              </button>
+              <span className="text-[11px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">
+                {upcomingEventsList.length} Upcoming
+              </span>
             </div>
 
             {/* Event List */}
-            <div className="divide-y divide-slate-100">
-              {upcomingEvents.map((ev) => (
-                <div 
-                  key={ev.id}
-                  onClick={() => setSelectedEventModal(ev)}
-                  className="py-3 flex items-center justify-between group hover:bg-slate-50/80 -mx-2 px-2 rounded-xl transition-colors cursor-pointer"
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    {/* Date Pill Box */}
-                    <div className="w-12 h-12 rounded-xl bg-[#EFF6FF] border border-blue-100 text-center flex flex-col items-center justify-center shrink-0">
-                      <span className="text-[9px] font-bold text-[#0050CB] uppercase tracking-wider leading-none">
-                        {ev.date.split(" ")[0]}
-                      </span>
-                      <span className="text-base font-black text-slate-900 leading-tight mt-0.5">
-                        {ev.date.split(" ")[1]}
-                      </span>
+            <div className="divide-y divide-slate-100 mt-1">
+              {upcomingEventsList.map((ev) => {
+                const dateParts = ev.date.split("-");
+                const mIdx = parseInt(dateParts[1], 10) - 1;
+                const monthShort = SHORT_MONTHS[mIdx] || "SEP";
+                const dayNum = dateParts[2];
+
+                return (
+                  <div 
+                    key={ev.id}
+                    onClick={() => setSelectedEventModal(ev)}
+                    className="py-3 flex items-center justify-between group hover:bg-slate-50/80 -mx-2 px-2 rounded-xl transition-colors cursor-pointer"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      {/* Date Pill Box */}
+                      <div className="w-12 h-12 rounded-xl bg-[#EFF6FF] border border-blue-100 text-center flex flex-col items-center justify-center shrink-0">
+                        <span className="text-[9px] font-bold text-[#0050CB] uppercase tracking-wider leading-none">
+                          {monthShort}
+                        </span>
+                        <span className="text-base font-black text-slate-900 leading-tight mt-0.5">
+                          {dayNum}
+                        </span>
+                      </div>
+
+                      {/* Event Details */}
+                      <div className="min-w-0 pr-2">
+                        <h4 className="text-xs font-bold text-slate-900 truncate group-hover:text-[#0050CB] transition-colors">
+                          {ev.title}
+                        </h4>
+                        <p className="text-[11px] text-slate-400 mt-0.5 flex items-center gap-1 truncate">
+                          <span>🕒</span> {ev.time}
+                        </p>
+                        <p className="text-[11px] text-slate-400 flex items-center gap-1 truncate">
+                          <span>📍</span> {ev.location}
+                        </p>
+                      </div>
                     </div>
 
-                    {/* Event Details */}
-                    <div className="min-w-0 pr-2">
-                      <h4 className="text-xs font-bold text-slate-900 truncate group-hover:text-[#0050CB] transition-colors">
-                        {ev.title}
-                      </h4>
-                      <p className="text-[11px] text-slate-400 mt-0.5 flex items-center gap-1 truncate">
-                        <span>🕒</span> {ev.time}
-                      </p>
-                      <p className="text-[11px] text-slate-400 flex items-center gap-1 truncate">
-                        <span>📍</span> {ev.location}
-                      </p>
+                    {/* Badge & Arrow */}
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${ev.badgeBg} ${ev.badgeColor}`}>
+                        {ev.type}
+                      </span>
+                      <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-slate-600 group-hover:translate-x-0.5 transition-all" />
                     </div>
                   </div>
-
-                  {/* Badge & Arrow */}
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${ev.badgeBg} ${ev.badgeColor}`}>
-                      {ev.type}
-                    </span>
-                    <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-slate-600 group-hover:translate-x-0.5 transition-all" />
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
@@ -662,7 +1062,10 @@ export default function AcademicCalendarPage() {
               {/* 1. Add Event */}
               <button
                 type="button"
-                onClick={() => setShowAddModal(true)}
+                onClick={() => {
+                  setNewEventDate(todayStr);
+                  setShowAddModal(true);
+                }}
                 className="bg-[#EFF6FF] hover:bg-blue-100/70 border border-blue-100/70 rounded-xl p-3 flex flex-col items-center justify-center gap-1.5 text-center transition-all cursor-pointer group hover:scale-102"
               >
                 <div className="w-8 h-8 rounded-lg bg-[#0050CB] text-white flex items-center justify-center shadow-xs">
@@ -676,6 +1079,7 @@ export default function AcademicCalendarPage() {
                 type="button"
                 onClick={() => {
                   setNewEventType("Holiday");
+                  setNewEventDate(todayStr);
                   setShowAddModal(true);
                 }}
                 className="bg-[#FAF5FF] hover:bg-purple-100/70 border border-purple-100/70 rounded-xl p-3 flex flex-col items-center justify-center gap-1.5 text-center transition-all cursor-pointer group hover:scale-102"
@@ -734,14 +1138,16 @@ export default function AcademicCalendarPage() {
         </div>
       </div>
 
-      {/* 3. BOTTOM SECTION: Class Schedule (50%) + Academic Overview (50%) */}
+      {/* ========================================================
+          3. BOTTOM SECTION: Class Schedule + Academic Overview
+      ======================================================== */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left: Today's Class Schedule */}
         <div className="lg:col-span-6 rounded-2xl bg-white border border-slate-200/80 p-5 shadow-xs">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <h3 className="text-sm font-bold text-[#000E28] flex items-center gap-2">
               <CalendarIcon className="w-4 h-4 text-[#0050CB]" />
-              Today's Class Schedule
+              Today's Class Schedule ({todayStr})
             </h3>
             <Link
               href="/dashboard/academic?tab=timetable"
@@ -752,7 +1158,6 @@ export default function AcademicCalendarPage() {
           </div>
 
           <div className="divide-y divide-slate-100 mt-2">
-            {/* Period 1 */}
             <div className="py-2.5 flex items-center justify-between text-xs">
               <span className="text-slate-400 font-medium w-36">08:00 AM - 09:00 AM</span>
               <span className="font-bold text-slate-800 flex-1 px-3">Early Numeracy & Math</span>
@@ -762,7 +1167,6 @@ export default function AcademicCalendarPage() {
               </span>
             </div>
 
-            {/* Period 2 */}
             <div className="py-2.5 flex items-center justify-between text-xs">
               <span className="text-slate-400 font-medium w-36">09:15 AM - 10:15 AM</span>
               <span className="font-bold text-slate-800 flex-1 px-3">Phonics & Rhymes</span>
@@ -772,7 +1176,6 @@ export default function AcademicCalendarPage() {
               </span>
             </div>
 
-            {/* Period 3 */}
             <div className="py-2.5 flex items-center justify-between text-xs">
               <span className="text-slate-400 font-medium w-36">10:30 AM - 11:30 AM</span>
               <span className="font-bold text-slate-800 flex-1 px-3">General Awareness (EVS)</span>
@@ -782,7 +1185,6 @@ export default function AcademicCalendarPage() {
               </span>
             </div>
 
-            {/* Period 4 */}
             <div className="py-2.5 flex items-center justify-between text-xs">
               <span className="text-slate-400 font-medium w-36">11:45 AM - 12:45 PM</span>
               <span className="font-bold text-slate-800 flex-1 px-3">Art & Craft Discovery</span>
@@ -800,26 +1202,17 @@ export default function AcademicCalendarPage() {
             <h3 className="text-sm font-bold text-[#000E28] flex items-center gap-2">
               <span>📊</span> Academic Overview
             </h3>
-            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full border border-slate-200 text-xs text-slate-600 bg-white font-medium cursor-pointer">
-              <span>This Month</span>
-              <ChevronDown className="w-3 h-3 text-slate-400" />
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full border border-slate-200 text-xs text-slate-600 bg-white font-medium">
+              <span>{currentMonthName} {currentYear}</span>
             </div>
           </div>
 
-          {/* 4 Circular Indicators Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4 text-center">
-            {/* Gauge 1: Classes Conducted (84%) */}
+            {/* Gauge 1: Classes Conducted */}
             <div className="flex flex-col items-center">
               <div className="relative w-16 h-16 flex items-center justify-center">
                 <svg className="w-16 h-16 transform -rotate-90">
-                  <circle
-                    cx="32"
-                    cy="32"
-                    r="26"
-                    stroke="#E2E8F0"
-                    strokeWidth="4"
-                    fill="none"
-                  />
+                  <circle cx="32" cy="32" r="26" stroke="#E2E8F0" strokeWidth="4" fill="none" />
                   <circle
                     cx="32"
                     cy="32"
@@ -838,18 +1231,11 @@ export default function AcademicCalendarPage() {
               <span className="text-[11px] text-slate-400 font-semibold">20 / 24</span>
             </div>
 
-            {/* Gauge 2: Attendance Rate (72%) */}
+            {/* Gauge 2: Attendance Rate */}
             <div className="flex flex-col items-center">
               <div className="relative w-16 h-16 flex items-center justify-center">
                 <svg className="w-16 h-16 transform -rotate-90">
-                  <circle
-                    cx="32"
-                    cy="32"
-                    r="26"
-                    stroke="#E2E8F0"
-                    strokeWidth="4"
-                    fill="none"
-                  />
+                  <circle cx="32" cy="32" r="26" stroke="#E2E8F0" strokeWidth="4" fill="none" />
                   <circle
                     cx="32"
                     cy="32"
@@ -868,32 +1254,34 @@ export default function AcademicCalendarPage() {
               <span className="text-[11px] text-slate-400 font-semibold">1,248 / 1,730</span>
             </div>
 
-            {/* Gauge 3: Holidays (12) */}
+            {/* Gauge 3: Holidays */}
             <div className="flex flex-col items-center">
               <div className="relative w-16 h-16 flex items-center justify-center">
                 <div className="w-14 h-14 rounded-full bg-[#FAF5FF] border-2 border-[#7C3AED]/40 flex flex-col items-center justify-center text-[#7C3AED]">
-                  <span className="text-base font-black leading-none">12</span>
+                  <span className="text-base font-black leading-none">{monthStats.holidays}</span>
                 </div>
               </div>
               <span className="text-[11px] font-bold text-slate-700 mt-2">Holidays</span>
-              <span className="text-[11px] text-slate-400 font-semibold">This Month</span>
+              <span className="text-[11px] text-slate-400 font-semibold">{currentMonthName}</span>
             </div>
 
-            {/* Gauge 4: Events (6) */}
+            {/* Gauge 4: Events */}
             <div className="flex flex-col items-center">
               <div className="relative w-16 h-16 flex items-center justify-center">
                 <div className="w-14 h-14 rounded-full bg-[#FFF7ED] border-2 border-[#EA580C]/40 flex flex-col items-center justify-center text-[#EA580C]">
-                  <span className="text-base font-black leading-none">6</span>
+                  <span className="text-base font-black leading-none">{monthStats.total}</span>
                 </div>
               </div>
-              <span className="text-[11px] font-bold text-slate-700 mt-2">Events</span>
-              <span className="text-[11px] text-slate-400 font-semibold">This Month</span>
+              <span className="text-[11px] font-bold text-slate-700 mt-2">Total Events</span>
+              <span className="text-[11px] text-slate-400 font-semibold">{currentMonthName}</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* 4. FOOTER */}
+      {/* ========================================================
+          4. FOOTER
+      ======================================================== */}
       <footer className="pt-6 border-t border-slate-200/80 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-400 gap-2">
         <p>GGPS School ERP © 2026. All rights reserved.</p>
         <p className="flex items-center gap-1">
@@ -901,7 +1289,9 @@ export default function AcademicCalendarPage() {
         </p>
       </footer>
 
-      {/* 5. ADD EVENT MODAL */}
+      {/* ========================================================
+          5. ADD EVENT MODAL (Enforces Upcoming Dates Only)
+      ======================================================== */}
       {showAddModal && (
         <div className="fixed inset-0 bg-[#000E28]/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 animate-in fade-in duration-150">
           <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200">
@@ -910,7 +1300,10 @@ export default function AcademicCalendarPage() {
                 <div className="w-8 h-8 rounded-lg bg-[#0050CB] text-white flex items-center justify-center">
                   <Plus className="w-4 h-4" />
                 </div>
-                <h3 className="font-bold text-base text-[#000E28]">Add Academic Event</h3>
+                <div>
+                  <h3 className="font-bold text-base text-[#000E28]">Schedule Academic Event</h3>
+                  <p className="text-[11px] text-slate-400">Only upcoming dates can be assigned</p>
+                </div>
               </div>
               <button
                 type="button"
@@ -924,14 +1317,14 @@ export default function AcademicCalendarPage() {
             <form onSubmit={handleCreateEvent} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Event Title
+                  Event Title <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={newEventTitle}
                   onChange={(e) => setNewEventTitle(e.target.value)}
-                  placeholder="e.g. Science Fair / PTM Meeting / Sports Day"
-                  className="w-full text-xs px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0050CB]"
+                  placeholder="e.g. Science Fair / PTM Meeting / Term Assessment"
+                  className="w-full text-xs px-3 py-2 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#0050CB]"
                   required
                 />
               </div>
@@ -943,8 +1336,8 @@ export default function AcademicCalendarPage() {
                   </label>
                   <select
                     value={newEventType}
-                    onChange={(e) => setNewEventType(e.target.value)}
-                    className="w-full text-xs px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0050CB]"
+                    onChange={(e) => setNewEventType(e.target.value as any)}
+                    className="w-full text-xs px-3 py-2 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#0050CB]"
                   >
                     <option value="Event">Event</option>
                     <option value="Exam">Exam / Assessment</option>
@@ -953,15 +1346,25 @@ export default function AcademicCalendarPage() {
                     <option value="Reminder">Administrative Reminder</option>
                   </select>
                 </div>
+
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Date
+                    Date <span className="text-rose-500">*</span>
+                    <span className="text-[10px] text-slate-400 font-normal ml-1">(Upcoming only)</span>
                   </label>
                   <input
                     type="date"
+                    required
+                    min={todayStr}
                     value={newEventDate}
-                    onChange={(e) => setNewEventDate(e.target.value)}
-                    className="w-full text-xs px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0050CB]"
+                    onChange={(e) => {
+                      if (e.target.value < todayStr) {
+                        toast.error("Please pick today or an upcoming date.");
+                        return;
+                      }
+                      setNewEventDate(e.target.value);
+                    }}
+                    className="w-full text-xs px-3 py-2 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#0050CB]"
                   />
                 </div>
               </div>
@@ -976,19 +1379,19 @@ export default function AcademicCalendarPage() {
                     value={newEventTime}
                     onChange={(e) => setNewEventTime(e.target.value)}
                     placeholder="10:00 AM - 12:00 PM"
-                    className="w-full text-xs px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0050CB]"
+                    className="w-full text-xs px-3 py-2 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#0050CB]"
                   />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Location
+                    Location / Venue
                   </label>
                   <input
                     type="text"
                     value={newEventLocation}
                     onChange={(e) => setNewEventLocation(e.target.value)}
-                    placeholder="Auditorium / Ground"
-                    className="w-full text-xs px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0050CB]"
+                    placeholder="Auditorium / Ground / Lab"
+                    className="w-full text-xs px-3 py-2 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#0050CB]"
                   />
                 </div>
               </div>
@@ -1003,7 +1406,7 @@ export default function AcademicCalendarPage() {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl text-xs font-bold bg-[#0050CB] hover:bg-blue-700 text-white shadow-sm cursor-pointer"
+                  className="px-5 py-2 rounded-xl text-xs font-bold bg-[#0050CB] hover:bg-blue-700 text-white shadow-xs cursor-pointer transition-colors"
                 >
                   Create Event
                 </button>
@@ -1013,7 +1416,9 @@ export default function AcademicCalendarPage() {
         </div>
       )}
 
-      {/* 6. EVENT DETAILS MODAL */}
+      {/* ========================================================
+          6. EVENT DETAILS MODAL
+      ======================================================== */}
       {selectedEventModal && (
         <div className="fixed inset-0 bg-[#000E28]/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 animate-in fade-in duration-150">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
@@ -1036,15 +1441,15 @@ export default function AcademicCalendarPage() {
 
             <div className="space-y-2 text-xs text-slate-600 bg-slate-50 p-3.5 rounded-xl border border-slate-100">
               <div className="flex items-center gap-2">
-                <CalendarIcon className="w-4 h-4 text-blue-600" />
-                <span>Date: <strong>{selectedEventModal.date}, 2026</strong></span>
+                <CalendarIcon className="w-4 h-4 text-blue-600 shrink-0" />
+                <span>Date: <strong>{selectedEventModal.date}</strong></span>
               </div>
               <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4 text-blue-600" />
+                <Clock className="w-4 h-4 text-blue-600 shrink-0" />
                 <span>Time: <strong>{selectedEventModal.time}</strong></span>
               </div>
               <div className="flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-blue-600" />
+                <MapPin className="w-4 h-4 text-blue-600 shrink-0" />
                 <span>Venue: <strong>{selectedEventModal.location}</strong></span>
               </div>
             </div>
@@ -1053,7 +1458,7 @@ export default function AcademicCalendarPage() {
               <button
                 type="button"
                 onClick={() => setSelectedEventModal(null)}
-                className="px-4 py-2 rounded-xl text-xs font-bold bg-[#0050CB] text-white hover:bg-blue-700 cursor-pointer"
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-[#0050CB] text-white hover:bg-blue-700 cursor-pointer transition-colors"
               >
                 Close
               </button>

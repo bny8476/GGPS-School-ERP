@@ -29,7 +29,14 @@ export default function Navbar() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  if (pathname === '/login' || pathname?.startsWith('/dashboard') || pathname?.startsWith('/portal') || pathname?.startsWith('/parent')) {
+  if (
+    pathname === '/login' ||
+    pathname?.startsWith('/dashboard') ||
+    pathname?.startsWith('/portal') ||
+    pathname?.startsWith('/parent') ||
+    pathname?.startsWith('/teacher') ||
+    pathname?.startsWith('/admin')
+  ) {
     return null;
   }
 

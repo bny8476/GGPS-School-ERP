@@ -93,7 +93,8 @@ function AttendanceContent() {
       
       let loadedEntities: any[] = [];
       if (entitiesRes && entitiesRes.ok) {
-        loadedEntities = await entitiesRes.json();
+        const rawEntities = await entitiesRes.json();
+        loadedEntities = Array.isArray(rawEntities) ? rawEntities : (rawEntities.data || rawEntities.users || rawEntities.students || []);
       }
 
       if (!loadedEntities || loadedEntities.length === 0) {
@@ -212,11 +213,17 @@ function AttendanceContent() {
   const filteredList = useMemo(() => {
     if (!searchQuery) return currentList;
     const lowerQ = searchQuery.toLowerCase();
-    return currentList.filter(item => 
-      (item.firstName + ' ' + item.lastName).toLowerCase().includes(lowerQ) ||
-      (item.studentId || '').toLowerCase().includes(lowerQ) ||
-      (item.admissionNumber || '').toLowerCase().includes(lowerQ)
-    );
+    return currentList.filter(item => {
+      const roleName = typeof item.role === 'object' && item.role !== null ? item.role.name : String(item.role || '');
+      const gradeName = typeof item.grade === 'object' && item.grade !== null ? item.grade.name : String(item.grade || '');
+      return (
+        ((item.firstName || '') + ' ' + (item.lastName || '')).toLowerCase().includes(lowerQ) ||
+        String(item.studentId || '').toLowerCase().includes(lowerQ) ||
+        String(item.admissionNumber || '').toLowerCase().includes(lowerQ) ||
+        roleName.toLowerCase().includes(lowerQ) ||
+        gradeName.toLowerCase().includes(lowerQ)
+      );
+    });
   }, [currentList, searchQuery]);
 
   const metrics = useMemo(() => {
@@ -235,12 +242,16 @@ function AttendanceContent() {
 
   const exportAttendanceCSV = () => {
     const headers = ["Name", "Class / Role", "Date", "Status"];
-    const rows = filteredList.map(item => [
-      `"${item.firstName} ${item.lastName}"`,
-      `"${item.grade ? `Class ${item.grade}` : item.role || 'Staff'}"`,
-      `"${selectedDate}"`,
-      `"${attendanceData[item._id] || 'Present'}"`
-    ]);
+    const rows = filteredList.map(item => {
+      const roleStr = typeof item.role === 'object' && item.role !== null ? item.role.name : (item.role || 'Staff');
+      const gradeStr = typeof item.grade === 'object' && item.grade !== null ? item.grade.name : item.grade;
+      return [
+        `"${item.firstName || ''} ${item.lastName || ''}"`,
+        `"${gradeStr ? `Class ${gradeStr}` : roleStr}"`,
+        `"${selectedDate}"`,
+        `"${attendanceData[item._id] || 'Present'}"`
+      ];
+    });
     const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
     const link = document.createElement("a");
     link.href = encodeURI(csvContent);
@@ -463,14 +474,14 @@ function AttendanceContent() {
                                 {item.firstName} {item.lastName}
                               </span>
                               <span className="text-[10px] font-mono text-slate-400">
-                                {item.studentId || item.admissionNumber || item.role || 'Staff Member'}
+                                {item.studentId || item.admissionNumber || (typeof item.role === 'object' && item.role !== null ? item.role.name : item.role) || 'Staff Member'}
                               </span>
                             </div>
                           </div>
                         </td>
 
                         <td className="py-3.5 px-3 text-slate-600 dark:text-slate-300 font-semibold">
-                          {item.grade ? `Class ${item.grade}` : item.department || 'Staff'}
+                          {item.grade ? `Class ${typeof item.grade === 'object' && item.grade !== null ? item.grade.name : item.grade}` : (typeof item.department === 'object' && item.department !== null ? item.department.name : item.department) || (typeof item.role === 'object' && item.role !== null ? item.role.name : item.role) || 'Staff'}
                         </td>
 
                         {/* Present Button */}

@@ -395,7 +395,7 @@ export default function Home() {
               <div className="absolute -inset-8 sm:-inset-14 bg-gradient-to-tr from-[#0050CB]/20 via-sky-300/25 to-indigo-200/20 dark:from-blue-600/25 dark:via-sky-400/20 dark:to-indigo-500/20 rounded-full blur-3xl pointer-events-none -z-10" />
 
               {/* Main Transparent Hero Artwork - Theme-Adaptive (Light & Dark) */}
-              <div className="relative w-full flex items-center justify-center [mask-image:radial-gradient(ellipse_at_center,black_82%,transparent_100%)] [-webkit-mask-image:radial-gradient(ellipse_at_center,black_82%,transparent_100%)]">
+              <div className="relative w-full flex items-center justify-center [mask-image:radial-gradient(ellipse_70%_70%_at_center,black_60%,transparent_100%)] [-webkit-mask-image:radial-gradient(ellipse_70%_70%_at_center,black_60%,transparent_100%)]">
                 {/* Light Theme Hero Banner */}
                 <Image
                   src="/hero-banner-light.jpg"

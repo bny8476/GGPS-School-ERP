@@ -93,7 +93,7 @@ export default function ContactPage() {
     <div className="min-h-screen bg-[#F6F8FC] dark:bg-[#000a1f] text-[#000E28] dark:text-slate-100 font-sans selection:bg-[#0050CB]/20 selection:text-[#0050CB] transition-colors duration-200">
       
       {/* HERO SECTION */}
-      <section className="relative pt-28 pb-12 sm:pt-36 sm:pb-16 overflow-hidden border-b border-slate-200/80 dark:border-slate-800 bg-gradient-to-b from-white via-[#F6F8FC] to-[#E5EEFF]/30 dark:from-[#000E28] dark:via-[#000a1f] dark:to-[#050E22]">
+      <section className="relative pt-6 pb-10 sm:pt-8 sm:pb-12 overflow-hidden border-b border-slate-200/80 dark:border-slate-800 bg-gradient-to-b from-white via-[#F6F8FC] to-[#E5EEFF]/30 dark:from-[#000E28] dark:via-[#000a1f] dark:to-[#050E22]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-3xl">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#E5EEFF] dark:bg-[#0050CB]/30 border border-blue-200 dark:border-blue-900 text-[#0050CB] dark:text-[#38BDF8] text-xs font-bold mb-4">

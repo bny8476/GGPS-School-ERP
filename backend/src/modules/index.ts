@@ -39,6 +39,7 @@ import {
   emailRoutes,
 } from './communication';
 import messageRoutes from '../routes/messageRoutes';
+import disciplineRoutes from '../routes/disciplineRoutes';
 import reportRoutes from '../routes/reportRoutes';
 import roleRoutes from '../routes/roleRoutes';
 import searchRoutes from '../routes/searchRoutes';
@@ -82,6 +83,7 @@ export function registerDomainModules(apiRouter: Router): void {
 
   // Students & Academics
   apiRouter.use('/students', studentRoutes);
+  apiRouter.use('/discipline', disciplineRoutes);
   apiRouter.use('/id-cards', idCardRoutes);
   apiRouter.use('/enrollment', enrollmentRoutes);
   apiRouter.use('/academic', academicRoutes);

@@ -15,6 +15,7 @@ import {
   User,
   GraduationCap,
   Calendar,
+  Clock,
   Phone,
   Mail,
   MapPin,
@@ -203,7 +204,6 @@ export default function IdCardGeneratorPage() {
 
   // QR Code preview Data URL
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>("");
-  const [previewSide, setPreviewSide] = useState<"both" | "front" | "back">("both");
 
   // Generated Card Record
   const [activeGeneratedCard, setActiveGeneratedCard] = useState<IdCardItem | null>(null);
@@ -651,7 +651,14 @@ export default function IdCardGeneratorPage() {
 
   // 11. Trigger Print
   const handlePrint = () => {
-    window.print();
+    if (activeTab !== "single") {
+      setActiveTab("single");
+      setTimeout(() => {
+        window.print();
+      }, 150);
+    } else {
+      window.print();
+    }
   };
 
   // 12. Trigger PDF Download
@@ -719,10 +726,71 @@ export default function IdCardGeneratorPage() {
     ? new Date(selectedStudent.dateOfBirth).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
     : "15 Apr 2021";
   const bloodGroup = selectedStudent?.bloodGroup || "O+";
+  const parentName = selectedStudent?.parentId?.fatherName || selectedStudent?.parentId?.motherName || "Rajesh Sharma";
   const parentContact = selectedStudent?.emergencyContact || selectedStudent?.parentId?.fatherContact || "+91 98765 43210";
-  const parentEmail = selectedStudent?.parentId?.primaryEmail || "aarav.sharma@example.com";
-  const address = selectedStudent?.address || selectedStudent?.parentId?.address || "123 Meadow Lane, Green Park, City";
+  const parentEmail = selectedStudent?.parentId?.primaryEmail || "parent@school.com";
+  const address = selectedStudent?.address || selectedStudent?.parentId?.address || "123 GGPS Campus Way";
   const barcodeValue = studentIdDisplay;
+
+  const validityDisplay = validFrom && validTill
+    ? `${new Date(validFrom).toLocaleDateString("en-GB", { month: "2-digit", year: "2-digit" })} – ${new Date(validTill).toLocaleDateString("en-GB", { month: "2-digit", year: "2-digit" })}`
+    : validTill
+    ? `Till ${new Date(validTill).toLocaleDateString("en-GB", { month: "short", year: "numeric" })}`
+    : "05/26 – 05/27";
+
+  const templateConfig: Record<CardTemplate, {
+    headerBg: string;
+    headerWavePrimary: string;
+    headerWaveSecondary: string;
+    infoBoxBg: string;
+    accentText: string;
+    footerBg: string;
+    borderColor: string;
+    scriptColor: string;
+  }> = {
+    "modern-blue": {
+      headerBg: "bg-[#0050CB]",
+      headerWavePrimary: "#0050CB",
+      headerWaveSecondary: "#0040AB",
+      infoBoxBg: "bg-[#F0F6FF] border-blue-100/70",
+      accentText: "text-[#0050CB]",
+      footerBg: "bg-[#0050CB]",
+      borderColor: "border-slate-200/90",
+      scriptColor: "text-[#0050CB]",
+    },
+    "premium-school": {
+      headerBg: "bg-[#000E28]",
+      headerWavePrimary: "#000E28",
+      headerWaveSecondary: "#FF690C",
+      infoBoxBg: "bg-[#FFF8F3] border-amber-200/70",
+      accentText: "text-[#FF690C]",
+      footerBg: "bg-[#000E28]",
+      borderColor: "border-amber-200/80 shadow-[0_10px_35px_rgba(255,105,12,0.08)]",
+      scriptColor: "text-[#FF690C]",
+    },
+    "classic-white": {
+      headerBg: "bg-slate-800",
+      headerWavePrimary: "#1E293B",
+      headerWaveSecondary: "#334155",
+      infoBoxBg: "bg-slate-50 border-slate-200",
+      accentText: "text-slate-700",
+      footerBg: "bg-slate-800",
+      borderColor: "border-slate-300",
+      scriptColor: "text-slate-700",
+    },
+    "minimal": {
+      headerBg: "bg-[#0F766E]",
+      headerWavePrimary: "#0F766E",
+      headerWaveSecondary: "#115E59",
+      infoBoxBg: "bg-teal-50/70 border-teal-200/60",
+      accentText: "text-[#0F766E]",
+      footerBg: "bg-[#0F766E]",
+      borderColor: "border-teal-200/70",
+      scriptColor: "text-[#0F766E]",
+    },
+  };
+
+  const currentTheme = templateConfig[template] || templateConfig["modern-blue"];
 
   return (
     <div className="space-y-5 pb-16 font-sans">
@@ -734,34 +802,86 @@ export default function IdCardGeneratorPage() {
         @media print {
           @page {
             size: A4 portrait;
-            margin: 15mm;
+            margin: 12mm 10mm;
           }
-          body * {
-            visibility: hidden !important;
+
+          /* Force browser to print all background colors, gradients, and images */
+          *, *::before, *::after {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            color-adjust: exact !important;
           }
-          .print-area-wrapper, .print-area-wrapper * {
-            visibility: visible !important;
+
+          /* Hide global layout chrome (header, sidebar, nav), toasts, and print:hidden elements */
+          header, nav, aside, [role="navigation"], .print\\:hidden, #nprogress, .toaster, [data-sonner-toaster] {
+            display: none !important;
           }
-          .print-area-wrapper {
-            position: absolute !important;
-            left: 0 !important;
-            top: 0 !important;
+
+          /* Reset layout scroll and height constraints */
+          html, body {
+            background: #ffffff !important;
+            color: #000000 !important;
+            overflow: visible !important;
+            height: auto !important;
+            min-height: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+          }
+
+          main, div, section {
+            overflow: visible !important;
+          }
+
+          /* Reset parent container backgrounds, paddings, and borders */
+          main, main > div, .max-w-\\[1680px\\] {
+            padding: 0 !important;
+            margin: 0 !important;
+            background: transparent !important;
+            box-shadow: none !important;
+            border: none !important;
             width: 100% !important;
+            max-width: 100% !important;
+          }
+
+          /* Center the two CR80 cards nicely on the printed page */
+          .print-area-wrapper {
             display: flex !important;
             flex-direction: row !important;
+            align-items: center !important;
             justify-content: center !important;
-            gap: 15mm !important;
-            background: white !important;
-            padding: 10mm !important;
+            gap: 16mm !important;
+            padding: 20mm 0 !important;
+            margin: 0 auto !important;
+            width: 100% !important;
+            background: transparent !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
           }
+
+          /* CR80 card styling for clean printing */
           .cr80-card-exact {
-            width: 53.98mm !important;
-            height: 85.60mm !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: space-between !important;
+            width: 285px !important;
+            height: 455px !important;
+            min-width: 285px !important;
+            min-height: 455px !important;
+            max-width: 285px !important;
+            max-height: 455px !important;
             box-shadow: none !important;
-            border: 1px solid #94A3B8 !important;
-            border-radius: 3.18mm !important;
+            border: 1px solid #CBD5E1 !important;
+            border-radius: 20px !important;
             overflow: hidden !important;
             page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            background: #ffffff !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+
+          /* Force high resolution images and vector graphics */
+          .cr80-card-exact img, .cr80-card-exact svg {
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
           }
@@ -822,19 +942,6 @@ export default function IdCardGeneratorPage() {
               </div>
             </div>
 
-            {/* Box 3: Bulk Generation */}
-            <div 
-              onClick={() => setActiveTab(activeTab === "bulk" ? "single" : "bulk")}
-              className="hidden lg:flex items-center gap-2.5 px-3 py-2 rounded-xl bg-white dark:bg-[#07152F] border border-slate-200/90 dark:border-white/10 shadow-2xs cursor-pointer hover:border-blue-300 transition-all"
-            >
-              <div className="w-7 h-7 rounded-lg bg-blue-50 dark:bg-blue-950/50 text-[#0050CB] flex items-center justify-center shrink-0">
-                <Users className="w-4 h-4" />
-              </div>
-              <div className="text-left leading-tight">
-                <p className="text-[11px] font-bold text-[#000E28] dark:text-white">Bulk Generation</p>
-                <p className="text-[9px] text-slate-400">Save time</p>
-              </div>
-            </div>
 
             {/* Primary Blue Print Button */}
             <button
@@ -852,11 +959,11 @@ export default function IdCardGeneratorPage() {
           2. TWO-COLUMN MAIN CANVAS (Exact to Reference Screenshot)
       ======================================================== */}
       {activeTab === "single" ? (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start print:hidden">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start print:block">
           {/* ====================================================
               LEFT COLUMN: ID Card Generator Controls (Spans 5 cols)
           ==================================================== */}
-          <div className="lg:col-span-5 bg-white dark:bg-[#07152F] rounded-[22px] border border-slate-200/90 dark:border-white/10 p-5 sm:p-6 shadow-[0_4px_20px_rgba(0,14,40,0.02)] space-y-5">
+          <div className="lg:col-span-5 print:hidden bg-white dark:bg-[#07152F] rounded-[22px] border border-slate-200/90 dark:border-white/10 p-5 sm:p-6 shadow-[0_4px_20px_rgba(0,14,40,0.02)] space-y-5">
             {/* Mode Switcher Tabs */}
             <div className="grid grid-cols-2 gap-3">
               {/* Tab 1: Generate Single ID (Active) */}
@@ -1019,44 +1126,23 @@ export default function IdCardGeneratorPage() {
                 </h3>
               </div>
 
-              {/* Title / Position & Card Template Dropdowns */}
-              <div className="grid grid-cols-2 gap-3.5">
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-                    Title / Position
-                  </label>
-                  <div className="relative">
-                    <select
-                      value={titlePosition}
-                      onChange={(e) => setTitlePosition(e.target.value)}
-                      className="w-full appearance-none px-3.5 py-2.5 bg-white dark:bg-[#07152F] border border-slate-200/90 dark:border-white/10 rounded-xl text-xs font-medium text-[#000E28] dark:text-white focus:outline-hidden focus:ring-2 focus:ring-[#0050CB]/20 transition-all pr-8 cursor-pointer shadow-2xs"
-                    >
-                      <option value="Student">Student</option>
-                      <option value="Prefect">Prefect</option>
-                      <option value="Head Boy">Head Boy</option>
-                      <option value="Head Girl">Head Girl</option>
-                    </select>
-                    <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-                    Card Template
-                  </label>
-                  <div className="relative">
-                    <select
-                      value={template}
-                      onChange={(e) => setTemplate(e.target.value as CardTemplate)}
-                      className="w-full appearance-none px-3.5 py-2.5 bg-white dark:bg-[#07152F] border border-slate-200/90 dark:border-white/10 rounded-xl text-xs font-medium text-[#000E28] dark:text-white focus:outline-hidden focus:ring-2 focus:ring-[#0050CB]/20 transition-all pr-8 cursor-pointer shadow-2xs"
-                    >
-                      <option value="modern-blue">Modern Blue (Default)</option>
-                      <option value="premium-school">Premium School</option>
-                      <option value="classic-white">Classic White</option>
-                      <option value="minimal">Minimal</option>
-                    </select>
-                    <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  </div>
+              {/* Title / Position */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
+                  Title / Position
+                </label>
+                <div className="relative">
+                  <select
+                    value={titlePosition}
+                    onChange={(e) => setTitlePosition(e.target.value)}
+                    className="w-full appearance-none px-3.5 py-2.5 bg-white dark:bg-[#07152F] border border-slate-200/90 dark:border-white/10 rounded-xl text-xs font-medium text-[#000E28] dark:text-white focus:outline-hidden focus:ring-2 focus:ring-[#0050CB]/20 transition-all pr-8 cursor-pointer shadow-2xs"
+                  >
+                    <option value="Student">Student</option>
+                    <option value="Prefect">Prefect</option>
+                    <option value="Head Boy">Head Boy</option>
+                    <option value="Head Girl">Head Girl</option>
+                  </select>
+                  <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                 </div>
               </div>
 
@@ -1099,12 +1185,16 @@ export default function IdCardGeneratorPage() {
                   Photo (Optional)
                 </label>
                 <div className="flex items-center gap-3">
-                  <div className="w-11 h-11 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-50 shrink-0 shadow-2xs">
-                    <img
-                      src={customPhoto || "/aarav-hero-student.jpg"}
-                      alt="Student Preview"
-                      className="w-full h-full object-cover"
-                    />
+                  <div className="w-11 h-11 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-50 shrink-0 shadow-2xs flex items-center justify-center">
+                    {customPhoto ? (
+                      <img
+                        src={customPhoto}
+                        alt="Student Preview"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <User className="w-5 h-5 text-slate-400" />
+                    )}
                   </div>
 
                   <input
@@ -1241,9 +1331,9 @@ export default function IdCardGeneratorPage() {
           {/* ====================================================
               RIGHT COLUMN: Live Preview Canvas (Spans 7 cols)
           ==================================================== */}
-          <div className="lg:col-span-7 bg-white dark:bg-[#07152F] rounded-[22px] border border-slate-200/90 dark:border-white/10 p-5 sm:p-6 shadow-[0_4px_20px_rgba(0,14,40,0.02)] space-y-6">
+          <div className="lg:col-span-7 print:w-full print:border-none print:shadow-none print:p-0 print:m-0 print:bg-transparent bg-white dark:bg-[#07152F] rounded-[22px] border border-slate-200/90 dark:border-white/10 p-5 sm:p-6 shadow-[0_4px_20px_rgba(0,14,40,0.02)] space-y-6">
             {/* Live Preview Header Bar */}
-            <div className="flex items-center justify-between pb-1">
+            <div className="flex items-center justify-between pb-1 print:hidden">
               <div className="flex items-center gap-2.5">
                 <div className="w-6 h-6 rounded-full bg-blue-50 dark:bg-blue-950/60 text-[#0050CB] flex items-center justify-center">
                   <Eye className="w-3.5 h-3.5" />
@@ -1257,32 +1347,6 @@ export default function IdCardGeneratorPage() {
                   </p>
                 </div>
               </div>
-
-              {/* Front / Back Toggle Pills */}
-              <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
-                <button
-                  type="button"
-                  onClick={() => setPreviewSide("front")}
-                  className={`px-3.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                    previewSide === "front" || previewSide === "both"
-                      ? "bg-[#0050CB] text-white shadow-2xs"
-                      : "text-slate-600 dark:text-slate-300 hover:text-[#0050CB]"
-                  }`}
-                >
-                  Front
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPreviewSide("back")}
-                  className={`px-3.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                    previewSide === "back"
-                      ? "bg-[#0050CB] text-white shadow-2xs"
-                      : "text-slate-600 dark:text-slate-300 hover:text-[#0050CB]"
-                  }`}
-                >
-                  Back
-                </button>
-              </div>
             </div>
 
             {/* Canvas Stage: Dual Side-by-Side Cards (CR80) */}
@@ -1290,19 +1354,19 @@ export default function IdCardGeneratorPage() {
               {/* ----------------------------------------------------
                   FRONT CARD (CR80 - Exact to Screenshot)
               ----------------------------------------------------- */}
-              <div className="cr80-card-exact w-[275px] sm:w-[285px] h-[440px] sm:h-[455px] bg-white rounded-[24px] border border-slate-200/90 shadow-[0_10px_35px_rgba(0,14,40,0.06)] overflow-hidden relative flex flex-col justify-between shrink-0">
-                {/* Top Blue Wave Header */}
-                <div className="relative w-full h-[115px] bg-[#0050CB] overflow-hidden shrink-0">
+              <div className={`cr80-card-exact w-[275px] sm:w-[285px] h-[440px] sm:h-[455px] bg-white rounded-[24px] border ${currentTheme.borderColor} shadow-[0_10px_35px_rgba(0,14,40,0.06)] overflow-hidden relative flex flex-col justify-between shrink-0 transition-all duration-300`}>
+                {/* Top Wave Header */}
+                <div className={`relative w-full h-[115px] ${currentTheme.headerBg} overflow-hidden shrink-0 transition-colors duration-300`}>
                   {/* Organic Wave SVG Swoop */}
                   <svg viewBox="0 0 285 115" preserveAspectRatio="none" className="absolute inset-0 w-full h-full pointer-events-none">
                     <path
                       d="M 0,0 L 285,0 L 285,85 C 240,90 200,115 150,105 C 100,95 40,60 0,80 Z"
-                      fill="#0050CB"
+                      fill={currentTheme.headerWavePrimary}
                     />
                     <path
                       d="M 0,70 C 60,60 120,95 180,95 C 230,95 260,80 285,80 L 285,115 L 0,115 Z"
-                      fill="#0040AB"
-                      opacity="0.25"
+                      fill={currentTheme.headerWaveSecondary}
+                      opacity="0.35"
                     />
                   </svg>
 
@@ -1323,12 +1387,19 @@ export default function IdCardGeneratorPage() {
                 {/* Body Area */}
                 <div className="flex flex-col items-center text-center flex-1 px-4 -mt-8 relative z-20">
                   {/* Centered Student Photo */}
-                  <div className="w-24 h-24 rounded-2xl overflow-hidden border-2 border-white shadow-md bg-white shrink-0">
-                    <img
-                      src={customPhoto || "/aarav-hero-student.jpg"}
-                      alt={studentName}
-                      className="w-full h-full object-cover"
-                    />
+                  <div className="w-24 h-24 rounded-2xl overflow-hidden border-2 border-white shadow-md bg-slate-100 flex items-center justify-center shrink-0">
+                    {customPhoto ? (
+                      <img
+                        src={customPhoto}
+                        alt={studentName}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center bg-slate-100 text-slate-400">
+                        <User className="w-10 h-10 stroke-[1.5]" />
+                        <span className="text-[8px] font-bold mt-0.5">No Photo</span>
+                      </div>
+                    )}
                   </div>
 
                   {/* Student Name & Title */}
@@ -1340,46 +1411,58 @@ export default function IdCardGeneratorPage() {
                   </p>
 
                   {/* Metadata Info Box */}
-                  <div className="w-full mt-2.5 space-y-1 bg-[#F0F6FF] rounded-2xl p-3 border border-blue-100/70 text-left text-[10px]">
+                  <div className={`w-full mt-2.5 space-y-1 ${currentTheme.infoBoxBg} rounded-2xl p-3 border text-left text-[10px] transition-colors duration-300`}>
                     <div className="flex items-center justify-between font-medium">
-                      <span className="text-[#0050CB] font-bold flex items-center gap-1">
-                        <IdCardIcon className="w-3 h-3 text-[#0050CB]" /> ID No.
+                      <span className={`${currentTheme.accentText} font-bold flex items-center gap-1`}>
+                        <IdCardIcon className={`w-3 h-3 ${currentTheme.accentText}`} /> ID No.
                       </span>
                       <span className="font-bold text-[#000E28]">: {studentIdDisplay}</span>
                     </div>
                     <div className="flex items-center justify-between font-medium">
-                      <span className="text-[#0050CB] font-bold flex items-center gap-1">
-                        <GraduationCap className="w-3 h-3 text-[#0050CB]" /> Class
+                      <span className={`${currentTheme.accentText} font-bold flex items-center gap-1`}>
+                        <GraduationCap className={`w-3 h-3 ${currentTheme.accentText}`} /> Class
                       </span>
                       <span className="font-bold text-[#000E28]">: {classDisplay}</span>
                     </div>
                     <div className="flex items-center justify-between font-medium">
-                      <span className="text-[#0050CB] font-bold flex items-center gap-1">
-                        <Calendar className="w-3 h-3 text-[#0050CB]" /> DOB
+                      <span className={`${currentTheme.accentText} font-bold flex items-center gap-1`}>
+                        <Calendar className={`w-3 h-3 ${currentTheme.accentText}`} /> DOB
                       </span>
                       <span className="font-bold text-[#000E28]">: {dobDisplay}</span>
                     </div>
-                    <div className="flex items-center justify-between font-medium">
-                      <span className="text-[#0050CB] font-bold flex items-center gap-1">
-                        <Droplets className="w-3 h-3 text-[#0050CB]" /> Blood Group
-                      </span>
-                      <span className="font-bold text-[#000E28]">: {bloodGroup}</span>
-                    </div>
+                    {(validFrom || validTill) && (
+                      <div className="flex items-center justify-between font-medium">
+                        <span className={`${currentTheme.accentText} font-bold flex items-center gap-1`}>
+                          <Clock className={`w-3 h-3 ${currentTheme.accentText}`} /> Validity
+                        </span>
+                        <span className="font-bold text-[#000E28]">: {validityDisplay}</span>
+                      </div>
+                    )}
+                    {fields.showBloodGroup && (
+                      <div className="flex items-center justify-between font-medium">
+                        <span className={`${currentTheme.accentText} font-bold flex items-center gap-1`}>
+                          <Droplets className={`w-3 h-3 ${currentTheme.accentText}`} /> Blood Group
+                        </span>
+                        <span className="font-bold text-[#000E28]">: {bloodGroup}</span>
+                      </div>
+                    )}
                   </div>
 
                   {/* Bottom Barcode */}
-                  <div className="w-full mt-2 mb-1">
-                    <BarcodeSVG value={barcodeValue} />
-                  </div>
+                  {fields.showBarcode && (
+                    <div className="w-full mt-2 mb-1">
+                      <BarcodeSVG value={barcodeValue} />
+                    </div>
+                  )}
                 </div>
               </div>
 
               {/* ----------------------------------------------------
                   BACK CARD (CR80 - Exact to Screenshot)
               ----------------------------------------------------- */}
-              <div className="cr80-card-exact w-[275px] sm:w-[285px] h-[440px] sm:h-[455px] bg-white rounded-[24px] border border-slate-200/90 shadow-[0_10px_35px_rgba(0,14,40,0.06)] overflow-hidden relative flex flex-col justify-between shrink-0">
-                {/* Top Blue Header Strip */}
-                <div className="w-full h-[75px] bg-[#0050CB] text-white flex flex-col items-center justify-center shrink-0">
+              <div className={`cr80-card-exact w-[275px] sm:w-[285px] h-[440px] sm:h-[455px] bg-white rounded-[24px] border ${currentTheme.borderColor} shadow-[0_10px_35px_rgba(0,14,40,0.06)] overflow-hidden relative flex flex-col justify-between shrink-0 transition-all duration-300`}>
+                {/* Top Header Strip */}
+                <div className={`w-full h-[75px] ${currentTheme.headerBg} text-white flex flex-col items-center justify-center shrink-0 transition-colors duration-300`}>
                   <div className="flex items-center gap-1.5">
                     <GraduationCap className="w-5 h-5 text-white" />
                     <span className="font-black text-sm tracking-wider uppercase">
@@ -1400,43 +1483,60 @@ export default function IdCardGeneratorPage() {
                     </h5>
 
                     <div className="space-y-1.5 text-[10px] text-slate-600">
+                      {fields.showParentName && (
+                        <div className="flex items-center gap-2">
+                          <User className={`w-3.5 h-3.5 ${currentTheme.accentText} shrink-0`} />
+                          <span className="font-medium text-slate-700 truncate">{parentName}</span>
+                        </div>
+                      )}
+                      {fields.showParentPhone && (
+                        <div className="flex items-center gap-2">
+                          <Phone className={`w-3.5 h-3.5 ${currentTheme.accentText} shrink-0`} />
+                          <span className="font-medium text-slate-700">{parentContact}</span>
+                        </div>
+                      )}
                       <div className="flex items-center gap-2">
-                        <Phone className="w-3.5 h-3.5 text-[#0050CB] shrink-0" />
-                        <span className="font-medium text-slate-700">{parentContact}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Mail className="w-3.5 h-3.5 text-[#0050CB] shrink-0" />
+                        <Mail className={`w-3.5 h-3.5 ${currentTheme.accentText} shrink-0`} />
                         <span className="font-medium text-slate-700 truncate">{parentEmail}</span>
                       </div>
-                      <div className="flex items-start gap-2">
-                        <MapPin className="w-3.5 h-3.5 text-[#0050CB] shrink-0 mt-0.5" />
-                        <span className="font-medium text-slate-700 leading-tight line-clamp-2">
-                          {address}
-                        </span>
-                      </div>
+                      {fields.showAddress && (
+                        <div className="flex items-start gap-2">
+                          <MapPin className={`w-3.5 h-3.5 ${currentTheme.accentText} shrink-0 mt-0.5`} />
+                          <span className="font-medium text-slate-700 leading-tight line-clamp-2">
+                            {address}
+                          </span>
+                        </div>
+                      )}
+                      {notes && (
+                        <div className="mt-1 pt-1 border-t border-slate-100 text-[9px] text-slate-500 italic line-clamp-2">
+                          Note: {notes}
+                        </div>
+                      )}
                     </div>
                   </div>
 
                   {/* Middle Row: QR Code (Left) + Artistic Script Quote (Right) */}
                   <div className="flex items-center justify-between py-2 px-1">
                     {/* QR Code Container */}
-                    <div className="w-20 h-20 rounded-xl bg-white border border-slate-200 p-1 flex items-center justify-center shadow-2xs">
-                      {qrCodeDataUrl ? (
-                        <img src={qrCodeDataUrl} alt="QR Code" className="w-full h-full object-contain" />
-                      ) : (
-                        <QrCode className="w-10 h-10 text-slate-400" />
-                      )}
-                    </div>
+                    {fields.showQRCode && (
+                      <div className="w-20 h-20 rounded-xl bg-white border border-slate-200 p-1 flex items-center justify-center shadow-2xs">
+                        {qrCodeDataUrl ? (
+                          <img src={qrCodeDataUrl} alt="QR Code" className="w-full h-full object-contain" />
+                        ) : (
+                          <QrCode className="w-10 h-10 text-slate-400" />
+                        )}
+                      </div>
+                    )}
 
                     {/* Dream Learn Grow Stylized Script Graphic */}
-                    <div className="text-right pr-2 select-none transform -rotate-3">
+                    <div className="text-right pr-2 select-none transform -rotate-3 ml-auto">
                       <p className="font-serif italic font-bold text-slate-600 text-sm leading-tight tracking-wider">
                         Dream
                       </p>
                       <p className="font-serif italic font-bold text-slate-700 text-base leading-tight tracking-wider pl-3">
                         Learn
                       </p>
-                      <p className="font-serif italic font-bold text-[#0050CB] text-lg leading-tight tracking-wider pl-5">
+                      <p className={`font-serif italic font-bold ${currentTheme.scriptColor} text-lg leading-tight tracking-wider pl-5`}>
                         Grow
                       </p>
                     </div>
@@ -1444,7 +1544,7 @@ export default function IdCardGeneratorPage() {
                 </div>
 
                 {/* Bottom Signature Banner */}
-                <div className="w-full h-[68px] bg-[#0050CB] text-white p-2.5 px-4 flex flex-col justify-between shrink-0">
+                <div className={`w-full h-[68px] ${currentTheme.footerBg} text-white p-2.5 px-4 flex flex-col justify-between shrink-0 transition-colors duration-300`}>
                   <span className="text-[8px] text-blue-200 uppercase tracking-widest font-semibold">
                     Authorized Signature
                   </span>
@@ -1462,7 +1562,7 @@ export default function IdCardGeneratorPage() {
             </div>
 
             {/* Bottom Feature Badges matching screenshot */}
-            <div className="flex items-center justify-center gap-4 sm:gap-6 flex-wrap pt-2 border-t border-slate-100 dark:border-slate-800 text-[11px] font-bold text-slate-500">
+            <div className="flex items-center justify-center gap-4 sm:gap-6 flex-wrap pt-2 border-t border-slate-100 dark:border-slate-800 text-[11px] font-bold text-slate-500 print:hidden">
               <div className="flex items-center gap-1.5">
                 <CheckCircle className="w-4 h-4 text-[#0050CB]" />
                 <span>High Resolution</span>
@@ -1486,7 +1586,7 @@ export default function IdCardGeneratorPage() {
         /* ====================================================
             BULK GENERATION TAB
         ==================================================== */
-        <div className="bg-white dark:bg-[#07152F] rounded-[22px] border border-slate-200/90 dark:border-white/10 p-6 shadow-sm space-y-6">
+        <div className="print:hidden bg-white dark:bg-[#07152F] rounded-[22px] border border-slate-200/90 dark:border-white/10 p-6 shadow-sm space-y-6">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-base font-black text-[#000E28] dark:text-white">
@@ -1504,7 +1604,7 @@ export default function IdCardGeneratorPage() {
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">Academic Year</label>
               <select className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium">
@@ -1523,19 +1623,6 @@ export default function IdCardGeneratorPage() {
                 <option value="UKG">UKG</option>
                 <option value="Class 1">Class 1</option>
                 <option value="Class 2">Class 2</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">Card Template</label>
-              <select
-                value={template}
-                onChange={(e) => setTemplate(e.target.value as CardTemplate)}
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium"
-              >
-                <option value="modern-blue">Modern Blue</option>
-                <option value="premium-school">Premium School</option>
-                <option value="classic-white">Classic White</option>
-                <option value="minimal">Minimal</option>
               </select>
             </div>
             <div className="flex items-end">
@@ -1596,7 +1683,7 @@ export default function IdCardGeneratorPage() {
         /* ====================================================
             HISTORY TAB
         ==================================================== */
-        <div className="bg-white dark:bg-[#07152F] rounded-[22px] border border-slate-200/90 dark:border-white/10 p-6 shadow-sm space-y-4">
+        <div className="print:hidden bg-white dark:bg-[#07152F] rounded-[22px] border border-slate-200/90 dark:border-white/10 p-6 shadow-sm space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-base font-black text-[#000E28] dark:text-white">
               Issued ID Cards History
@@ -1641,7 +1728,7 @@ export default function IdCardGeneratorPage() {
           BROWSE STUDENTS MODAL
       ======================================================== */}
       {isBrowseModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#000E28]/60 backdrop-blur-xs">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#000E28]/60 backdrop-blur-xs print:hidden">
           <div className="relative w-full max-w-lg bg-white dark:bg-[#07152F] rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl p-6 space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <h3 className="text-sm font-black text-[#000E28] dark:text-white">
