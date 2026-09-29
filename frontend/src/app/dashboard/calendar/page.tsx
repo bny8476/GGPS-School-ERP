@@ -829,7 +829,9 @@ export default function AcademicCalendarPage() {
 
                         {/* Status Icon / Quick Add on Enabled Dates */}
                         {isPast ? (
-                          <Lock className="w-3 h-3 text-slate-300" title="Date finished & locked" />
+                          <span title="Date finished & locked">
+                            <Lock className="w-3 h-3 text-slate-300" />
+                          </span>
                         ) : (
                           <button
                             type="button"
