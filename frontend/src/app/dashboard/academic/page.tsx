@@ -1777,7 +1777,7 @@ function AcademicContent() {
 
             <button
               type="button"
-              onClick={() => toast.info('Curriculum module is integrated with academic plan')}
+              onClick={() => toast('Curriculum module is integrated with academic plan', { icon: '📘' })}
               className="text-[#0050CB] dark:text-blue-400 text-xs font-bold hover:underline flex items-center gap-1 cursor-pointer whitespace-nowrap self-start sm:self-center"
             >
               <span>Go to Curriculum</span>
