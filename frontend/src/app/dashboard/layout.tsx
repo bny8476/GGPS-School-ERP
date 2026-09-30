@@ -280,7 +280,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
       show: true,
       subItems: [
         { href: '/dashboard/events', label: 'School Events' },
-        { href: '/dashboard/events?tab=gallery', label: 'Photo Gallery' },
+        { href: '/dashboard/gallery', label: 'Photo Gallery' },
       ]
     },
     { 
