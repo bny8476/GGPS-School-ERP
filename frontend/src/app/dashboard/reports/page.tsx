@@ -51,6 +51,8 @@ import {
 import toast from 'react-hot-toast';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import { getApiBaseUrl } from '@/lib/utils';
+import { downloadFile } from '@/lib/fileDownload';
+import { printDocument } from '@/lib/exportUtils';
 
 const kindergartenStaffList = [
   {
@@ -433,156 +435,29 @@ function ReportsContent() {
     fetchReportData(activeReport);
   }, [activeReport]);
 
-  const handleExportCSV = async (dataset: string) => {
+  const handleExport = async (dataset: string, format: 'csv' | 'xlsx' | 'pdf' = 'csv') => {
     setIsExporting(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 300));
-      let headers: string[] = [];
-      let rows: string[][] = [];
-      let filename = `report_${dataset}_${new Date().toISOString().split('T')[0]}.csv`;
-
-      if (dataset === 'fees' || dataset === 'finance') {
-        headers = ['Student Name', 'Admission No', 'Cohort', 'Fee Category', 'Term', 'Total Billed (INR)', 'Amount Paid (INR)', 'Balance Due (INR)', 'Due Date', 'Status', 'Guardian Phone'];
-        const financeExportRecords = [
-          { name: 'Aarav Sharma', id: 'GGPS-2026-001', cohort: 'Pre-KG A', feeType: 'Composite Tuition & Learning Kit', term: 'Term 2', total: 28500, paid: 28500, due: '2026-09-15', status: 'Settled', contact: '+91 98765 43210' },
-          { name: 'Diya Patel', id: 'GGPS-2026-002', cohort: 'LKG A', feeType: 'Composite Tuition', term: 'Term 2', total: 32000, paid: 32000, due: '2026-09-15', status: 'Settled', contact: '+91 98223 11223' },
-          { name: 'Vihaan Verma', id: 'GGPS-2026-003', cohort: 'UKG A', feeType: 'Composite Tuition & Annual Fest', term: 'Term 2', total: 34000, paid: 34000, due: '2026-09-15', status: 'Settled', contact: '+91 98456 77889' },
-          { name: 'Ananya Rao', id: 'GGPS-2026-004', cohort: 'LKG B', feeType: 'Composite Tuition', term: 'Term 2', total: 32000, paid: 16000, due: '2026-09-15', status: 'Partial', contact: '+91 97112 33445' },
-          { name: 'Ishaan Gupta', id: 'GGPS-2026-005', cohort: 'UKG B', feeType: 'Composite Tuition & Transport', term: 'Term 2', total: 42000, paid: 0, due: '2026-09-10', status: 'Overdue', contact: '+91 99887 66554' },
-          { name: 'Kavya Nair', id: 'GGPS-2026-006', cohort: 'Pre-KG A', feeType: 'Composite Tuition & Activity Kit', term: 'Term 2', total: 28500, paid: 28500, due: '2026-09-15', status: 'Settled', contact: '+91 98332 11990' },
-          { name: 'Rohan Mehta', id: 'GGPS-2026-007', cohort: 'Pre-KG B', feeType: 'Composite Tuition', term: 'Term 2', total: 28500, paid: 0, due: '2026-09-05', status: 'Overdue', contact: '+91 98110 99887' },
-          { name: 'Sanya Malhotra', id: 'GGPS-2026-008', cohort: 'LKG A', feeType: 'Composite Tuition', term: 'Term 2', total: 32000, paid: 32000, due: '2026-09-15', status: 'Settled', contact: '+91 98199 88776' },
-          { name: 'Kabir Deshmukh', id: 'GGPS-2026-009', cohort: 'UKG B', feeType: 'Composite Tuition & Daycare', term: 'Term 2', total: 45000, paid: 15000, due: '2026-09-10', status: 'Overdue', contact: '+91 98334 45566' },
-          { name: 'Advika Joshi', id: 'GGPS-2026-010', cohort: 'UKG A', feeType: 'Composite Tuition', term: 'Term 2', total: 34000, paid: 34000, due: '2026-09-15', status: 'Settled', contact: '+91 97665 44332' },
-          { name: 'Alok Nath', id: 'GGPS-2026-011', cohort: 'LKG A', feeType: 'Composite Tuition & Transport', term: 'Term 2', total: 39000, paid: 0, due: '2026-09-05', status: 'Overdue', contact: '+91 99221 44556' },
-        ];
-        rows = financeExportRecords.map((f: any) => [
-          `"${f.name}"`,
-          `"${f.id}"`,
-          `"${f.cohort}"`,
-          `"${f.feeType}"`,
-          `"${f.term}"`,
-          `"${f.total}"`,
-          `"${f.paid}"`,
-          `"${f.total - f.paid}"`,
-          `"${f.due}"`,
-          `"${f.status}"`,
-          `"${f.contact}"`,
-        ]);
-      } else if (dataset === 'students') {
-        headers = ['Admission No', 'Student Name', 'Grade', 'Section', 'Gender', 'Blood Group', 'Status'];
-        rows = [
-          ['"GGPS-2026-001"', '"Aarav Sharma"', '"Pre-KG"', '"A"', '"Male"', '"O+"', '"Active"'],
-          ['"GGPS-2026-002"', '"Diya Patel"', '"LKG"', '"A"', '"Female"', '"B+"', '"Active"'],
-          ['"GGPS-2026-003"', '"Vihaan Verma"', '"UKG"', '"B"', '"Male"', '"A+"', '"Active"'],
-        ];
-      } else if (dataset === 'staff') {
-        headers = [
-          'Employee ID',
-          'Faculty Name',
-          'Role / Designation',
-          'Assigned Cohort',
-          'Curricular Domain / Subject',
-          'Qualification',
-          'Experience',
-          'Weekly Classroom Hours',
-          'Milestone Completion (%)',
-          'Parent Rating (out of 5)',
-          'Pediatric First Aid',
-          'Phone',
-          'Email',
-          'Status'
-        ];
-        rows = kindergartenStaffList.map((s: any) => [
-          `"${s.id}"`,
-          `"${s.name}"`,
-          `"${s.designation}"`,
-          `"${s.cohort}"`,
-          `"${s.domain}"`,
-          `"${s.qualification}"`,
-          `"${s.experience}"`,
-          `"${s.weeklyHours} hrs/wk"`,
-          `"${s.milestoneProgress}%"`,
-          `"${s.rating} ★"`,
-          `"${s.firstAid}"`,
-          `"${s.phone}"`,
-          `"${s.email}"`,
-          `"${s.status}"`
-        ]);
-      } else if (dataset === 'attendance') {
-        headers = ['Name', 'Category', 'Cohort / Role', 'Admission / Emp ID', 'Check-in Time', 'Method', 'Status', 'Guardian Phone', 'Alert Notification Status'];
-        const recordsToExport = [
-          { id: 'GGPS-2026-001', name: 'Aarav Sharma', type: 'Student', cohort: 'Pre-KG A', checkInTime: '08:12 AM', method: 'RFID Tap', status: 'Present', contact: '+91 98765 43210', smsStatus: 'Delivered' },
-          { id: 'GGPS-2026-002', name: 'Diya Patel', type: 'Student', cohort: 'LKG A', checkInTime: '08:18 AM', method: 'RFID Tap', status: 'Present', contact: '+91 98223 11223', smsStatus: 'Delivered' },
-          { id: 'GGPS-2026-003', name: 'Vihaan Verma', type: 'Student', cohort: 'UKG A', checkInTime: '08:22 AM', method: 'Bus GPS Sync', status: 'Present', contact: '+91 98456 77889', smsStatus: 'Delivered' },
-          { id: 'GGPS-2026-004', name: 'Ananya Rao', type: 'Student', cohort: 'LKG B', checkInTime: '08:25 AM', method: 'RFID Tap', status: 'Present', contact: '+91 97112 33445', smsStatus: 'Delivered' },
-          { id: 'GGPS-2026-005', name: 'Ishaan Gupta', type: 'Student', cohort: 'UKG B', checkInTime: '08:42 AM', method: 'Manual Log', status: 'Late', contact: '+91 99887 66554', smsStatus: 'Late Arrival SMS Sent' },
-          { id: 'GGPS-2026-006', name: 'Kavya Nair', type: 'Student', cohort: 'Pre-KG A', checkInTime: '08:15 AM', method: 'RFID Tap', status: 'Present', contact: '+91 98332 11990', smsStatus: 'Delivered' },
-          { id: 'GGPS-2026-007', name: 'Rohan Mehta', type: 'Student', cohort: 'Pre-KG B', checkInTime: '—', method: '—', status: 'Absent', contact: '+91 98110 99887', smsStatus: 'Unnotified' },
-          { id: 'GGPS-2026-008', name: 'Sanya Malhotra', type: 'Student', cohort: 'LKG A', checkInTime: '08:10 AM', method: 'RFID Tap', status: 'Present', contact: '+91 98199 88776', smsStatus: 'Delivered' },
-          { id: 'GGPS-2026-009', name: 'Kabir Deshmukh', type: 'Student', cohort: 'UKG B', checkInTime: '—', method: '—', status: 'Absent', contact: '+91 98334 45566', smsStatus: 'Unnotified' },
-          { id: 'GGPS-2026-010', name: 'Advika Joshi', type: 'Student', cohort: 'UKG A', checkInTime: '08:28 AM', method: 'RFID Tap', status: 'Present', contact: '+91 97665 44332', smsStatus: 'Delivered' },
-          { id: 'GGPS-2026-011', name: 'Alok Nath', type: 'Student', cohort: 'LKG A', checkInTime: '—', method: '—', status: 'Excused', contact: '+91 99221 44556', smsStatus: 'Medical Leave Approved' },
-          { id: 'EMP-2026-101', name: 'Dr. Sarah Jenkins', type: 'Staff', cohort: 'Lead ECE Educator', checkInTime: '07:45 AM', method: 'Biometric Palm', status: 'Present', contact: '+91 98110 11223', smsStatus: 'On Duty' },
-          { id: 'EMP-2026-102', name: 'Mrs. Rajeshwari Iyer', type: 'Staff', cohort: 'Pre-Primary Coordinator', checkInTime: '07:50 AM', method: 'Biometric Palm', status: 'Present', contact: '+91 98220 22334', smsStatus: 'On Duty' },
-          { id: 'EMP-2026-103', name: 'Ms. Ananya Roy', type: 'Staff', cohort: 'LKG A Class Mentor', checkInTime: '07:55 AM', method: 'Biometric Palm', status: 'Present', contact: '+91 98330 33445', smsStatus: 'On Duty' },
-          { id: 'EMP-2026-104', name: 'Ms. Pooja Sharma', type: 'Staff', cohort: 'LKG B Class Mentor', checkInTime: '08:02 AM', method: 'Biometric Palm', status: 'Present', contact: '+91 98440 44556', smsStatus: 'On Duty' },
-          { id: 'EMP-2026-105', name: 'Ms. Shalini Saxena', type: 'Staff', cohort: 'Pre-KG B Class Mentor', checkInTime: '—', method: '—', status: 'Excused', contact: '+91 98550 55667', smsStatus: 'Casual Leave Approved' },
-        ];
-        rows = recordsToExport.map((r: any) => [
-          `"${r.name}"`,
-          `"${r.type}"`,
-          `"${r.cohort}"`,
-          `"${r.id}"`,
-          `"${r.checkInTime}"`,
-          `"${r.method}"`,
-          `"${r.status}"`,
-          `"${r.contact}"`,
-          `"${r.smsStatus}"`,
-        ]);
-      } else if (dataset === 'academic') {
-        headers = ['Student Name', 'Admission No', 'Class', 'Subject', 'Assessment Title', 'Term', 'Score', 'Max Marks', 'Percentage (%)', 'Grade', 'Date'];
-        const assessmentsToExport = (academicData?.recentAssessments && academicData.recentAssessments.length > 0)
-          ? academicData.recentAssessments
-          : [
-              { childId: { firstName: 'Aarav', lastName: 'Sharma', admissionNumber: 'GGPS-2026-001' }, title: 'Phonics & Alphabet Recognition', subject: 'Phonics & English', grade: 'Pre-KG A', term: 'Term 1 Evaluation', score: 94, maxScore: 100, overallGrade: 'A+', date: '2026-09-18' },
-              { childId: { firstName: 'Diya', lastName: 'Patel', admissionNumber: 'GGPS-2026-002' }, title: 'Number Work & Counting (1-50)', subject: 'Early Numeracy & Math', grade: 'LKG A', term: 'Term 1 Evaluation', score: 88, maxScore: 100, overallGrade: 'A', date: '2026-09-19' },
-              { childId: { firstName: 'Vihaan', lastName: 'Verma', admissionNumber: 'GGPS-2026-003' }, title: 'Sight Words & Sentence Reading', subject: 'Phonics & English', grade: 'UKG A', term: 'Term 1 Mid-Term', score: 82, maxScore: 100, overallGrade: 'A', date: '2026-09-15' },
-              { childId: { firstName: 'Ananya', lastName: 'Rao', admissionNumber: 'GGPS-2026-004' }, title: 'General Awareness - Animals & Nature', subject: 'General Awareness (EVS)', grade: 'LKG B', term: 'Term 1 Evaluation', score: 91, maxScore: 100, overallGrade: 'A+', date: '2026-09-20' },
-              { childId: { firstName: 'Ishaan', lastName: 'Gupta', admissionNumber: 'GGPS-2026-005' }, title: 'Basic Addition & 2D Shapes', subject: 'Early Numeracy & Math', grade: 'UKG B', term: 'Term 1 Evaluation', score: 96, maxScore: 100, overallGrade: 'A+', date: '2026-09-21' },
-              { childId: { firstName: 'Rohan', lastName: 'Mehta', admissionNumber: 'GGPS-2026-007' }, title: 'Pre-Writing & Pencil Grip Practice', subject: 'Sensory & Motor Skills', grade: 'Pre-KG B', term: 'Term 1 Evaluation', score: 48, maxScore: 100, overallGrade: 'D', date: '2026-09-19' },
-            ];
-        rows = assessmentsToExport.map((item: any) => [
-          `"${item.childId ? `${item.childId.firstName} ${item.childId.lastName}` : 'Student'}"`,
-          `"${item.childId?.admissionNumber || 'GGPS-REC'}"`,
-          `"${item.grade || 'LKG A'}"`,
-          `"${item.subject || 'Phonics & English'}"`,
-          `"${item.title || 'Evaluation'}"`,
-          `"${item.term || 'Term 1'}"`,
-          `"${item.score || 85}"`,
-          `"${item.maxScore || 100}"`,
-          `"${Math.round(((item.score || 85) / (item.maxScore || 100)) * 100)}%"`,
-          `"${item.overallGrade || 'A'}"`,
-          `"${item.date || '2026-09-20'}"`,
-        ]);
-      } else {
-        headers = ['Metric', 'Evaluated', 'Pass Rate (%)', 'Session'];
-        rows = [['"Institutional Average"', '"248"', '"96%"', '"AY 2025-2026"']];
-      }
-
-      const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
-      const encodedUri = encodeURI(csvContent);
-      const link = document.createElement('a');
-      link.setAttribute('href', encodedUri);
-      link.setAttribute('download', filename);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      toast.success(`${dataset.toUpperCase()} CSV report downloaded successfully!`);
-    } catch (err) {
-      toast.error('Failed to generate CSV export');
+      let reportKey = dataset;
+      if (dataset === 'fees' || dataset === 'finance') reportKey = 'fee-defaulters';
+      await downloadFile(
+        `/api/v1/reports/export/${reportKey}?format=${format}`,
+        `GGPS-Report-${dataset.toUpperCase()}.${format}`
+      );
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to download report');
     } finally {
       setIsExporting(false);
+    }
+  };
+
+  const handlePrintCurrentReport = () => {
+    const reportTitle = `${activeReport.toUpperCase()} REPORT - GGPS SCHOOL ERP`;
+    const printableArea = document.getElementById('report-content-area');
+    if (printableArea) {
+      printDocument(reportTitle, printableArea.innerHTML);
+    } else {
+      window.print();
     }
   };
 
@@ -597,15 +472,41 @@ function ReportsContent() {
           { label: 'Reports' }
         ]}
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
-              onClick={() => handleExportCSV(activeReport)}
+              onClick={() => handleExport(activeReport, 'pdf')}
               disabled={isExporting}
-              className="flex items-center gap-2 px-4 py-2 bg-[#0050CB] hover:bg-[#003E9E] disabled:bg-slate-300 text-white text-xs font-bold rounded-xl shadow-md cursor-pointer transition-all"
+              className="flex items-center gap-1.5 px-3 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-xs cursor-pointer transition-all"
             >
-              {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-              <span>Export {activeReport.toUpperCase()} CSV</span>
+              <FileText className="w-3.5 h-3.5" />
+              <span>Export PDF</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleExport(activeReport, 'xlsx')}
+              disabled={isExporting}
+              className="flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-xs cursor-pointer transition-all"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5" />
+              <span>Export Excel</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleExport(activeReport, 'csv')}
+              disabled={isExporting}
+              className="flex items-center gap-1.5 px-3 py-2 bg-[#0050CB] hover:bg-[#003E9E] disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-xs cursor-pointer transition-all"
+            >
+              {isExporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+              <span>Export CSV</span>
+            </button>
+            <button
+              type="button"
+              onClick={handlePrintCurrentReport}
+              className="flex items-center gap-1.5 px-3 py-2 bg-white dark:bg-slate-800 hover:bg-slate-100 text-[#000E28] dark:text-white border border-slate-200 dark:border-slate-700 text-xs font-bold rounded-xl shadow-xs cursor-pointer transition-all"
+            >
+              <Printer className="w-3.5 h-3.5 text-[#0050CB]" />
+              <span>Print</span>
             </button>
           </div>
         }
@@ -641,7 +542,7 @@ function ReportsContent() {
       </div>
 
       {/* TAB CONTENT AREA */}
-      <div className="w-full bg-white dark:bg-[#07152F] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+      <div id="report-content-area" className="w-full bg-white dark:bg-[#07152F] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
         {isLoading ? (
           <div className="p-16 flex flex-col items-center justify-center space-y-3">
             <Loader2 className="w-8 h-8 text-[#0050CB] animate-spin" />
@@ -2677,14 +2578,30 @@ function ReportsContent() {
                         <p className="text-[11px] text-slate-500 leading-relaxed">{exp.desc}</p>
                       </div>
 
-                      <div className="pt-4 mt-2">
+                      <div className="pt-4 mt-2 flex items-center gap-1.5">
                         <button
                           type="button"
-                          onClick={() => handleExportCSV(exp.id)}
-                          className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-[#0050CB] hover:bg-[#003E9E] text-white text-xs font-bold rounded-xl shadow-xs cursor-pointer transition-all"
+                          onClick={() => handleExport(exp.id, 'csv')}
+                          className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-[#0050CB] hover:bg-[#003E9E] text-white text-[11px] font-bold rounded-lg shadow-xs cursor-pointer transition-all"
                         >
-                          <Download className="w-3.5 h-3.5" />
-                          <span>Download Dataset</span>
+                          <Download className="w-3 h-3" />
+                          <span>CSV</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleExport(exp.id, 'xlsx')}
+                          className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold rounded-lg shadow-xs cursor-pointer transition-all"
+                        >
+                          <FileSpreadsheet className="w-3 h-3" />
+                          <span>Excel</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleExport(exp.id, 'pdf')}
+                          className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-red-600 hover:bg-red-700 text-white text-[11px] font-bold rounded-lg shadow-xs cursor-pointer transition-all"
+                        >
+                          <FileText className="w-3 h-3" />
+                          <span>PDF</span>
                         </button>
                       </div>
                     </div>

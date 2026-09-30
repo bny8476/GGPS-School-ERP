@@ -7,13 +7,15 @@ import {
   Edit3, CheckCircle2, X, AlertCircle, FileSpreadsheet,
   ArrowUpRight, ArrowDownRight, CreditCard, ChevronRight,
   Send, Receipt, Calendar, Building2, UserCheck, Filter,
-  Printer, ShieldAlert, Award, RefreshCw, Smartphone, 
+  Printer, ShieldAlert, Award, Smartphone, 
   HelpCircle, CheckCircle, Percent, AlertTriangle, FileText
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import AdminStatCard from '@/components/admin/AdminStatCard';
 import AdminDataTable, { Column } from '@/components/admin/AdminDataTable';
+import { downloadFile } from '@/lib/fileDownload';
+import { printDocument, exportToCSV } from '@/lib/exportUtils';
 
 // Types
 interface FeeRecord {
@@ -63,24 +65,13 @@ interface ScholarshipRecord {
   status: 'Active' | 'Under Review' | 'Expired';
 }
 
-interface RefundRecord {
-  id: string;
-  studentName: string;
-  grade: string;
-  reason: string;
-  amount: number;
-  requestDate: string;
-  status: 'Pending' | 'Approved' | 'Disbursed';
-  transactionRef?: string;
-}
-
 function FeesFinanceContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
   // Tab state
   const rawTab = searchParams.get('tab') || 'invoices';
-  const validTabs = ['structure', 'invoices', 'collect', 'receipts', 'dues', 'scholarships', 'refunds', 'expenses'];
+  const validTabs = ['structure', 'invoices', 'collect', 'receipts', 'dues', 'scholarships', 'expenses'];
   const initialTab = validTabs.includes(rawTab) ? rawTab : 'invoices';
   const [activeTab, setActiveTab] = useState<string>(initialTab);
 
@@ -130,12 +121,6 @@ function FeesFinanceContent() {
     { id: 'sch-3', studentName: 'Vihaan Verma', admissionNo: 'GGPS-2026-UKG-022', grade: 'UKG', category: 'Early Enrollee Concession', discountPercentage: 20, annualBenefit: 7600, approvedBy: 'Admissions Desk', status: 'Active' },
   ]);
 
-  // Refunds State
-  const [refunds, setRefunds] = useState<RefundRecord[]>([
-    { id: 'ref-1', studentName: 'Rohan Mehra', grade: 'LKG', reason: 'Relocation to Mumbai (Caution Deposit Return)', amount: 15000, requestDate: '2026-09-12', status: 'Approved', transactionRef: 'NEFT-884920' },
-    { id: 'ref-2', studentName: 'Tara Sen', grade: 'UKG', reason: 'Duplicate Online Term 1 Payment Adjustment', amount: 8500, requestDate: '2026-09-20', status: 'Pending' },
-  ]);
-
   // Modals
   const [showFeeModal, setShowFeeModal] = useState(false);
   const [showExpenseModal, setShowExpenseModal] = useState(false);
@@ -143,7 +128,6 @@ function FeesFinanceContent() {
   const [showReceiptModal, setShowReceiptModal] = useState<{show: boolean, record: any | null}>({show: false, record: null});
   const [showStructureModal, setShowStructureModal] = useState(false);
   const [showScholarshipModal, setShowScholarshipModal] = useState(false);
-  const [showRefundModal, setShowRefundModal] = useState(false);
 
   // Forms
   const [feeForm, setFeeForm] = useState({
@@ -194,13 +178,6 @@ function FeesFinanceContent() {
     grade: 'Pre-KG',
     category: 'Sibling Discount',
     discountPercentage: '15'
-  });
-
-  const [refundForm, setRefundForm] = useState({
-    studentName: '',
-    grade: 'Pre-KG',
-    reason: '',
-    amount: ''
   });
 
   // Filter state for Invoices
@@ -473,33 +450,6 @@ function FeesFinanceContent() {
     setScholarshipForm({ studentName: '', admissionNo: '', grade: 'Pre-KG', category: 'Sibling Discount', discountPercentage: '15' });
   };
 
-  const handleCreateRefund = (e: React.FormEvent) => {
-    e.preventDefault();
-    const newRef: RefundRecord = {
-      id: 'ref-' + Date.now(),
-      studentName: refundForm.studentName,
-      grade: refundForm.grade,
-      reason: refundForm.reason,
-      amount: Number(refundForm.amount),
-      requestDate: new Date().toISOString().split('T')[0],
-      status: 'Pending'
-    };
-
-    setRefunds(prev => [newRef, ...prev]);
-    toast.success('Refund request submitted for administrative audit');
-    setShowRefundModal(false);
-    setRefundForm({ studentName: '', grade: 'Pre-KG', reason: '', amount: '' });
-  };
-
-  const handleApproveRefund = (id: string) => {
-    setRefunds(prev => prev.map(r => {
-      if (r.id === id) {
-        return { ...r, status: 'Disbursed', transactionRef: `NEFT-${Math.floor(100000 + Math.random() * 900000)}` };
-      }
-      return r;
-    }));
-    toast.success('Refund approved and marked as Disbursed via NEFT');
-  };
 
   const handleSendReminder = (studentName: string, balance: number) => {
     toast.success(`Fee due reminder notice sent to parents of ${studentName} (Outstanding: ₹${balance.toLocaleString('en-IN')}) via WhatsApp & SMS`);
@@ -537,25 +487,24 @@ function FeesFinanceContent() {
     return fees.filter(f => f.amountPaid > 0 && f.receiptNumber);
   }, [fees]);
 
-  const exportFeesCSV = () => {
-    const headers = ["Invoice No", "Receipt No", "Student Name", "Grade", "Fee Type", "Total Amount", "Amount Paid", "Status", "Due Date"];
-    const rows = fees.map(f => [
-      `"${f.invoiceNumber || ''}"`,
-      `"${f.receiptNumber || ''}"`,
-      `"${f.studentId ? `${f.studentId.firstName} ${f.studentId.lastName}` : 'Student'}"`,
-      `"${f.grade || ''}"`,
-      `"${f.feeType || ''}"`,
-      `"${f.totalAmount}"`,
-      `"${f.amountPaid}"`,
-      `"${f.status}"`,
-      `"${f.dueDate ? new Date(f.dueDate).toLocaleDateString() : ''}"`
-    ]);
-    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
-    const link = document.createElement("a");
-    link.href = encodeURI(csvContent);
-    link.download = `ggps_fee_ledger_${new Date().toISOString().split('T')[0]}.csv`;
-    link.click();
-    toast.success('Fee ledger exported to CSV');
+  const exportFeesCSV = async () => {
+    const filename = `GGPS-Fee-Ledger-${new Date().toISOString().split('T')[0]}.csv`;
+    const res = await downloadFile(`/api/finance/export?format=csv&status=${statusFilter}&grade=${gradeFilter}`, filename);
+    if (!res.success) {
+      const rows = fees.map((f) => ({
+        'Invoice Number': f.invoiceNumber || '-',
+        'Receipt Number': f.receiptNumber || '-',
+        'Student Name': f.studentId ? `${f.studentId.firstName} ${f.studentId.lastName}` : 'Student',
+        'Grade / Class': f.grade || '-',
+        'Fee Category': f.feeType || 'Tuition',
+        'Total Amount (INR)': f.totalAmount,
+        'Amount Paid (INR)': f.amountPaid,
+        'Balance Due (INR)': Math.max(0, (f.totalAmount || 0) - (f.amountPaid || 0)),
+        'Payment Status': f.status,
+        'Due Date': f.dueDate ? new Date(f.dueDate).toLocaleDateString('en-GB') : '-',
+      }));
+      exportToCSV(rows, filename);
+    }
   };
 
   const feeColumns: Column<FeeRecord>[] = [
@@ -650,6 +599,15 @@ function FeesFinanceContent() {
       className: 'text-right',
       cell: (row: FeeRecord) => (
         <div className="flex items-center justify-end gap-1.5">
+          {/* Download Invoice PDF */}
+          <button
+            onClick={() => downloadFile(`/api/finance/fees/${row._id}/pdf`, `GGPS-Fee-Invoice-${row.invoiceNumber || row._id}.pdf`)}
+            title="Download Invoice PDF"
+            className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-[#E5EEFF] hover:text-[#0050CB] transition-all cursor-pointer"
+          >
+            <Download className="w-3.5 h-3.5" />
+          </button>
+
           {row.receiptNumber && (
             <button
               onClick={() => setShowReceiptModal({ show: true, record: row })}
@@ -771,7 +729,6 @@ function FeesFinanceContent() {
           { key: 'dues', label: 'Outstanding & Dues', icon: AlertTriangle, count: defaulters.length },
           { key: 'structure', label: 'Fee Structure Setup', icon: Calendar },
           { key: 'scholarships', label: 'Concessions & Aid', icon: Award },
-          { key: 'refunds', label: 'Refund Processing', icon: RefreshCw },
           { key: 'expenses', label: 'Campus Expenses', icon: Building2 },
         ].map((tab) => {
           const Icon = tab.icon;
@@ -1081,13 +1038,23 @@ function FeesFinanceContent() {
                       </span>
                     </td>
                     <td className="py-3 px-4 text-right">
-                      <button
-                        onClick={() => setShowReceiptModal({ show: true, record: f })}
-                        className="inline-flex items-center gap-1 px-3 py-1 rounded-xl bg-[#E5EEFF] dark:bg-[#0050CB]/25 text-[#0050CB] dark:text-[#38BDF8] hover:bg-[#0050CB] hover:text-white font-bold text-[11px] transition-all cursor-pointer"
-                      >
-                        <Printer className="w-3 h-3" />
-                        <span>View / Print</span>
-                      </button>
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          onClick={() => downloadFile(`/api/finance/receipts/${f.receiptNumber}/pdf`, `GGPS-Fee-Receipt-${f.receiptNumber}.pdf`)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white font-bold text-[11px] transition-all cursor-pointer border border-emerald-200"
+                          title="Download Receipt PDF"
+                        >
+                          <Download className="w-3 h-3" />
+                          <span>PDF</span>
+                        </button>
+                        <button
+                          onClick={() => setShowReceiptModal({ show: true, record: f })}
+                          className="inline-flex items-center gap-1 px-3 py-1 rounded-xl bg-[#E5EEFF] dark:bg-[#0050CB]/25 text-[#0050CB] dark:text-[#38BDF8] hover:bg-[#0050CB] hover:text-white font-bold text-[11px] transition-all cursor-pointer"
+                        >
+                          <Printer className="w-3 h-3" />
+                          <span>View / Print</span>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -1355,87 +1322,6 @@ function FeesFinanceContent() {
         </div>
       )}
 
-      {/* TAB: REFUND PROCESSING */}
-      {activeTab === 'refunds' && (
-        <div className="bg-white/95 dark:bg-[#001438]/95 backdrop-blur-md rounded-[28px] border border-slate-200/80 dark:border-slate-800/80 shadow-xs p-6 space-y-5">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
-            <div>
-              <h3 className="font-black text-sm text-[#000E28] dark:text-white flex items-center gap-2">
-                <RefreshCw className="w-4 h-4 text-[#0050CB]" />
-                Fee Refunds & Caution Deposit Disbursal
-              </h3>
-              <p className="text-xs text-slate-500">Process admission withdrawals, excess payment reversions, and security deposits</p>
-            </div>
-            <button
-              onClick={() => setShowRefundModal(true)}
-              className="px-4 py-2.5 rounded-xl bg-[#0050CB] hover:bg-[#0041A8] text-white font-bold text-xs shadow-xs flex items-center gap-1.5 cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Initiate Refund Claim</span>
-            </button>
-          </div>
-
-          <div className="overflow-x-auto rounded-2xl border border-slate-200/80 dark:border-slate-800/80">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50/80 dark:bg-[#000E28]/60 text-slate-500 font-bold uppercase text-[10px] tracking-wider border-b border-slate-200/80 dark:border-slate-800">
-                <tr>
-                  <th className="py-3 px-4">Student & Grade</th>
-                  <th className="py-3 px-4">Refund Justification</th>
-                  <th className="py-3 px-3">Request Date</th>
-                  <th className="py-3 px-4 text-right">Refund Amount</th>
-                  <th className="py-3 px-3 text-center">Audit Status</th>
-                  <th className="py-3 px-4 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-medium">
-                {refunds.map((r) => (
-                  <tr key={r.id} className="hover:bg-slate-50/60 dark:hover:bg-[#000E28]/40">
-                    <td className="py-3.5 px-4 font-bold text-[#000E28] dark:text-white">
-                      {r.studentName}
-                      <span className="block text-[11px] font-normal text-slate-500">
-                        {r.grade}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-4 text-slate-700 dark:text-slate-300">
-                      {r.reason}
-                    </td>
-                    <td className="py-3.5 px-3 text-slate-500">
-                      {new Date(r.requestDate).toLocaleDateString('en-GB')}
-                    </td>
-                    <td className="py-3.5 px-4 text-right font-black text-rose-600">
-                      ₹{r.amount.toLocaleString('en-IN')}
-                    </td>
-                    <td className="py-3.5 px-3 text-center">
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
-                        r.status === 'Disbursed' ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' :
-                        r.status === 'Approved' ? 'bg-blue-50 text-[#0050CB] border border-blue-200' :
-                        'bg-amber-50 text-amber-600 border border-amber-200'
-                      }`}>
-                        {r.status}
-                      </span>
-                      {r.transactionRef && (
-                        <span className="block font-mono text-[9px] text-slate-400 mt-0.5">{r.transactionRef}</span>
-                      )}
-                    </td>
-                    <td className="py-3.5 px-4 text-right">
-                      {r.status !== 'Disbursed' ? (
-                        <button
-                          onClick={() => handleApproveRefund(r.id)}
-                          className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-all shadow-xs cursor-pointer"
-                        >
-                          Approve & Disburse
-                        </button>
-                      ) : (
-                        <span className="text-[11px] text-slate-400 font-bold">Disbursed</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
 
       {/* TAB: CAMPUS EXPENSES & PAYROLL */}
       {activeTab === 'expenses' && (
@@ -1654,7 +1540,7 @@ function FeesFinanceContent() {
       {/* Printable Receipt Modal */}
       {showReceiptModal.show && showReceiptModal.record && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="bg-white rounded-[28px] max-w-lg w-full p-8 border border-slate-200 shadow-2xl space-y-6 text-[#000E28]">
+          <div id="printable-receipt-container" className="bg-white rounded-[28px] max-w-lg w-full p-8 border border-slate-200 shadow-2xl space-y-6 text-[#000E28]">
             {/* Receipt Header */}
             <div className="flex justify-between items-start pb-4 border-b-2 border-slate-800">
               <div>
@@ -1743,11 +1629,17 @@ function FeesFinanceContent() {
                 Close
               </button>
               <button
+                onClick={() => downloadFile(`/api/finance/receipts/${showReceiptModal.record?.receiptNumber}/pdf`, `GGPS-Fee-Receipt-${showReceiptModal.record?.receiptNumber || 'REC'}.pdf`)}
+                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs"
+              >
+                <Download className="w-4 h-4" />
+                <span>Download PDF</span>
+              </button>
+              <button
                 onClick={() => {
-                  window.print();
-                  toast.success('Print dialog sent');
+                  printDocument('printable-receipt-container', `GGPS Receipt #${showReceiptModal.record?.receiptNumber}`);
                 }}
-                className="px-5 py-2 rounded-xl bg-[#0050CB] hover:bg-[#0041A8] text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer"
+                className="px-5 py-2 rounded-xl bg-[#0050CB] hover:bg-[#0041A8] text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs"
               >
                 <Printer className="w-4 h-4" />
                 <span>Print Official Receipt</span>
@@ -2029,86 +1921,6 @@ function FeesFinanceContent() {
         </div>
       )}
 
-      {/* Initiate Refund Modal */}
-      {showRefundModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
-          <div className="bg-white dark:bg-[#001438] rounded-[28px] max-w-md w-full p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex justify-between items-center pb-3 border-b border-slate-100 dark:border-slate-800">
-              <h3 className="font-black text-base text-[#000E28] dark:text-white">Initiate Student Refund Claim</h3>
-              <button onClick={() => setShowRefundModal(false)} className="p-1 rounded-lg text-slate-400 hover:text-slate-600 cursor-pointer">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleCreateRefund} className="space-y-4 text-xs">
-              <div>
-                <label className="block font-bold text-slate-600 dark:text-slate-300 mb-1">Student Name</label>
-                <input
-                  type="text"
-                  value={refundForm.studentName}
-                  onChange={(e) => setRefundForm({ ...refundForm, studentName: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#000E28] font-bold"
-                  placeholder="e.g. Rohan Mehra"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold text-slate-600 dark:text-slate-300 mb-1">Class / Grade</label>
-                <select
-                  value={refundForm.grade}
-                  onChange={(e) => setRefundForm({ ...refundForm, grade: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#000E28] font-bold"
-                >
-                  <option>Pre-KG</option>
-                  <option>LKG</option>
-                  <option>UKG</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block font-bold text-slate-600 dark:text-slate-300 mb-1">Refund Justification / Reason</label>
-                <textarea
-                  rows={3}
-                  value={refundForm.reason}
-                  onChange={(e) => setRefundForm({ ...refundForm, reason: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#000E28] font-medium"
-                  placeholder="e.g. School transfer / Caution deposit settlement"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold text-slate-600 dark:text-slate-300 mb-1">Refund Amount (₹)</label>
-                <input
-                  type="number"
-                  value={refundForm.amount}
-                  onChange={(e) => setRefundForm({ ...refundForm, amount: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#000E28] font-bold text-rose-600"
-                  placeholder="15000"
-                  required
-                />
-              </div>
-
-              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
-                <button
-                  type="button"
-                  onClick={() => setShowRefundModal(false)}
-                  className="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-100 font-bold cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold transition-all shadow-xs cursor-pointer"
-                >
-                  Submit for Approval
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
     </div>
   );

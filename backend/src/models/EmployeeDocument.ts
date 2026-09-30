@@ -1,35 +1,32 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
-export type StudentDocCategory =
-  | 'Birth Certificate'
-  | 'Aadhaar/ID Proof'
+export type EmployeeDocCategory =
+  | 'ID Proof'
+  | 'Qualification Certificate'
+  | 'Experience Certificate'
+  | 'Joining Documents'
   | 'Address Proof'
-  | 'Transfer Certificate'
-  | 'Medical Documents'
-  | 'Passport Photo'
-  | 'Parent Documents'
-  | 'Previous School Records'
-  | 'Academic Certificate'
+  | 'Photo'
+  | 'Contract'
   | 'Other Documents';
 
-export type StudentDocVerificationStatus =
+export type EmployeeDocVerificationStatus =
   | 'Pending'
   | 'Verified'
   | 'Rejected'
-  | 'Replacement Required'
-  | 'Expired';
+  | 'Replacement Required';
 
-export interface IStudentDocument extends Document {
-  studentId: mongoose.Types.ObjectId;
+export interface IEmployeeDocument extends Document {
+  employeeId?: mongoose.Types.ObjectId;
+  userId: mongoose.Types.ObjectId;
   fileRecordId?: mongoose.Types.ObjectId;
   title: string;
-  category: StudentDocCategory;
+  category: EmployeeDocCategory;
   fileName?: string;
   fileSize?: number;
   mimeType?: string;
   documentUrl: string;
-  expiryDate?: Date;
-  verificationStatus: StudentDocVerificationStatus;
+  verificationStatus: EmployeeDocVerificationStatus;
   verifiedBy?: mongoose.Types.ObjectId;
   verifiedAt?: Date;
   rejectionReason?: string;
@@ -38,11 +35,16 @@ export interface IStudentDocument extends Document {
   updatedAt: Date;
 }
 
-const StudentDocumentSchema: Schema = new Schema(
+const EmployeeDocumentSchema: Schema = new Schema(
   {
-    studentId: {
+    employeeId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Student',
+      ref: 'Employee',
+      index: true,
+    },
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
       required: true,
       index: true,
     },
@@ -59,17 +61,13 @@ const StudentDocumentSchema: Schema = new Schema(
     category: {
       type: String,
       enum: [
-        'Birth Certificate',
-        'Aadhaar/ID Proof',
         'ID Proof',
+        'Qualification Certificate',
+        'Experience Certificate',
+        'Joining Documents',
         'Address Proof',
-        'Transfer Certificate',
-        'Medical Documents',
-        'Medical Certificate',
-        'Passport Photo',
-        'Parent Documents',
-        'Previous School Records',
-        'Academic Certificate',
+        'Photo',
+        'Contract',
         'Other Documents',
       ],
       required: true,
@@ -82,12 +80,9 @@ const StudentDocumentSchema: Schema = new Schema(
       type: String,
       required: true,
     },
-    expiryDate: {
-      type: Date,
-    },
     verificationStatus: {
       type: String,
-      enum: ['Pending', 'Verified', 'Rejected', 'Replacement Required', 'Expired'],
+      enum: ['Pending', 'Verified', 'Rejected', 'Replacement Required'],
       default: 'Pending',
       index: true,
     },
@@ -110,6 +105,6 @@ const StudentDocumentSchema: Schema = new Schema(
   { timestamps: true }
 );
 
-StudentDocumentSchema.index({ studentId: 1, category: 1 });
+EmployeeDocumentSchema.index({ userId: 1, category: 1 });
 
-export default mongoose.models.StudentDocument || mongoose.model<IStudentDocument>('StudentDocument', StudentDocumentSchema);
+export default mongoose.models.EmployeeDocument || mongoose.model<IEmployeeDocument>('EmployeeDocument', EmployeeDocumentSchema);

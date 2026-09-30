@@ -301,28 +301,6 @@ export default function Home() {
               {t('hero.subtitle', 'GGPS School brings together students, parents, teachers and administrators with a powerful, easy-to-use school management system.')}
             </motion.p>
 
-            {/* Hero Admission Assistance Banner */}
-            <motion.div
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.65, ease: [0.16, 1, 0.3, 1] }}
-              className="flex items-center gap-3 p-2.5 sm:p-3 px-4 rounded-2xl bg-[#E5EEFF]/80 dark:bg-[#001D4D]/70 border border-blue-200/90 dark:border-blue-800/60 mb-6 max-w-lg shadow-xs"
-            >
-              <div className="w-8 h-8 rounded-full bg-[#0050CB] text-[#FFB703] flex items-center justify-center shrink-0 shadow-xs">
-                <Sparkles className="w-4 h-4" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-bold text-[#000E28] dark:text-white text-xs">Have questions about admission?</p>
-                <p className="text-[11px] text-slate-600 dark:text-blue-200">Talk to the GGPS School admissions team.</p>
-              </div>
-              <Link
-                href="/enquire"
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#0050CB] hover:bg-[#0041A8] text-white text-xs font-bold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:shadow-[#0050CB]/25 shrink-0"
-              >
-                <span>Send an Enquiry</span>
-                <ArrowRight className="w-3 h-3" />
-              </Link>
-            </motion.div>
 
             {/* CTA Buttons: Staggered Entrance with Hover Micro-Interactions */}
             <motion.div

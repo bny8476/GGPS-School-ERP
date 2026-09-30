@@ -57,6 +57,8 @@ import {
   documentRoutes,
   ticketRoutes,
 } from './core';
+import fileRoutes from '../routes/fileRoutes';
+import importExportRoutes from '../routes/importExportRoutes';
 
 /**
  * Registers all domain module routes onto the canonical API router.
@@ -74,7 +76,9 @@ export function registerDomainModules(apiRouter: Router): void {
   apiRouter.use('/ai', aiRoutes);
   apiRouter.use('/nextgen', nextGenRoutes);
   apiRouter.use('/notes', noteRoutes);
+  apiRouter.use('/files', fileRoutes);
   apiRouter.use('/documents', documentRoutes);
+  apiRouter.use('/import-export', importExportRoutes);
   apiRouter.use('/tickets', ticketRoutes);
   apiRouter.use('/search', searchRoutes);
 

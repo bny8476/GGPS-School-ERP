@@ -5,7 +5,8 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { 
   GraduationCap, Plus, Download, Kanban, Table as TableIcon, 
   Sparkles, CheckCircle2, Calendar, Phone, Mail, Clock, 
-  ArrowRight, Filter, ChevronRight, UserPlus, FileText, Check, AlertCircle, Eye, ShieldCheck
+  ArrowRight, Filter, ChevronRight, UserPlus, FileText, Check, AlertCircle, Eye, ShieldCheck,
+  UploadCloud, X, RefreshCw
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';
@@ -14,6 +15,9 @@ import AdmissionKanban, { AdmissionApplication } from '@/components/admin/Admiss
 import AdminDataTable, { Column } from '@/components/admin/AdminDataTable';
 import AddStudentModal from '@/components/admin/AddStudentModal';
 import AdminEnquiriesManager from '@/components/admin/AdminEnquiriesManager';
+import { downloadFile } from '@/lib/fileDownload';
+import FilePreviewModal from '@/components/common/FilePreviewModal';
+import FileUploadModal from '@/components/common/FileUploadModal';
 
 function AdmissionsContent() {
   const searchParams = useSearchParams();
@@ -25,9 +29,23 @@ function AdmissionsContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'kanban' | 'table'>('kanban');
   const [isAddApplicantOpen, setIsAddApplicantOpen] = useState(false);
-  const [verifiedDocs, setVerifiedDocs] = useState<Record<string, Record<string, boolean>>>({
-    app_5: { birthCertificate: true, transferCertificate: true, addressProof: true, photos: true },
-    app_1: { birthCertificate: true, addressProof: false, photos: true },
+  const [selectedApplicantDocs, setSelectedApplicantDocs] = useState<AdmissionApplication | null>(null);
+  const [previewFile, setPreviewFile] = useState<any>(null);
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [activeUploadDocType, setActiveUploadDocType] = useState<string>('Birth Certificate');
+  const [docStatuses, setDocStatuses] = useState<Record<string, Record<string, 'Verified' | 'Pending' | 'Rejected' | 'Replacement Required'>>>({
+    app_5: {
+      birthCertificate: 'Verified',
+      transferCertificate: 'Verified',
+      addressProof: 'Verified',
+      photos: 'Verified',
+    },
+    app_1: {
+      birthCertificate: 'Verified',
+      transferCertificate: 'Pending',
+      addressProof: 'Replacement Required',
+      photos: 'Verified',
+    },
   });
 
   useEffect(() => {
@@ -116,23 +134,11 @@ function AdmissionsContent() {
     };
   }, [applications]);
 
-  const handleExport = () => {
-    const headers = ["Child Name", "Grade Applied", "Parent Name", "Contact", "Email", "Status", "Inquiry Date"];
-    const rows = applications.map(a => [
-      `"${a.childFirstName} ${a.childLastName}"`,
-      `"${a.gradeAppliedFor || ''}"`,
-      `"${a.parentName}"`,
-      `"${a.parentPhone || ''}"`,
-      `"${a.parentEmail || ''}"`,
-      `"${a.status}"`,
-      `"${a.createdAt ? new Date(a.createdAt).toLocaleDateString() : ''}"`
-    ]);
-    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
-    const link = document.createElement("a");
-    link.href = encodeURI(csvContent);
-    link.download = `admissions_pipeline_${new Date().toISOString().split('T')[0]}.csv`;
-    link.click();
-    toast.success('Admissions pipeline exported to CSV');
+  const handleExport = async () => {
+    await downloadFile(
+      '/api/v1/reports/export/admissions?format=csv',
+      `GGPS-Admissions-Pipeline-${new Date().toISOString().split('T')[0]}.csv`
+    );
   };
 
   const columns: Column<AdmissionApplication>[] = [
@@ -428,68 +434,58 @@ function AdmissionsContent() {
       {activeTab === 'documents' && (
         <div className="space-y-4 bg-white dark:bg-[#07152F] p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
           <div>
-            <h3 className="text-sm font-black text-slate-800 dark:text-slate-100">
-              Admission Document Verification Checklist
+            <h3 className="text-sm font-black text-[#000E28] dark:text-slate-100">
+              Admission Document Verification Desk
             </h3>
             <p className="text-xs text-slate-500">
-              Verify statutory certificates and identity proof before final enrollment approval.
+              Verify statutory certificates, address proofs, and photos before final enrollment approval.
             </p>
           </div>
 
           <div className="divide-y divide-slate-100 dark:divide-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
             {applications.map((app) => {
-              const docs = verifiedDocs[app._id] || {};
-              const docKeys = [
-                { key: 'birthCertificate', label: 'Birth Certificate' },
-                { key: 'transferCertificate', label: 'Transfer Cert (TC)' },
-                { key: 'addressProof', label: 'Address Proof' },
-                { key: 'photos', label: 'Passport Photos' },
-              ];
-
-              const toggleDoc = (docKey: string) => {
-                setVerifiedDocs((prev) => ({
-                  ...prev,
-                  [app._id]: {
-                    ...(prev[app._id] || {}),
-                    [docKey]: !prev[app._id]?.[docKey],
-                  },
-                }));
-                toast.success('Document verification status updated');
+              const currentStatuses = docStatuses[app._id] || {
+                birthCertificate: 'Pending',
+                transferCertificate: 'Pending',
+                addressProof: 'Pending',
+                photos: 'Pending',
               };
 
+              const allVerified = Object.values(currentStatuses).every((s) => s === 'Verified');
+              const anyRejected = Object.values(currentStatuses).some((s) => s === 'Rejected' || s === 'Replacement Required');
+
               return (
-                <div key={app._id} className="p-4 hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div key={app._id} className="p-4 hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-xs text-slate-800 dark:text-slate-100">
+                      <span className="font-bold text-xs text-[#000E28] dark:text-slate-100">
                         {app.childFirstName} {app.childLastName}
                       </span>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-50 text-[#0050CB]">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#E5EEFF] text-[#0050CB]">
                         Class {app.gradeAppliedFor || 'LKG'}
                       </span>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                        allVerified
+                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                          : anyRejected
+                          ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                          : 'bg-slate-100 text-slate-600'
+                      }`}>
+                        {allVerified ? 'All Documents Verified' : anyRejected ? 'Action Required' : 'Verification In-Progress'}
+                      </span>
                     </div>
-                    <span className="text-[11px] text-slate-400">Parent: {app.parentName} ({app.parentPhone})</span>
+                    <span className="text-[11px] text-slate-400">Parent: {app.parentName} ({app.parentPhone || '+91 98000 00000'})</span>
                   </div>
 
                   <div className="flex items-center gap-2 flex-wrap">
-                    {docKeys.map((doc) => {
-                      const isVerified = Boolean(docs[doc.key]);
-                      return (
-                        <button
-                          key={doc.key}
-                          type="button"
-                          onClick={() => toggleDoc(doc.key)}
-                          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-all cursor-pointer ${
-                            isVerified
-                              ? 'bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300'
-                              : 'bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-800 dark:border-slate-700 hover:border-slate-400'
-                          }`}
-                        >
-                          {isVerified ? <Check className="w-3 h-3 text-emerald-600" /> : <AlertCircle className="w-3 h-3 text-slate-400" />}
-                          <span>{doc.label}</span>
-                        </button>
-                      );
-                    })}
+                    <button
+                      type="button"
+                      onClick={() => setSelectedApplicantDocs(app)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-[#0050CB] hover:bg-blue-700 text-white shadow-xs cursor-pointer transition-colors"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>Inspect & Verify Documents</span>
+                    </button>
                   </div>
                 </div>
               );
@@ -551,6 +547,185 @@ function AdmissionsContent() {
         onClose={() => setIsAddApplicantOpen(false)}
         onSuccess={() => {
           fetchApplications();
+        }}
+      />
+
+      {/* 6. Document Inspection & Verification Modal */}
+      {selectedApplicantDocs && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-2xl w-full p-6 space-y-6 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
+              <div>
+                <h3 className="font-extrabold text-base text-[#000E28] dark:text-white flex items-center gap-2">
+                  <ShieldCheck className="w-5 h-5 text-[#0050CB]" />
+                  Document Verification: {selectedApplicantDocs.childFirstName} {selectedApplicantDocs.childLastName}
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Grade: Class {selectedApplicantDocs.gradeAppliedFor || 'LKG'} • App No: {selectedApplicantDocs.applicationNumber || selectedApplicantDocs._id}
+                </p>
+              </div>
+              <button
+                onClick={() => setSelectedApplicantDocs(null)}
+                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              {[
+                { key: 'birthCertificate', name: 'Birth Certificate', ext: 'PDF' },
+                { key: 'transferCertificate', name: 'Transfer Certificate (TC)', ext: 'PDF' },
+                { key: 'addressProof', name: 'Parent Address / Aadhaar Proof', ext: 'JPG' },
+                { key: 'photos', name: 'Passport Size Student Photo', ext: 'PNG' },
+              ].map((doc) => {
+                const appId = selectedApplicantDocs._id;
+                const status = docStatuses[appId]?.[doc.key] || 'Pending';
+
+                const updateDocStatus = (newStatus: 'Verified' | 'Rejected' | 'Replacement Required') => {
+                  setDocStatuses((prev) => ({
+                    ...prev,
+                    [appId]: {
+                      ...(prev[appId] || {}),
+                      [doc.key]: newStatus,
+                    },
+                  }));
+                  toast.success(`${doc.name} marked as "${newStatus}"`);
+                };
+
+                return (
+                  <div key={doc.key} className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <FileText className="w-5 h-5 text-[#0050CB]" />
+                        <div>
+                          <h4 className="font-bold text-xs text-[#000E28] dark:text-white">{doc.name}</h4>
+                          <span className="text-[10px] text-slate-400 font-mono">Format: {doc.ext} • Verified Storage Key</span>
+                        </div>
+                      </div>
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                        status === 'Verified'
+                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                          : status === 'Rejected'
+                          ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                          : status === 'Replacement Required'
+                          ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                          : 'bg-slate-100 text-slate-600'
+                      }`}>
+                        {status}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-200/60 dark:border-slate-700/60 flex-wrap">
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPreviewFile({
+                              _id: `${appId}_${doc.key}`,
+                              originalName: `${doc.name}.${doc.ext.toLowerCase()}`,
+                              mimeType: doc.ext === 'PDF' ? 'application/pdf' : 'image/jpeg',
+                              size: 1048576,
+                              url: `/api/v1/files/${appId}_${doc.key}/preview`,
+                            });
+                          }}
+                          className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-[#0050CB] text-slate-700 dark:text-slate-300 cursor-pointer"
+                        >
+                          <Eye className="w-3.5 h-3.5 text-[#0050CB]" /> Preview
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            downloadFile(`/api/v1/files/${appId}_${doc.key}/download`, `GGPS-Admission-${selectedApplicantDocs.childFirstName}-${doc.key}.${doc.ext.toLowerCase()}`);
+                          }}
+                          className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-[#0050CB] text-slate-700 dark:text-slate-300 cursor-pointer"
+                        >
+                          <Download className="w-3.5 h-3.5 text-[#0050CB]" /> Download
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActiveUploadDocType(doc.name);
+                            setUploadModalOpen(true);
+                          }}
+                          className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-[#FF690C] text-slate-700 dark:text-slate-300 cursor-pointer"
+                        >
+                          <UploadCloud className="w-3.5 h-3.5 text-[#FF690C]" /> Replace
+                        </button>
+                      </div>
+
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => updateDocStatus('Verified')}
+                          className="px-2 py-1 text-[11px] font-bold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer"
+                        >
+                          Verify
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => updateDocStatus('Replacement Required')}
+                          className="px-2 py-1 text-[11px] font-bold rounded-lg bg-amber-500 hover:bg-amber-600 text-white cursor-pointer"
+                        >
+                          Require Replace
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => updateDocStatus('Rejected')}
+                          className="px-2 py-1 text-[11px] font-bold rounded-lg bg-rose-600 hover:bg-rose-700 text-white cursor-pointer"
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => setSelectedApplicantDocs(null)}
+                className="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl hover:bg-slate-200 cursor-pointer"
+              >
+                Close Desk
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Universal File Preview Modal */}
+      {previewFile && (
+        <FilePreviewModal
+          isOpen={Boolean(previewFile)}
+          onClose={() => setPreviewFile(null)}
+          file={previewFile}
+          onDownload={() => {
+            downloadFile(previewFile._id || previewFile.url, previewFile.originalName);
+          }}
+        />
+      )}
+
+      {/* Universal File Upload Modal */}
+      <FileUploadModal
+        isOpen={uploadModalOpen}
+        onClose={() => setUploadModalOpen(false)}
+        category="admissions"
+        entityType="Admission"
+        entityId={selectedApplicantDocs?._id}
+        onUploadComplete={() => {
+          toast.success(`${activeUploadDocType} uploaded and attached to admission application!`);
+          if (selectedApplicantDocs) {
+            setDocStatuses((prev) => ({
+              ...prev,
+              [selectedApplicantDocs._id]: {
+                ...(prev[selectedApplicantDocs._id] || {}),
+                [activeUploadDocType.toLowerCase().replace(/[^a-z]/g, '')]: 'Pending',
+              },
+            }));
+          }
         }}
       />
 

@@ -9,6 +9,9 @@ import {
   createPaymentOrder,
   recordManualPayment,
   handlePaymentWebhook,
+  downloadFeeInvoicePDF,
+  downloadPaymentReceiptPDF,
+  exportFinanceData,
 } from '../controllers/financeController';
 import { protect, authorize } from '../middleware/auth';
 
@@ -23,6 +26,13 @@ router.post('/webhook', handlePaymentWebhook);
 // Admins & Accountants can manage finance, Parents can view their fees and pay invoices
 const adminAuth = [protect, authorize('Admin', 'SuperAdmin', 'Accountant')];
 const feeViewAuth = [protect, authorize('Admin', 'SuperAdmin', 'Accountant', 'Parent')];
+
+// Export route
+router.get('/export', adminAuth, exportFinanceData);
+
+// PDF Downloads
+router.get('/fees/:id/pdf', feeViewAuth, downloadFeeInvoicePDF);
+router.get('/receipts/:receiptNumber/pdf', feeViewAuth, downloadPaymentReceiptPDF);
 
 router.get('/fees', feeViewAuth, getFees);
 router.post('/fees', adminAuth, validate(createFeeSchema), createFee);

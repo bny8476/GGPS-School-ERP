@@ -6,11 +6,15 @@ import {
   GraduationCap, UserCheck, DollarSign, Calendar, HeartPulse, 
   FileText, ArrowLeft, Download, ShieldCheck, Mail, Phone, 
   MapPin, Clock, AlertTriangle, CheckCircle2, ChevronRight,
-  Printer, Send, Edit3, Award, Sparkles, Activity, FileCheck
+  Printer, Send, Edit3, Award, Sparkles, Activity, FileCheck, Upload
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import AdminStatCard from '@/components/admin/AdminStatCard';
+import DocumentTable, { DocumentItem } from '@/components/common/DocumentTable';
+import FileUploadModal from '@/components/common/FileUploadModal';
+import FilePreviewModal, { PreviewableFile } from '@/components/common/FilePreviewModal';
+import { downloadFile } from '@/lib/fileDownload';
 
 export default function Student360Profile({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
@@ -21,7 +25,10 @@ export default function Student360Profile({ params }: { params: Promise<{ id: st
   const [attendance, setAttendance] = useState<any[]>([]);
   const [fees, setFees] = useState<any[]>([]);
   const [assessments, setAssessments] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState<'overview' | 'academic' | 'attendance' | 'fees' | 'health' | 'timeline'>('overview');
+  const [documents, setDocuments] = useState<DocumentItem[]>([]);
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [previewDoc, setPreviewDoc] = useState<PreviewableFile | null>(null);
+  const [activeTab, setActiveTab] = useState<'overview' | 'academic' | 'attendance' | 'fees' | 'health' | 'timeline' | 'documents'>('overview');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -114,6 +121,20 @@ export default function Student360Profile({ params }: { params: Promise<{ id: st
             { _id: 'ass_3', term: 'Term 1 Mid-Term Evaluation', subject: 'Motor Skills & Sensory Play', score: '98/100', grade: 'A+', teacherComments: 'Excellent fine motor coordination in block building and craft work.', createdAt: '2026-08-24' },
           ]);
         }
+
+        // Fetch Documents
+        const docRes = await fetch(`${apiBase}/api/v1/documents?studentId=${studentId}`, { headers }).catch(() => null);
+        if (docRes && docRes.ok) {
+          const docData = await docRes.json();
+          setDocuments(Array.isArray(docData.data) ? docData.data : []);
+        } else {
+          setDocuments([
+            { _id: 'doc-birth', title: 'Official Birth Certificate', category: 'Birth Certificate', size: 1450000, mimeType: 'application/pdf', verificationStatus: 'Verified', createdAt: '2026-03-15' },
+            { _id: 'doc-aadhaar', title: 'Aadhaar / National Identity Proof', category: 'Aadhaar/ID Proof', size: 820000, mimeType: 'image/jpeg', verificationStatus: 'Verified', createdAt: '2026-03-15' },
+            { _id: 'doc-immun', title: 'Pediatric Immunization Record', category: 'Medical Documents', size: 1120000, mimeType: 'application/pdf', verificationStatus: 'Pending', createdAt: '2026-04-10' },
+            { _id: 'doc-parent', title: 'Parent Proof of Residence & Address', category: 'Address Proof', size: 950000, mimeType: 'application/pdf', verificationStatus: 'Verified', createdAt: '2026-03-16' },
+          ]);
+        }
       } catch (err) {
         console.error('Failed to load Student 360 profile', err);
       } finally {
@@ -126,29 +147,67 @@ export default function Student360Profile({ params }: { params: Promise<{ id: st
     }
   }, [studentId]);
 
-  const handleDownloadReportCard = async () => {
-    toast.success('Generating official GGPS Student 360° Report Card PDF...');
+  const fetchStudentDocuments = async () => {
     try {
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
       const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
-      const res = await fetch(`${apiBase}/api/assessments/report-card/${studentId}/pdf`, {
-        headers: { 'Authorization': `Bearer ${token || ''}` }
+      const docRes = await fetch(`${apiBase}/api/v1/documents?studentId=${studentId}`, {
+        headers: { Authorization: `Bearer ${token || ''}` },
+      });
+      if (docRes.ok) {
+        const docData = await docRes.json();
+        setDocuments(Array.isArray(docData.data) ? docData.data : []);
+      }
+    } catch {
+      // Ignored
+    }
+  };
+
+  const handleDownloadReportCard = async () => {
+    const filename = `GGPS-Student-Report-${student?.studentId || studentId}.pdf`;
+    await downloadFile(`/api/assessments/report-card/${studentId}/pdf`, filename);
+  };
+
+  const handleVerifyDocument = async (doc: DocumentItem, status: 'Verified' | 'Rejected' | 'Replacement Required') => {
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+      const res = await fetch(`${apiBase}/api/v1/documents/${doc._id || doc.id}/verify`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token || ''}`,
+        },
+        body: JSON.stringify({ verificationStatus: status }),
       });
       if (res.ok) {
-        const blob = await res.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `report_card_${student?.firstName}_${student?.lastName}.pdf`;
-        a.click();
+        toast.success(`Document marked as ${status}`);
+        fetchStudentDocuments();
       } else {
-        // Mock download trigger
-        setTimeout(() => {
-          toast.success('Report Card downloaded successfully');
-        }, 800);
+        toast.error('Failed to update verification status');
       }
-    } catch (err) {
-      toast.error('Could not generate PDF');
+    } catch {
+      toast.error('Network error during verification update');
+    }
+  };
+
+  const handleDeleteDocument = async (doc: DocumentItem) => {
+    if (!confirm(`Are you sure you want to remove "${doc.title}"?`)) return;
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+      const res = await fetch(`${apiBase}/api/v1/documents/${doc._id || doc.id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token || ''}` },
+      });
+      if (res.ok) {
+        toast.success('Document deleted');
+        setDocuments(prev => prev.filter(d => (d._id || d.id) !== (doc._id || doc.id)));
+      } else {
+        toast.error('Failed to delete document');
+      }
+    } catch {
+      toast.error('Network error');
     }
   };
 
@@ -288,6 +347,7 @@ export default function Student360Profile({ params }: { params: Promise<{ id: st
           { id: 'attendance', label: 'Attendance Roll', icon: Calendar },
           { id: 'fees', label: `Fee Ledger (${fees.length})`, icon: DollarSign },
           { id: 'health', label: 'Health & Dietary', icon: HeartPulse },
+          { id: 'documents', label: `Documents (${documents.length})`, icon: FileCheck },
           { id: 'timeline', label: 'Audit Timeline', icon: Clock },
         ].map((tab) => {
           const Icon = tab.icon;
@@ -575,6 +635,56 @@ export default function Student360Profile({ params }: { params: Promise<{ id: st
           </div>
         </div>
       )}
+
+      {activeTab === 'documents' && (
+        <div className="bg-white/95 dark:bg-[#001438]/95 backdrop-blur-md rounded-[28px] p-6 border border-slate-200/80 dark:border-slate-800/80 shadow-xs space-y-5">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
+            <div>
+              <h3 className="font-black text-base text-[#000E28] dark:text-white flex items-center gap-2">
+                <FileCheck className="w-5 h-5 text-[#0050CB]" />
+                Student Verified Documents & Certificates Vault
+              </h3>
+              <p className="text-xs text-slate-500">
+                Official records: Birth Certificate, ID Proof, Address Proof, Transfer Certificate, and Immunization Records.
+              </p>
+            </div>
+            <button
+              onClick={() => setIsUploadModalOpen(true)}
+              className="px-4 py-2 bg-[#0050CB] hover:bg-[#0041A8] text-white font-bold text-xs rounded-xl transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+            >
+              <Upload className="w-4 h-4" />
+              <span>Upload Document</span>
+            </button>
+          </div>
+
+          <DocumentTable
+            documents={documents}
+            onPreview={(doc) => setPreviewDoc(doc as any)}
+            onVerify={handleVerifyDocument}
+            onDelete={handleDeleteDocument}
+            canVerify={true}
+            canDelete={true}
+          />
+        </div>
+      )}
+
+      {/* Upload Modal */}
+      <FileUploadModal
+        isOpen={isUploadModalOpen}
+        onClose={() => setIsUploadModalOpen(false)}
+        defaultCategory="students"
+        entityType="Student"
+        entityId={studentId}
+        title={`Upload Student Document • ${student.firstName} ${student.lastName}`}
+        onSuccess={() => fetchStudentDocuments()}
+      />
+
+      {/* Universal Preview Modal */}
+      <FilePreviewModal
+        file={previewDoc}
+        isOpen={!!previewDoc}
+        onClose={() => setPreviewDoc(null)}
+      />
 
     </div>
   );

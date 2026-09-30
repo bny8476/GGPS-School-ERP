@@ -5,11 +5,14 @@ import { useSearchParams } from "next/navigation";
 import { 
   BookOpen, Plus, Edit2, Trash2, Search, Phone, Mail, Award, Clock, DollarSign,
   ChevronRight, MoreVertical, FileText, Users, Sparkles, Check, X, ArrowRight,
-  Filter, LayoutGrid, List, UserCheck, GraduationCap, ShieldCheck
+  Filter, LayoutGrid, List, UserCheck, GraduationCap, ShieldCheck, Download, Eye, UploadCloud
 } from "lucide-react";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import { Card, StatCard, ProfileCard, ActionCard, EmptyStateCard } from "@/components/ui/Card";
+import { downloadFile } from "@/lib/fileDownload";
+import FilePreviewModal from "@/components/common/FilePreviewModal";
+import FileUploadModal from "@/components/common/FileUploadModal";
 
 function TeachersContent() {
   const searchParams = useSearchParams();
@@ -27,6 +30,81 @@ function TeachersContent() {
 
   const [showModal, setShowModal] = useState(false);
   const [editingTeacherId, setEditingTeacherId] = useState<string | null>(null);
+
+  // Teacher Documents State
+  const [selectedTeacherForDocs, setSelectedTeacherForDocs] = useState<any>(null);
+  const [teacherDocs, setTeacherDocs] = useState<any[]>([]);
+  const [isLoadingDocs, setIsLoadingDocs] = useState(false);
+  const [previewDoc, setPreviewDoc] = useState<any>(null);
+  const [isUploadDocOpen, setIsUploadDocOpen] = useState(false);
+  const [activeUploadCategory, setActiveUploadCategory] = useState<string>('qualification');
+
+  const fetchTeacherDocuments = async (teacherId: string) => {
+    setIsLoadingDocs(true);
+    try {
+      const token = localStorage.getItem('token');
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
+      const res = await fetch(`${apiBase}/api/v1/documents/employees?userId=${teacherId}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setTeacherDocs(data.data || []);
+      }
+    } catch (err) {
+      console.error('Failed to load teacher documents', err);
+    } finally {
+      setIsLoadingDocs(false);
+    }
+  };
+
+  const openTeacherDocuments = (teacher: any) => {
+    setSelectedTeacherForDocs(teacher);
+    fetchTeacherDocuments(teacher._id);
+  };
+
+  const handleVerifyTeacherDoc = async (docId: string, status: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
+      const res = await fetch(`${apiBase}/api/v1/documents/employees/${docId}/verify`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ verificationStatus: status }),
+      });
+      if (res.ok) {
+        toast.success(`Document marked as "${status}"`);
+        if (selectedTeacherForDocs) fetchTeacherDocuments(selectedTeacherForDocs._id);
+      } else {
+        toast.error('Failed to update status');
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Status update failed');
+    }
+  };
+
+  const handleDeleteTeacherDoc = async (docId: string) => {
+    if (!confirm('Are you sure you want to delete this staff document?')) return;
+    try {
+      const token = localStorage.getItem('token');
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
+      const res = await fetch(`${apiBase}/api/v1/documents/employees/${docId}`, {
+        method: 'DELETE',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (res.ok) {
+        toast.success('Document deleted');
+        if (selectedTeacherForDocs) fetchTeacherDocuments(selectedTeacherForDocs._id);
+      } else {
+        toast.error('Failed to delete document');
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Deletion failed');
+    }
+  };
 
   useEffect(() => {
     if (searchParams.get('action') === 'new') {
@@ -500,6 +578,14 @@ function TeachersContent() {
                     </span>
 
                     <button 
+                      onClick={() => openTeacherDocuments(t)}
+                      className="p-1.5 rounded-lg bg-[#E5EEFF] dark:bg-blue-950/40 text-[#0050CB] hover:bg-blue-100 cursor-pointer"
+                      title="Faculty Documents Vault"
+                    >
+                      <FileText className="w-3.5 h-3.5" />
+                    </button>
+
+                    <button 
                       onClick={() => openEdit(t)}
                       className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-[#0050CB] cursor-pointer"
                       title="Edit Profile"
@@ -818,6 +904,187 @@ function TeachersContent() {
           </div>
         </div>
       )}
+
+      {/* Teacher Documents Vault Modal */}
+      {selectedTeacherForDocs && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-4xl w-full p-6 space-y-6 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-[#E5EEFF] text-[#0050CB] flex items-center justify-center font-bold">
+                  <ShieldCheck className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-base text-[#000E28] dark:text-white">
+                    Faculty Document Vault: {selectedTeacherForDocs.firstName} {selectedTeacherForDocs.lastName}
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    {selectedTeacherForDocs.designation || 'Educator'} • ID: {selectedTeacherForDocs._id}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsUploadDocOpen(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-[#0050CB] hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-xs cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Upload Document</span>
+                </button>
+                <button
+                  onClick={() => setSelectedTeacherForDocs(null)}
+                  className="p-1.5 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Document Categories Checklist & Items */}
+            {isLoadingDocs ? (
+              <div className="p-12 text-center text-xs text-slate-500">Loading verified documentation...</div>
+            ) : teacherDocs.length > 0 ? (
+              <div className="divide-y divide-slate-100 dark:divide-slate-800 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden">
+                {teacherDocs.map((doc: any) => (
+                  <div key={doc._id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-blue-50 text-[#0050CB] flex items-center justify-center shrink-0">
+                        <FileText className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-xs text-[#000E28] dark:text-white">{doc.title}</h4>
+                        <p className="text-[11px] text-slate-400">
+                          {doc.category} • {doc.fileName} • {doc.fileSize ? `${Math.round(doc.fileSize / 1024)} KB` : 'Verified'}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                        doc.verificationStatus === 'Verified'
+                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                          : doc.verificationStatus === 'Rejected'
+                          ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                          : 'bg-amber-50 text-amber-700 border border-amber-200'
+                      }`}>
+                        {doc.verificationStatus || 'Pending'}
+                      </span>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPreviewDoc({
+                            _id: doc.fileRecordId?._id || doc._id,
+                            originalName: doc.fileName || doc.title,
+                            mimeType: doc.mimeType || 'application/pdf',
+                            size: doc.fileSize || 1048576,
+                            url: doc.documentUrl || `/api/v1/files/${doc.fileRecordId?._id || doc._id}/preview`,
+                          });
+                        }}
+                        className="p-1.5 rounded-lg border border-slate-200 hover:border-[#0050CB] text-[#0050CB] cursor-pointer"
+                        title="Preview"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          downloadFile(
+                            doc.documentUrl || doc.fileRecordId?._id || doc._id,
+                            `GGPS-Staff-${selectedTeacherForDocs.firstName}-${doc.title.replace(/[^a-zA-Z0-9_-]/g, '_')}.pdf`
+                          );
+                        }}
+                        className="p-1.5 rounded-lg border border-slate-200 hover:border-[#0050CB] text-[#0050CB] cursor-pointer"
+                        title="Download"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleVerifyTeacherDoc(doc._id, 'Verified')}
+                        className="px-2 py-1 text-[11px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg cursor-pointer"
+                      >
+                        Verify
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleVerifyTeacherDoc(doc._id, 'Rejected')}
+                        className="px-2 py-1 text-[11px] font-bold bg-rose-600 hover:bg-rose-700 text-white rounded-lg cursor-pointer"
+                      >
+                        Reject
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteTeacherDoc(doc._id)}
+                        className="p-1.5 text-rose-500 hover:text-rose-700 cursor-pointer"
+                        title="Delete"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-8 text-center space-y-3 bg-slate-50/50 dark:bg-slate-800/40 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700">
+                <FileText className="w-10 h-10 text-slate-300 mx-auto" />
+                <p className="text-xs font-bold text-slate-600 dark:text-slate-300">
+                  No employee documents on file yet for {selectedTeacherForDocs.firstName}.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setIsUploadDocOpen(true)}
+                  className="px-3 py-1.5 bg-[#0050CB] text-white rounded-xl text-xs font-bold cursor-pointer"
+                >
+                  Upload First Document
+                </button>
+              </div>
+            )}
+
+            <div className="flex items-center justify-end pt-4 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => setSelectedTeacherForDocs(null)}
+                className="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-xl hover:bg-slate-200 cursor-pointer"
+              >
+                Close Vault
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Preview Modal */}
+      {previewDoc && (
+        <FilePreviewModal
+          isOpen={Boolean(previewDoc)}
+          onClose={() => setPreviewDoc(null)}
+          file={previewDoc}
+          onDownload={() => {
+            downloadFile(previewDoc._id || previewDoc.url, previewDoc.originalName);
+          }}
+        />
+      )}
+
+      {/* Upload Modal */}
+      <FileUploadModal
+        isOpen={isUploadDocOpen}
+        onClose={() => setIsUploadDocOpen(false)}
+        category="teachers"
+        entityType="Employee"
+        entityId={selectedTeacherForDocs?._id}
+        onUploadComplete={() => {
+          toast.success("Staff document successfully uploaded and verified in vault!");
+          if (selectedTeacherForDocs) {
+            fetchTeacherDocuments(selectedTeacherForDocs._id);
+          }
+        }}
+      />
 
     </div>
   );

@@ -11,6 +11,8 @@ import ReportCardModal from "@/components/parent/ReportCardModal";
 import IdCardParentModal from "@/components/parent/IdCardParentModal";
 import { useParent } from "@/context/ParentContext";
 import toast from "react-hot-toast";
+import { downloadFile } from "@/lib/fileDownload";
+import FileUploadModal from "@/components/common/FileUploadModal";
 
 interface DocumentRecord {
   id: string;
@@ -176,7 +178,7 @@ export default function DocumentVaultPage() {
     return result;
   }, [allDocuments, activeCategory, searchQuery, sortBy]);
 
-  const handleDownload = (doc: DocumentRecord) => {
+  const handleDownload = async (doc: DocumentRecord) => {
     if (doc.category === "Report Cards") {
       setIsReportModalOpen(true);
       return;
@@ -185,7 +187,12 @@ export default function DocumentVaultPage() {
       setIsIdCardModalOpen(true);
       return;
     }
-    toast.success(`Downloading verified "${doc.title}"...`);
+    if (doc.category === "Receipts" || doc.id === "doc-2") {
+      await downloadFile('/api/v1/finance/payments/latest/receipt-pdf', 'GGPS-Fee-Receipt-902811.pdf');
+      return;
+    }
+    const safeTitle = doc.title.replace(/[^a-zA-Z0-9_-]/g, '_');
+    await downloadFile(`/api/v1/reports/export/students?format=pdf`, `${safeTitle}.pdf`);
   };
 
   const handleViewDetails = (doc: DocumentRecord) => {
@@ -833,96 +840,18 @@ export default function DocumentVaultPage() {
         </div>
       )}
 
-      {/* ========================================================
-          7. + ADD / UPLOAD DOCUMENT MODAL
-      ======================================================== */}
-      {isUploadModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div
-            onClick={() => setIsUploadModalOpen(false)}
-            className="fixed inset-0 bg-[#000E28]/60 backdrop-blur-xs"
-          />
-
-          <div className="relative w-full max-w-lg bg-white dark:bg-[#07142F] rounded-[24px] border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden z-10 p-6 space-y-5">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-[#E5EEFF] text-[#0050CB] flex items-center justify-center">
-                  <UploadCloud className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-[#000E28] dark:text-white">
-                    Submit Family Document
-                  </h3>
-                  <p className="text-[11px] text-slate-400">
-                    Upload official certificates, medical forms, or parent declarations
-                  </p>
-                </div>
-              </div>
-
-              <button
-                onClick={() => setIsUploadModalOpen(false)}
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-white"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="space-y-3.5 text-xs">
-              <div>
-                <label className="block font-bold text-[#000E28] dark:text-slate-300 mb-1">
-                  Document Category
-                </label>
-                <select className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-medium">
-                  <option>School Documents &amp; Certificates</option>
-                  <option>Medical &amp; Immunization Record</option>
-                  <option>Address &amp; Parent Identity Proof</option>
-                  <option>Transfer / Previous School Transcript</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block font-bold text-[#000E28] dark:text-slate-300 mb-1">
-                  Document Title
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Annual Pediatric Health Check Certificate 2026"
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-medium"
-                />
-              </div>
-
-              {/* Upload Drop Area */}
-              <div className="p-6 border-2 border-dashed border-blue-200 dark:border-blue-900/60 rounded-2xl bg-blue-50/40 dark:bg-blue-950/20 text-center space-y-2">
-                <UploadCloud className="w-8 h-8 text-[#0050CB] mx-auto" />
-                <p className="text-xs font-bold text-[#000E28] dark:text-white">
-                  Drag &amp; drop PDF or click to browse
-                </p>
-                <p className="text-[11px] text-slate-400">
-                  Supported formats: PDF, PNG, JPG (Maximum 15 MB)
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-              <button
-                onClick={() => setIsUploadModalOpen(false)}
-                className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-bold hover:bg-slate-200"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  toast.success("Document uploaded and forwarded to School Registrar for digital verification.");
-                  setIsUploadModalOpen(false);
-                }}
-                className="px-4 py-2 rounded-xl bg-[#0050CB] text-white text-xs font-bold hover:bg-[#0041A8] flex items-center gap-1.5 shadow-sm"
-              >
-                <span>Upload &amp; Verify</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Universal File Upload Modal */}
+      <FileUploadModal
+        isOpen={isUploadModalOpen}
+        onClose={() => setIsUploadModalOpen(false)}
+        category="students"
+        entityType="Student"
+        entityId={child._id}
+        onUploadComplete={() => {
+          toast.success("Document uploaded and forwarded to School Registrar for digital verification.");
+          setIsUploadModalOpen(false);
+        }}
+      />
 
       {/* Official Interactive Report Card Modal */}
       <ReportCardModal

@@ -15,6 +15,9 @@ import {
   generateNextInvoiceNumber,
 } from '../services/sequenceService';
 import { emitToUser, emitToRole } from '../socket';
+import { generateFeeInvoicePDF, generatePaymentReceiptPDF } from '../utils/pdfGenerator';
+import * as XLSX from 'xlsx';
+import AuditLog from '../models/AuditLog';
 
 // @desc    Get all fees (with role isolation & search/filter/pagination)
 // @route   GET /api/finance/fees
@@ -728,4 +731,171 @@ export const recordManualPayment = async (req: Request, res: Response) => {
     return res.status(500).json({ success: false, message: 'Failed to record manual fee payment', error });
   }
 };
+
+// @desc    Download Fee Invoice PDF
+// @route   GET /api/finance/fees/:id/pdf
+export const downloadFeeInvoicePDF = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({ success: false, message: 'Invalid fee ID' });
+    }
+
+    const fee = await Fee.findById(id).populate('studentId', 'firstName lastName admissionNumber grade section rollNumber studentId');
+    if (!fee) {
+      return res.status(404).json({ success: false, message: 'Fee invoice not found' });
+    }
+
+    // Role check for Parents
+    if (req.user?.role === 'Parent') {
+      const parent = await Parent.findOne({ userId: req.user.id });
+      if (parent) {
+        const student = await Student.findOne({ _id: fee.studentId, parentId: parent._id });
+        if (!student) {
+          return res.status(403).json({ success: false, message: 'Access denied: Invoice does not belong to your ward' });
+        }
+      }
+    }
+
+    // Audit Log
+    AuditLog.create({
+      userId: req.user?.id ? new mongoose.Types.ObjectId(req.user.id) : undefined,
+      userName: `${req.user?.firstName || ''} ${req.user?.lastName || ''}`.trim() || req.user?.email,
+      userRole: req.user?.role,
+      action: 'FILE_DOWNLOADED',
+      module: 'Finance',
+      targetId: String(fee._id),
+      ipAddress: req.ip,
+      details: `Downloaded Fee Invoice PDF for Invoice No: ${fee.invoiceNumber || fee._id}.`,
+    }).catch(() => null);
+
+    generateFeeInvoicePDF(res, fee);
+  } catch (error: any) {
+    return res.status(500).json({ success: false, message: 'Failed to generate Fee Invoice PDF', error: error.message });
+  }
+};
+
+// @desc    Download Fee Payment Receipt PDF
+// @route   GET /api/finance/receipts/:receiptNumber/pdf
+export const downloadPaymentReceiptPDF = async (req: Request, res: Response) => {
+  try {
+    const { receiptNumber } = req.params;
+
+    // Search by receiptNumber or by fee _id
+    let fee = await Fee.findOne({
+      $or: [
+        { receiptNumber },
+        { 'paymentHistory.receiptNumber': receiptNumber },
+        ...(mongoose.isValidObjectId(receiptNumber) ? [{ _id: new mongoose.Types.ObjectId(receiptNumber) }] : []),
+      ],
+    }).populate('studentId', 'firstName lastName admissionNumber grade section rollNumber studentId');
+
+    if (!fee) {
+      return res.status(404).json({ success: false, message: 'Payment receipt record not found' });
+    }
+
+    // Locate exact payment entry if multiple
+    let specificPayment = fee.paymentHistory?.find((p: any) => p.receiptNumber === receiptNumber);
+    const receiptData = {
+      receiptNumber: specificPayment?.receiptNumber || fee.receiptNumber || receiptNumber,
+      amount: specificPayment?.amount || fee.amountPaid,
+      paymentMethod: specificPayment?.paymentMethod || fee.paymentMethod,
+      transactionId: specificPayment?.transactionId || fee.transactionId,
+      paidAt: specificPayment?.paidAt || fee.paidAt || fee.updatedAt,
+      studentId: fee.studentId,
+      feeType: fee.feeType || fee.title,
+      grade: fee.grade,
+    };
+
+    // Audit Log
+    AuditLog.create({
+      userId: req.user?.id ? new mongoose.Types.ObjectId(req.user.id) : undefined,
+      userName: `${req.user?.firstName || ''} ${req.user?.lastName || ''}`.trim() || req.user?.email,
+      userRole: req.user?.role,
+      action: 'FILE_DOWNLOADED',
+      module: 'Finance',
+      targetId: String(fee._id),
+      ipAddress: req.ip,
+      details: `Downloaded Payment Receipt PDF No: ${receiptData.receiptNumber}.`,
+    }).catch(() => null);
+
+    generatePaymentReceiptPDF(res, receiptData);
+  } catch (error: any) {
+    return res.status(500).json({ success: false, message: 'Failed to generate Payment Receipt PDF', error: error.message });
+  }
+};
+
+// @desc    Export Finance Invoices/Receipts to CSV or XLSX
+// @route   GET /api/finance/export
+export const exportFinanceData = async (req: Request, res: Response) => {
+  try {
+    const { status, grade, format = 'csv', type = 'invoices' } = req.query;
+
+    const query: Record<string, any> = {};
+    if (status && status !== 'all') query.status = status;
+    if (grade && grade !== 'all') query.grade = grade;
+
+    const fees = await Fee.find(query)
+      .populate('studentId', 'firstName lastName admissionNumber grade')
+      .sort({ createdAt: -1 });
+
+    const rows = fees.map((f: any) => {
+      const student = f.studentId || {};
+      const studentName = `${student.firstName || ''} ${student.lastName || ''}`.trim() || 'Student';
+      return {
+        'Invoice Number': f.invoiceNumber || String(f._id),
+        'Student Name': studentName,
+        'Admission Number': student.admissionNumber || '-',
+        'Grade / Class': f.grade || student.grade || '-',
+        'Fee Category': f.feeType || 'Tuition',
+        'Total Amount (INR)': f.totalAmount,
+        'Amount Paid (INR)': f.amountPaid,
+        'Balance Due (INR)': Math.max(0, (f.totalAmount || 0) - (f.amountPaid || 0)),
+        'Payment Status': f.status,
+        'Receipt Number': f.receiptNumber || '-',
+        'Due Date': f.dueDate ? new Date(f.dueDate).toLocaleDateString('en-GB') : '-',
+        'Last Paid At': f.paidAt ? new Date(f.paidAt).toLocaleDateString('en-GB') : '-',
+      };
+    });
+
+    const filename = `GGPS-Finance-Ledger-${new Date().toISOString().split('T')[0]}`;
+
+    if (format === 'xlsx') {
+      const ws = XLSX.utils.json_to_sheet(rows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Finance Ledger');
+      const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}.xlsx"`);
+      return res.send(buffer);
+    } else {
+      // CSV Export
+      const headers = [
+        'Invoice Number', 'Student Name', 'Admission Number', 'Grade / Class',
+        'Fee Category', 'Total Amount (INR)', 'Amount Paid (INR)', 'Balance Due (INR)',
+        'Payment Status', 'Receipt Number', 'Due Date', 'Last Paid At',
+      ];
+      const csvLines = [headers.join(',')];
+
+      rows.forEach((r) => {
+        const line = headers
+          .map((h) => {
+            const val = String((r as any)[h] || '').replace(/"/g, '""');
+            return `"${val}"`;
+          })
+          .join(',');
+        csvLines.push(line);
+      });
+
+      const csvData = csvLines.join('\n');
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}.csv"`);
+      return res.send(csvData);
+    }
+  } catch (error: any) {
+    return res.status(500).json({ success: false, message: 'Export failed', error: error.message });
+  }
+};
+
 

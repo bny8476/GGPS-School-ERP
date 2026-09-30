@@ -4,7 +4,8 @@ import {
   getAdmissionAnalytics, 
   getAttendanceSummary,
   getAcademicReport,
-  getStaffReport
+  getStaffReport,
+  exportReport,
 } from '../controllers/reportController';
 import { protect, authorize } from '../middleware/auth';
 
@@ -14,6 +15,8 @@ router.use(protect);
 
 const adminStaffAuth = authorize('SuperAdmin', 'Admin', 'Principal', 'Accountant');
 const generalStaffAuth = authorize('SuperAdmin', 'Admin', 'Principal', 'Accountant', 'Teacher');
+
+router.get('/export/:reportType', generalStaffAuth, exportReport);
 
 router.get('/fee-defaulters', adminStaffAuth, getFeeDefaulters);
 router.get('/admissions', adminStaffAuth, getAdmissionAnalytics);

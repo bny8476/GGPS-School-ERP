@@ -1,212 +1,351 @@
 "use client";
 
-import React, { useState, useRef } from "react";
-import { Folder, File, Upload, Download, Trash2, Search, HardDrive, Share2, Check } from "lucide-react";
+import React, { useState, useEffect, useCallback } from "react";
+import { 
+  Folder, File, Upload, Download, Trash2, Search, 
+  HardDrive, Share2, Eye, RefreshCw, Plus, ShieldCheck, 
+  FileSpreadsheet, Image as ImageIcon, FileText, CheckCircle2 
+} from "lucide-react";
 import EmergencyBanner from "@/components/ui/EmergencyBanner";
+import FileUploadModal from "@/components/common/FileUploadModal";
+import FilePreviewModal, { PreviewableFile } from "@/components/common/FilePreviewModal";
+import { downloadFile } from "@/lib/fileDownload";
 import toast from "react-hot-toast";
 
+interface CloudFile {
+  _id: string;
+  originalName: string;
+  storedName: string;
+  category: string;
+  size: number;
+  mimeType: string;
+  extension: string;
+  url: string;
+  verificationStatus?: string;
+  createdAt: string;
+  uploadedBy?: {
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+  };
+}
+
 export default function FileManagerPage() {
-  const [files, setFiles] = useState([
-    { id: 1, name: "Mathematics_Syllabus_2026.pdf", folder: "Curriculum", size: "2.4 MB", type: "PDF", date: "Sep 12, 2026" },
-    { id: 2, name: "School_Campus_Photo.jpg", folder: "Media", size: "4.1 MB", type: "Image", date: "Sep 10, 2026" },
-    { id: 3, name: "Grade_10_Attendance_Sheet.xlsx", folder: "Reports", size: "850 KB", type: "Excel", date: "Sep 08, 2026" },
-  ]);
-
+  const [files, setFiles] = useState<CloudFile[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedFolder, setSelectedFolder] = useState("All Folders");
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedFolder, setSelectedFolder] = useState("all");
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [previewFile, setPreviewFile] = useState<PreviewableFile | null>(null);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
-  const folders = ["All Folders", "Curriculum", "Media", "Reports", "Administrative", "Certificates"];
+  const folders = [
+    { key: "all", label: "All Folders" },
+    { key: "students", label: "Students" },
+    { key: "admissions", label: "Admissions" },
+    { key: "teachers", label: "Teachers & Staff" },
+    { key: "fees", label: "Fees & Finance" },
+    { key: "reports", label: "Reports" },
+    { key: "certificates", label: "Certificates" },
+    { key: "general", label: "General Docs" },
+  ];
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
-    const newFile = {
-      id: Date.now(),
-      name: file.name,
-      folder: selectedFolder === "All Folders" ? "Curriculum" : selectedFolder,
-      size: `${sizeMB === "0.0" ? "120 KB" : `${sizeMB} MB`}`,
-      type: file.name.split('.').pop()?.toUpperCase() || 'FILE',
-      date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
-    };
-    setFiles(prev => [newFile, ...prev]);
-    toast.success(`Uploaded "${file.name}" to ${newFile.folder}`);
-    if (fileInputRef.current) fileInputRef.current.value = "";
+  const fetchFiles = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      const headers: Record<string, string> = {};
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
+      let url = `${apiBase}/api/v1/files?limit=100`;
+      if (selectedFolder !== "all") {
+        url += `&category=${selectedFolder}`;
+      }
+      if (searchQuery.trim()) {
+        url += `&search=${encodeURIComponent(searchQuery.trim())}`;
+      }
+
+      const res = await fetch(url, { headers });
+      if (res.ok) {
+        const json = await res.json();
+        setFiles(json.data || []);
+      } else {
+        toast.error("Failed to load cloud files from repository.");
+      }
+    } catch (err: any) {
+      console.error("Fetch files error:", err);
+      toast.error("Network error loading files.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [selectedFolder, searchQuery]);
+
+  useEffect(() => {
+    fetchFiles();
+  }, [fetchFiles]);
+
+  const handleDownload = async (file: CloudFile) => {
+    setDownloadingId(file._id);
+    await downloadFile(file._id, file.originalName);
+    setDownloadingId(null);
   };
 
-  const handleDownload = (file: any) => {
-    const blob = new Blob([`Content of ${file.name}\nGenerated on ${file.date}\nGGPS School ERP`], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = file.name;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    toast.success(`Downloading ${file.name}`);
-  };
+  const handleDelete = async (id: string, name: string) => {
+    if (!confirm(`Are you sure you want to permanently delete "${name}"?`)) return;
 
-  const handleShare = (file: any) => {
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(`${window.location.origin}/dashboard/file-manager?file=${encodeURIComponent(file.name)}`);
-      toast.success(`Share link for "${file.name}" copied to clipboard!`);
-    } else {
-      toast.success(`Link generated for "${file.name}"`);
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      const res = await fetch(`${apiBase}/api/v1/files/${id}`, {
+        method: "DELETE",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+
+      if (res.ok) {
+        toast.success(`Deleted "${name}"`);
+        setFiles((prev) => prev.filter((f) => f._id !== id));
+      } else {
+        const err = await res.json().catch(() => ({}));
+        toast.error(err.message || "Failed to delete file.");
+      }
+    } catch {
+      toast.error("Network error while deleting file.");
     }
   };
 
-  const handleDelete = (id: number, name: string) => {
-    setFiles(prev => prev.filter(f => f.id !== id));
-    toast.success(`Deleted "${name}"`);
+  const handleShare = (file: CloudFile) => {
+    const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+    const shareUrl = `${apiBase}/api/v1/files/${file._id}/download`;
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(shareUrl);
+      toast.success(`Secure download URL for "${file.originalName}" copied to clipboard!`);
+    } else {
+      toast.success(`File link ready: ${file.originalName}`);
+    }
   };
 
-  const filteredFiles = files.filter(f => {
-    const matchesFolder = selectedFolder === "All Folders" || f.folder === selectedFolder;
-    const matchesSearch = f.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          f.folder.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesFolder && matchesSearch;
-  });
+  const formatSize = (bytes: number) => {
+    if (!bytes) return "0 KB";
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const getFileIcon = (mime: string, ext: string) => {
+    if (mime?.includes("pdf") || ext === ".pdf") return <FileText className="w-5 h-5 text-rose-500" />;
+    if (mime?.includes("sheet") || ext === ".xlsx" || ext === ".csv") return <FileSpreadsheet className="w-5 h-5 text-emerald-600" />;
+    if (mime?.startsWith("image/") || [".jpg", ".jpeg", ".png", ".webp"].includes(ext)) return <ImageIcon className="w-5 h-5 text-[#0050CB]" />;
+    return <File className="w-5 h-5 text-slate-500" />;
+  };
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       <EmergencyBanner />
 
-      {/* Hidden file input */}
-      <input
-        type="file"
-        ref={fileInputRef}
-        onChange={handleFileUpload}
-        className="hidden"
-      />
-
       {/* Page Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-extrabold text-[#000E28] dark:text-white flex items-center gap-3">
             <HardDrive className="w-8 h-8 text-[#0050CB] dark:text-[#38BDF8]" />
             Digital File Manager & Cloud Documents
           </h1>
           <p className="text-slate-500 dark:text-slate-400 mt-1 text-sm font-medium">
-            Centralized document storage, syllabus distribution, file sharing, and backups.
+            Centralized document storage, syllabus distribution, verified student archives, and secure streaming.
           </p>
         </div>
 
         <button 
-          onClick={() => fileInputRef.current?.click()}
-          className="px-5 py-2.5 bg-[#0050CB] hover:bg-[#0041A8] text-white text-xs font-bold rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer"
+          onClick={() => setIsUploadModalOpen(true)}
+          className="px-5 py-2.5 bg-[#0050CB] hover:bg-[#0041A8] text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer self-start sm:self-auto"
         >
           <Upload className="w-4 h-4" />
-          <span>Upload File</span>
+          <span>Upload Document</span>
         </button>
       </div>
 
-      {/* Storage Breakdown Banner */}
-      <div className="bg-gradient-to-r from-[#0050CB] to-[#002B7A] rounded-3xl p-6 text-white shadow-lg flex flex-col md:flex-row items-center justify-between gap-4">
-        <div className="space-y-1">
-          <h3 className="font-black text-lg">Cloud Storage Usage</h3>
-          <p className="text-xs text-blue-100 font-medium">14.2 GB used out of 100 GB Total Capacity</p>
+      {/* Filters & Search Toolbar */}
+      <div className="bg-white/95 dark:bg-[#001438]/95 backdrop-blur-md p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col md:flex-row gap-3 items-center justify-between">
+        {/* Search */}
+        <div className="relative w-full md:w-80">
+          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Search by file or student name..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-9 pr-4 py-2 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#000E28] text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0050CB]"
+          />
         </div>
-        <div className="w-full md:w-64 bg-white/20 h-3 rounded-full overflow-hidden">
-          <div className="bg-[#FF690C] h-full w-[14%]" />
-        </div>
-      </div>
 
-      {/* Main Layout Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        
-        {/* Folder Directory Sidebar */}
-        <div className="lg:col-span-3 bg-white dark:bg-[#000E28] border border-slate-200 dark:border-slate-800 rounded-3xl p-5 shadow-sm space-y-4">
-          <h3 className="font-extrabold text-slate-900 dark:text-white text-sm">Folders</h3>
-          <div className="space-y-1">
-            {folders.map((f) => (
+        {/* Folder / Category Tabs */}
+        <div className="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto scrollbar-none pb-1 md:pb-0">
+          {folders.map((folder) => {
+            const isActive = selectedFolder === folder.key;
+            return (
               <button
-                key={f}
-                type="button"
-                onClick={() => setSelectedFolder(f)}
-                className={`w-full px-3.5 py-2.5 rounded-xl text-xs font-bold flex items-center justify-between transition-colors cursor-pointer text-left ${
-                  selectedFolder === f
-                    ? "bg-[#E5EEFF] dark:bg-[#0050CB]/20 text-[#0050CB] dark:text-[#38BDF8]"
-                    : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+                key={folder.key}
+                onClick={() => setSelectedFolder(folder.key)}
+                className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
+                  isActive
+                    ? "bg-[#0050CB] text-white shadow-xs"
+                    : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/80"
                 }`}
               >
-                <div className="flex items-center gap-2.5">
-                  <Folder className="w-4 h-4 text-[#0050CB] shrink-0" />
-                  <span>{f}</span>
-                </div>
-                {selectedFolder === f && <Check className="w-3.5 h-3.5 text-[#0050CB]" />}
+                <Folder className="w-3.5 h-3.5" />
+                <span>{folder.label}</span>
               </button>
-            ))}
-          </div>
+            );
+          })}
         </div>
-
-        {/* File Table */}
-        <div className="lg:col-span-9 bg-white dark:bg-[#000E28] border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="font-extrabold text-slate-900 dark:text-white text-base">
-              {selectedFolder === "All Folders" ? "All Files" : `${selectedFolder} Files`} ({filteredFiles.length})
-            </h3>
-            <div className="relative">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search file name..."
-                className="pl-9 pr-4 py-1.5 bg-slate-50 dark:bg-[#001438] border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-800 dark:text-white focus:outline-none focus:border-[#0050CB]"
-              />
-            </div>
-          </div>
-
-          <div className="divide-y divide-slate-100 dark:divide-slate-800">
-            {filteredFiles.length === 0 ? (
-              <div className="py-12 text-center text-slate-400 text-xs font-bold">
-                No files found in {selectedFolder}.
-              </div>
-            ) : (
-              filteredFiles.map((file) => (
-                <div key={file.id} className="py-3 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2.5 rounded-xl bg-[#E5EEFF] dark:bg-[#0050CB]/20 text-[#0050CB]">
-                      <File className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <h4 className="font-extrabold text-xs text-slate-800 dark:text-white">{file.name}</h4>
-                      <p className="text-[10px] text-slate-400 font-semibold">{file.folder} • {file.size} • {file.date}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-1">
-                    <button 
-                      onClick={() => handleDownload(file)}
-                      className="p-2 rounded-lg text-slate-400 hover:text-[#0050CB] hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer" 
-                      title="Download"
-                    >
-                      <Download className="w-4 h-4" />
-                    </button>
-                    <button 
-                      onClick={() => handleShare(file)}
-                      className="p-2 rounded-lg text-slate-400 hover:text-[#0050CB] hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer" 
-                      title="Share link"
-                    >
-                      <Share2 className="w-4 h-4" />
-                    </button>
-                    <button 
-                      onClick={() => handleDelete(file.id, file.name)}
-                      className="p-2 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors cursor-pointer" 
-                      title="Delete file"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-
       </div>
+
+      {/* File List Grid & Table */}
+      <div className="bg-white/95 dark:bg-[#001438]/95 backdrop-blur-md rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs overflow-hidden">
+        {isLoading ? (
+          <div className="p-16 text-center space-y-3">
+            <RefreshCw className="w-8 h-8 animate-spin text-[#0050CB] mx-auto" />
+            <p className="text-xs font-bold text-slate-500">Querying verified documents repository...</p>
+          </div>
+        ) : files.length === 0 ? (
+          <div className="p-16 text-center space-y-3">
+            <Folder className="w-12 h-12 text-slate-300 dark:text-slate-700 mx-auto" />
+            <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300">No documents found</h3>
+            <p className="text-xs text-slate-400">Upload documents or adjust search filters to locate records.</p>
+            <button
+              onClick={() => setIsUploadModalOpen(true)}
+              className="mt-2 px-4 py-2 bg-[#0050CB] text-white text-xs font-bold rounded-xl shadow-xs inline-flex items-center gap-1.5 cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Upload First File</span>
+            </button>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-50/80 dark:bg-[#000E28]/60 text-slate-500 font-bold uppercase text-[10px] tracking-wider border-b border-slate-200/80 dark:border-slate-800">
+                <tr>
+                  <th className="py-3.5 px-4">Document Name</th>
+                  <th className="py-3.5 px-3">Vault / Category</th>
+                  <th className="py-3.5 px-3">Size</th>
+                  <th className="py-3.5 px-3">Uploaded Date</th>
+                  <th className="py-3.5 px-3 text-center">Status</th>
+                  <th className="py-3.5 px-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-medium">
+                {files.map((file) => {
+                  const isDownloading = downloadingId === file._id;
+
+                  return (
+                    <tr key={file._id} className="hover:bg-slate-50/60 dark:hover:bg-[#000E28]/40 transition-colors">
+                      <td className="py-3.5 px-4">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800/80 shrink-0">
+                            {getFileIcon(file.mimeType, file.extension)}
+                          </div>
+                          <div className="truncate max-w-[280px]">
+                            <p className="font-bold text-[#000E28] dark:text-white truncate">
+                              {file.originalName}
+                            </p>
+                            <p className="text-[10px] text-slate-400 font-mono truncate">{file.storedName}</p>
+                          </div>
+                        </div>
+                      </td>
+
+                      <td className="py-3.5 px-3">
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#E5EEFF] dark:bg-[#0050CB]/20 text-[#0050CB] dark:text-[#60A5FA] capitalize">
+                          {file.category}
+                        </span>
+                      </td>
+
+                      <td className="py-3.5 px-3 font-mono text-[11px] text-slate-600 dark:text-slate-300">
+                        {formatSize(file.size)}
+                      </td>
+
+                      <td className="py-3.5 px-3 text-slate-500 whitespace-nowrap">
+                        {new Date(file.createdAt).toLocaleDateString("en-GB")}
+                      </td>
+
+                      <td className="py-3.5 px-3 text-center whitespace-nowrap">
+                        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black ${
+                          file.verificationStatus === "Verified"
+                            ? "bg-emerald-50 text-emerald-600 border border-emerald-200"
+                            : file.verificationStatus === "Rejected"
+                            ? "bg-rose-50 text-rose-600 border border-rose-200"
+                            : "bg-blue-50 text-[#0050CB] border border-blue-200"
+                        }`}>
+                          <CheckCircle2 className="w-3 h-3" />
+                          {file.verificationStatus || "Verified"}
+                        </span>
+                      </td>
+
+                      <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                        <div className="flex items-center justify-end gap-1.5">
+                          {/* Preview Button */}
+                          <button
+                            onClick={() => setPreviewFile(file)}
+                            className="p-1.5 rounded-lg text-slate-500 hover:text-[#0050CB] hover:bg-[#E5EEFF] transition-colors cursor-pointer"
+                            title="Preview file"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+
+                          {/* Download Button */}
+                          <button
+                            onClick={() => handleDownload(file)}
+                            disabled={isDownloading}
+                            className="p-1.5 rounded-lg text-slate-500 hover:text-[#0050CB] hover:bg-[#E5EEFF] transition-colors cursor-pointer"
+                            title="Download file"
+                          >
+                            {isDownloading ? (
+                              <RefreshCw className="w-4 h-4 animate-spin text-[#0050CB]" />
+                            ) : (
+                              <Download className="w-4 h-4" />
+                            )}
+                          </button>
+
+                          {/* Share Link */}
+                          <button
+                            onClick={() => handleShare(file)}
+                            className="p-1.5 rounded-lg text-slate-500 hover:text-[#0050CB] hover:bg-[#E5EEFF] transition-colors cursor-pointer"
+                            title="Copy share link"
+                          >
+                            <Share2 className="w-4 h-4" />
+                          </button>
+
+                          {/* Delete */}
+                          <button
+                            onClick={() => handleDelete(file._id, file.originalName)}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                            title="Delete file"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Real Upload Modal */}
+      <FileUploadModal
+        isOpen={isUploadModalOpen}
+        onClose={() => setIsUploadModalOpen(false)}
+        defaultCategory={selectedFolder === "all" ? "general" : selectedFolder}
+        onSuccess={() => fetchFiles()}
+      />
+
+      {/* Real Preview Modal */}
+      <FilePreviewModal
+        file={previewFile}
+        isOpen={!!previewFile}
+        onClose={() => setPreviewFile(null)}
+      />
     </div>
   );
 }
