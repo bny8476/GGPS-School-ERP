@@ -28,12 +28,14 @@ interface FilePreviewModalProps {
   file: PreviewableFile | null;
   isOpen: boolean;
   onClose: () => void;
+  onDownload?: () => void;
 }
 
 export default function FilePreviewModal({
   file,
   isOpen,
   onClose,
+  onDownload,
 }: FilePreviewModalProps) {
   if (!isOpen || !file) return null;
 
@@ -55,6 +57,10 @@ export default function FilePreviewModal({
   const isSpreadsheet = ['xls', 'xlsx', 'csv'].includes(ext) || file.mimeType?.includes('sheet') || file.mimeType?.includes('csv');
 
   const handleDownloadClick = async () => {
+    if (onDownload) {
+      onDownload();
+      return;
+    }
     const downloadTarget = fileId ? fileId : (file.url || '');
     await downloadFile(downloadTarget, fileName);
   };

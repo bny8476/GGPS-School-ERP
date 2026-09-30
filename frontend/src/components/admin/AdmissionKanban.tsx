@@ -9,6 +9,7 @@ import {
 
 export interface AdmissionApplication {
   _id: string;
+  applicationNumber?: string;
   childFirstName: string;
   childLastName: string;
   parentName: string;

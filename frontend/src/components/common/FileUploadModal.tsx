@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   Upload, X, FileText, CheckCircle2, AlertCircle, 
   Trash2, RefreshCw, ShieldCheck, ArrowUpRight 
@@ -11,7 +11,9 @@ interface FileUploadModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: (fileRecord: any) => void;
+  onUploadComplete?: () => void;
   defaultCategory?: string;
+  category?: string;
   entityType?: string;
   entityId?: string;
   title?: string;
@@ -26,14 +28,23 @@ export default function FileUploadModal({
   isOpen,
   onClose,
   onSuccess,
+  onUploadComplete,
   defaultCategory = 'general',
+  category: propCategory,
   entityType,
   entityId,
   title = 'Upload Document to Cloud Storage',
 }: FileUploadModalProps) {
+  const initialCategory = propCategory || defaultCategory || 'general';
   const [file, setFile] = useState<File | null>(null);
   const [docTitle, setDocTitle] = useState('');
-  const [category, setCategory] = useState(defaultCategory);
+  const [category, setCategory] = useState(initialCategory);
+
+  useEffect(() => {
+    if (propCategory || defaultCategory) {
+      setCategory(propCategory || defaultCategory || 'general');
+    }
+  }, [propCategory, defaultCategory]);
   const [isDragging, setIsDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -115,6 +126,7 @@ export default function FileUploadModal({
           } catch {
             if (onSuccess) onSuccess(null);
           }
+          if (onUploadComplete) onUploadComplete();
           onClose();
           // Reset
           setFile(null);
