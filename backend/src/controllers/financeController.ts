@@ -779,7 +779,7 @@ export const downloadFeeInvoicePDF = async (req: Request, res: Response) => {
 // @route   GET /api/finance/receipts/:receiptNumber/pdf
 export const downloadPaymentReceiptPDF = async (req: Request, res: Response) => {
   try {
-    const { receiptNumber } = req.params;
+    const receiptNumber = String(req.params.receiptNumber || '');
 
     // Search by receiptNumber or by fee _id
     let fee = await Fee.findOne({

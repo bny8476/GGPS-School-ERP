@@ -11,7 +11,7 @@ import Admission from '../models/Admission';
 // @route   GET /api/v1/import-export/template/:entity
 export const downloadTemplate = async (req: Request, res: Response) => {
   try {
-    const { entity } = req.params;
+    const entity = String(req.params.entity || '');
 
     let headers: string[] = [];
     let sampleRow: string[] = [];
@@ -50,7 +50,7 @@ export const downloadTemplate = async (req: Request, res: Response) => {
 // @route   POST /api/v1/import-export/import/:entity
 export const importEntityData = async (req: Request, res: Response) => {
   try {
-    const { entity } = req.params;
+    const entity = String(req.params.entity || '');
     const file = req.file;
 
     if (!file) {
@@ -147,7 +147,7 @@ export const importEntityData = async (req: Request, res: Response) => {
     return res.json({
       success: true,
       message: `Successfully validated and imported ${insertedCount} records into ${entity.toUpperCase()}.`,
-      importedCount,
+      importedCount: insertedCount,
       errors: errors.slice(0, 10),
     });
   } catch (error: any) {
@@ -159,7 +159,7 @@ export const importEntityData = async (req: Request, res: Response) => {
 // @route   GET /api/v1/import-export/export/:entity
 export const exportEntityData = async (req: Request, res: Response) => {
   try {
-    const { entity } = req.params;
+    const entity = String(req.params.entity || '');
     const format = String(req.query.format || 'csv').toLowerCase();
 
     let rows: Record<string, any>[] = [];

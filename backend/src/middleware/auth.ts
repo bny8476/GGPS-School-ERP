@@ -8,6 +8,9 @@ import { hasPermission } from './rbac';
 export interface JwtUserPayload {
   id: string;
   role: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
   permissions?: string[];
   campusId?: string;
   schoolId?: string;
