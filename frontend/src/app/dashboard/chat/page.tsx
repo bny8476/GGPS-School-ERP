@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import {
   Search,
   SlidersHorizontal,
@@ -25,13 +26,19 @@ import {
   UserCheck,
   GraduationCap,
   X,
-  Plus
+  Plus,
+  Megaphone,
+  Briefcase,
+  BookOpen,
+  Award,
+  Layers,
+  Sparkles
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { useAuthStore } from "@/stores/authStore";
 import { getApiBaseUrl } from "@/lib/utils";
 
-type FilterTab = "all" | "parent" | "teacher" | "student";
+type FilterTab = "all" | "class_teacher" | "subject_faculty" | "coordinator";
 
 interface DocumentItem {
   id: string;
@@ -49,11 +56,14 @@ interface Message {
   status?: "sent" | "delivered" | "read";
 }
 
-interface Conversation {
+interface StaffConversation {
   id: string;
   name: string;
-  roleType: "parent" | "teacher" | "student";
+  category: "class_teacher" | "subject_faculty" | "coordinator";
   tag: string;
+  designation: string;
+  department: string;
+  employeeId: string;
   avatar: string;
   lastMessage: string;
   time: string;
@@ -61,153 +71,161 @@ interface Conversation {
   online: boolean;
   phone: string;
   email: string;
-  address: string;
-  child?: {
-    name: string;
-    grade: string;
-    avatar: string;
-  };
-  classesTaught?: string[];
+  campusOffice: string;
+  assignedClasses: string[];
+  subjects: string[];
   documents: DocumentItem[];
   messages: Message[];
 }
 
-const INITIAL_CONVERSATIONS: Conversation[] = [
+const INITIAL_STAFF_CONVERSATIONS: StaffConversation[] = [
   {
     id: "conv-1",
-    name: "Priya Sharma",
-    roleType: "parent",
-    tag: "Parent • Aarav Sharma (LKG-A)",
-    avatar: "/priya-sharma-avatar.jpg",
-    lastMessage: "Thank you for the information. 😊",
+    name: "Sunita Reddy",
+    category: "class_teacher",
+    tag: "Class Teacher • Class 1-A",
+    designation: "Primary Class Teacher & EVS Lead",
+    department: "Primary Academic Wing",
+    employeeId: "EMP-T-104",
+    avatar: "/avatar-anjali.png",
+    lastMessage: "Please find the lesson plan for this week uploaded to the portal.",
     time: "10:24 AM",
     unreadCount: 2,
     online: true,
-    phone: "+91 98765 43210",
-    email: "priya.sharma@email.com",
-    address: "12 Green Park, Chennai, Tamil Nadu",
-    child: {
-      name: "Aarav Sharma",
-      grade: "LKG - A",
-      avatar: "/aarav-sharma-avatar.jpg"
-    },
+    phone: "+91 94451 87654",
+    email: "sunita.reddy@ggpsschool.com",
+    campusOffice: "Primary Wing Staff Room, 1st Floor",
+    assignedClasses: ["Class 1-A (Class Teacher)", "Class 1-A (English)", "Class 1-A (EVS)"],
+    subjects: ["English", "Environmental Studies"],
     documents: [
-      { id: "doc-1", name: "Student_Profile.pdf", size: "2.4 MB", date: "Sep 20, 2026" },
-      { id: "doc-2", name: "Birth_Certificate.pdf", size: "1.8 MB", date: "Sep 18, 2026" },
-      { id: "doc-3", name: "Address_Proof.pdf", size: "1.2 MB", date: "Sep 15, 2026" }
+      { id: "doc-1", name: "Lesson_Plan_Week4_Class1A.pdf", size: "1.5 MB", date: "Sep 28, 2026" },
+      { id: "doc-2", name: "Class1A_Attendance_Summary.pdf", size: "850 KB", date: "Sep 25, 2026" },
+      { id: "doc-3", name: "Term1_EVS_Activity_Roster.pdf", size: "1.2 MB", date: "Sep 20, 2026" }
     ],
     messages: [
       {
-        id: "m-1",
+        id: "m-101",
         sender: "contact",
-        text: "Hello,  I wanted to know if the school timings are the same for next week as well?",
-        time: "09:42 AM"
+        text: "Good morning! Please find the lesson plan for this week uploaded to the portal.",
+        time: "09:30 AM"
       },
       {
-        id: "m-2",
+        id: "m-102",
         sender: "me",
-        text: "Good morning! Yes, the school timings will remain the same. School starts at 8:30 AM and ends at 2:30 PM.\n\nLet me know if you need any more information.",
+        text: "Thank you Sunita. Please ensure the activity worksheets for the upcoming science lab are printed before Thursday.",
         time: "09:45 AM",
         status: "read"
       },
       {
-        id: "m-3",
+        id: "m-103",
         sender: "contact",
-        text: "Thank you for the information. 😊",
+        text: "Certainly, all worksheets are finalized and prepared.",
         time: "10:24 AM"
       }
     ]
   },
   {
     id: "conv-2",
-    name: "Rohit Verma",
-    roleType: "parent",
-    tag: "Parent • Diya Verma (UKG-B)",
-    avatar: "/rohit-verma-avatar.jpg",
-    lastMessage: "When will the mid-term results be declared?",
+    name: "Vikram Singh",
+    category: "subject_faculty",
+    tag: "Maths & STEM Faculty • Class 2-B",
+    designation: "Senior Mathematics & Robotics Lead",
+    department: "STEM & Mathematics Department",
+    employeeId: "EMP-T-118",
+    avatar: "/teacher-ananya-roy.jpg",
+    lastMessage: "The robotics activity kit requisitions have been submitted.",
     time: "09:45 AM",
-    unreadCount: 1,
+    unreadCount: 0,
     online: true,
-    phone: "+91 98401 23456",
-    email: "rohit.verma@email.com",
-    address: "45 Anna Nagar, Chennai, Tamil Nadu",
-    child: {
-      name: "Diya Verma",
-      grade: "UKG - B",
-      avatar: "/hero-girl-student.png"
-    },
+    phone: "+91 91760 34567",
+    email: "vikram.singh@ggpsschool.com",
+    campusOffice: "STEM Innovation Lab, 2nd Floor",
+    assignedClasses: ["Class 2-B (Maths)", "Class 3-A (Robotics Lab)", "Class 4-B (Maths)"],
+    subjects: ["Mathematics", "Robotics & Coding"],
     documents: [
-      { id: "doc-4", name: "Diya_Admission_Form.pdf", size: "3.1 MB", date: "Sep 10, 2026" },
-      { id: "doc-5", name: "Term1_Fee_Receipt.pdf", size: "640 KB", date: "Aug 29, 2026" }
+      { id: "doc-4", name: "Science_Fair_Guidelines_2026.pdf", size: "2.8 MB", date: "Sep 26, 2026" },
+      { id: "doc-5", name: "Robotics_Lab_Inventory.pdf", size: "1.1 MB", date: "Sep 22, 2026" }
     ],
     messages: [
       {
         id: "m-201",
         sender: "contact",
-        text: "Hello Principal and Administration team. When will the mid-term results be declared?",
-        time: "09:45 AM"
+        text: "Good morning Sir, the robotics activity kit requisitions have been submitted for the upcoming inter-school science exhibition.",
+        time: "09:40 AM"
+      },
+      {
+        id: "m-202",
+        sender: "me",
+        text: "Received Vikram. The purchase approval will be cleared by the finance desk today.",
+        time: "09:45 AM",
+        status: "read"
       }
     ]
   },
   {
     id: "conv-3",
-    name: "Sunita Reddy",
-    roleType: "teacher",
-    tag: "Teacher • Class 1-A",
-    avatar: "/avatar-anjali.png",
-    lastMessage: "Please find the lesson plan for this week.",
+    name: "Anjali Nair",
+    category: "coordinator",
+    tag: "Academic Coordinator • Primary Wing",
+    designation: "Academic Program Coordinator",
+    department: "Curriculum & Academic Administration",
+    employeeId: "EMP-C-021",
+    avatar: "/avatar-priya.png",
+    lastMessage: "Term 1 exam timetable draft submitted for review.",
     time: "Yesterday",
-    unreadCount: 3,
+    unreadCount: 1,
     online: false,
-    phone: "+91 94451 87654",
-    email: "sunita.reddy@ggpsschool.com",
-    address: "Staff Quarters B-4, GGPS Campus, Chennai",
-    classesTaught: ["Class 1-A (English)", "Class 1-A (EVS)"],
+    phone: "+91 98841 23450",
+    email: "anjali.nair@ggpsschool.com",
+    campusOffice: "Academic Council Office, Room 102",
+    assignedClasses: ["Curriculum Oversight (Classes 1-5)", "Faculty Peer Evaluation"],
+    subjects: ["Curriculum Framework", "Language Arts"],
     documents: [
-      { id: "doc-6", name: "Lesson_Plan_Week4.pdf", size: "1.5 MB", date: "Sep 27, 2026" },
-      { id: "doc-7", name: "Class1A_Attendance_Summary.pdf", size: "850 KB", date: "Sep 25, 2026" }
+      { id: "doc-6", name: "Term1_Exam_Timetable_Draft.pdf", size: "1.6 MB", date: "Sep 27, 2026" },
+      { id: "doc-7", name: "Teacher_Workload_Distribution.pdf", size: "940 KB", date: "Sep 24, 2026" }
     ],
     messages: [
       {
         id: "m-301",
         sender: "contact",
-        text: "Good afternoon. Please find the lesson plan for this week uploaded to the portal.",
+        text: "Good afternoon. Term 1 examination timetable draft has been compiled following teacher inputs and submitted for your final approval.",
         time: "Yesterday 03:15 PM"
       }
     ]
   },
   {
     id: "conv-4",
-    name: "Anil Kumar",
-    roleType: "parent",
-    tag: "Parent • Rohan Kumar (LKG-B)",
+    name: "Rajesh Kannan",
+    category: "subject_faculty",
+    tag: "Science Faculty • Science Lab In-Charge",
+    designation: "Natural Sciences Faculty",
+    department: "Science Department",
+    employeeId: "EMP-T-109",
     avatar: "/avatar-rajesh.png",
-    lastMessage: "Can you please share the homework details?",
+    lastMessage: "Lab safety inventory check completed for this month.",
     time: "Yesterday",
     unreadCount: 0,
     online: false,
-    phone: "+91 97890 12345",
-    email: "anil.kumar@email.com",
-    address: "88 T. Nagar, Chennai, Tamil Nadu",
-    child: {
-      name: "Rohan Kumar",
-      grade: "LKG - B",
-      avatar: "/aarav-hero-student.jpg"
-    },
+    phone: "+91 97890 56789",
+    email: "rajesh.kannan@ggpsschool.com",
+    campusOffice: "Science Laboratory Block A",
+    assignedClasses: ["Class 3-A (Science)", "Class 3-B (Science)", "Class 4-A (EVS)"],
+    subjects: ["General Science", "Environmental Studies"],
     documents: [
-      { id: "doc-8", name: "Rohan_Medical_Report.pdf", size: "1.1 MB", date: "Aug 15, 2026" }
+      { id: "doc-8", name: "Lab_Safety_Compliance_Q3.pdf", size: "1.4 MB", date: "Sep 26, 2026" },
+      { id: "doc-9", name: "Science_Experiment_Syllabus.pdf", size: "2.1 MB", date: "Sep 15, 2026" }
     ],
     messages: [
       {
         id: "m-401",
         sender: "contact",
-        text: "Can you please share the homework details for today?",
+        text: "Lab safety inventory check completed for this month. All emergency eyewash and first aid kits are fully verified.",
         time: "Yesterday 04:30 PM"
       },
       {
         id: "m-402",
         sender: "me",
-        text: "Certainly! The teacher has posted the LKG-B rhymes and coloring assignment under the student homework tab.",
+        text: "Well done Rajesh. Please submit the signed safety log to the administrative desk.",
         time: "Yesterday 04:45 PM",
         status: "read"
       }
@@ -215,177 +233,125 @@ const INITIAL_CONVERSATIONS: Conversation[] = [
   },
   {
     id: "conv-5",
-    name: "Neha Kapoor",
-    roleType: "parent",
-    tag: "Parent • Anaya Kapoor (UKG-A)",
-    avatar: "/avatar-priya.png",
-    lastMessage: "Is there any holiday on Friday?",
+    name: "Kavita Swaminathan",
+    category: "coordinator",
+    tag: "Head Coordinator • Kindergarten",
+    designation: "Early Childhood Academic Head",
+    department: "Pre-Primary Division",
+    employeeId: "EMP-C-015",
+    avatar: "/priya-sharma-avatar.jpg",
+    lastMessage: "Open-House activity stations are scheduled for Saturday.",
     time: "Aug 27",
-    unreadCount: 1,
+    unreadCount: 0,
     online: false,
-    phone: "+91 98840 56789",
-    email: "neha.kapoor@email.com",
-    address: "16 Velachery Main Rd, Chennai",
-    child: {
-      name: "Anaya Kapoor",
-      grade: "UKG - A",
-      avatar: "/ananya-student.jpg"
-    },
+    phone: "+91 98840 98765",
+    email: "kavita.s@ggpsschool.com",
+    campusOffice: "Kindergarten Block, Ground Floor",
+    assignedClasses: ["Pre-KG & Kindergarten Academic Supervision", "Montessori Wing"],
+    subjects: ["Early Learning", "Phonics & Motor Skills"],
     documents: [
-      { id: "doc-9", name: "Anaya_Birth_Certificate.pdf", size: "1.4 MB", date: "Jul 12, 2026" }
+      { id: "doc-10", name: "KG_Activity_Calendar_Oct.pdf", size: "1.8 MB", date: "Aug 27, 2026" },
+      { id: "doc-11", name: "Phonics_Assessment_Framework.pdf", size: "1.3 MB", date: "Aug 20, 2026" }
     ],
     messages: [
       {
         id: "m-501",
         sender: "contact",
-        text: "Is there any holiday on Friday? We received a notice about staff training.",
+        text: "Good morning Sir, Open-House activity stations are scheduled for Saturday. All 4 preschool learning zones are ready.",
         time: "Aug 27 11:15 AM"
       }
     ]
   },
   {
     id: "conv-6",
-    name: "Vikram Singh",
-    roleType: "teacher",
-    tag: "Teacher • Class 2-B",
-    avatar: "/teacher-ananya-roy.jpg",
-    lastMessage: "The class activity is updated in the portal.",
+    name: "Deepak Chawla",
+    category: "subject_faculty",
+    tag: "Sports Lead • Physical Education",
+    designation: "Head of Physical Education & Athletics",
+    department: "Physical Education & Sports",
+    employeeId: "EMP-T-132",
+    avatar: "/rohit-verma-avatar.jpg",
+    lastMessage: "Annual Sports Meet track event schedule is finalized.",
     time: "Aug 26",
     unreadCount: 0,
     online: true,
-    phone: "+91 91760 34567",
-    email: "vikram.singh@ggpsschool.com",
-    address: "32 Adyar, Chennai, Tamil Nadu",
-    classesTaught: ["Class 2-B (Maths)", "Class 2-B (Robotics)"],
+    phone: "+91 98410 87654",
+    email: "deepak.chawla@ggpsschool.com",
+    campusOffice: "Sports Complex & Ground Pavilion",
+    assignedClasses: ["Primary Physical Education (Grades 1-5)", "Morning Athletics Squad"],
+    subjects: ["Physical Training", "Athletics & Track"],
     documents: [
-      { id: "doc-10", name: "Science_Fair_Guidelines.pdf", size: "2.8 MB", date: "Aug 26, 2026" }
+      { id: "doc-12", name: "Annual_Sports_Meet_Schedule.pdf", size: "2.5 MB", date: "Aug 25, 2026" },
+      { id: "doc-13", name: "First_Aid_Action_Plan.pdf", size: "890 KB", date: "Aug 20, 2026" }
     ],
     messages: [
       {
         id: "m-601",
         sender: "contact",
-        text: "The class activity is updated in the portal. All parent permissions are collected.",
+        text: "Annual Sports Meet track event schedule is finalized. The ground markings will be completed by Friday afternoon.",
         time: "Aug 26 02:40 PM"
       }
     ]
   },
   {
     id: "conv-7",
-    name: "Meera Iyer",
-    roleType: "parent",
-    tag: "Parent • Advait Iyer (Class 3)",
-    avatar: "/priya-sharma-avatar.jpg",
-    lastMessage: "Thank you for the support and guidance.",
+    name: "Meenakshi Sundaram",
+    category: "subject_faculty",
+    tag: "Creative Arts Lead • Fine Arts",
+    designation: "Visual Arts & Cultural Coordinator",
+    department: "Creative Arts & Performing Wings",
+    employeeId: "EMP-T-125",
+    avatar: "/avatar-anjali.png",
+    lastMessage: "Art competition selections have been compiled.",
     time: "Aug 25",
     unreadCount: 0,
     online: false,
-    phone: "+91 99400 98765",
-    email: "meera.iyer@email.com",
-    address: "24 Mylapore, Chennai, Tamil Nadu",
-    child: {
-      name: "Advait Iyer",
-      grade: "Class 3 - A",
-      avatar: "/aarav-exact-avatar.png"
-    },
+    phone: "+91 99400 34567",
+    email: "meenakshi.s@ggpsschool.com",
+    campusOffice: "Fine Arts Studio, 3rd Floor",
+    assignedClasses: ["Classes 1-5 (Visual Arts)", "Creative Expression Club"],
+    subjects: ["Drawing & Sketching", "Craft & Clay Modeling"],
     documents: [
-      { id: "doc-11", name: "Advait_ReportCard_Term1.pdf", size: "980 KB", date: "Aug 20, 2026" }
+      { id: "doc-14", name: "Art_Exhibition_Budget_2026.pdf", size: "1.2 MB", date: "Aug 24, 2026" },
+      { id: "doc-15", name: "InterSchool_Art_Contest_Roster.pdf", size: "780 KB", date: "Aug 18, 2026" }
     ],
     messages: [
       {
         id: "m-701",
         sender: "contact",
-        text: "Thank you for the support and guidance during the parent-teacher meeting.",
+        text: "The student artwork selections for the state level drawing competition have been finalized.",
         time: "Aug 25 05:10 PM"
       }
     ]
   },
   {
     id: "conv-8",
-    name: "Suresh Patel",
-    roleType: "parent",
-    tag: "Parent • Aanya Patel (LKG-A)",
-    avatar: "/rohit-verma-avatar.jpg",
-    lastMessage: "Please send the fee receipt for this month.",
+    name: "Shalini Joshi",
+    category: "class_teacher",
+    tag: "Class Teacher • Class 2-A",
+    designation: "Class Teacher & Language Educator",
+    department: "Primary Academic Wing",
+    employeeId: "EMP-T-112",
+    avatar: "/avatar-priya.png",
+    lastMessage: "Grade 2 reading assessment marks updated.",
     time: "Aug 24",
     unreadCount: 0,
     online: false,
-    phone: "+91 98410 43210",
-    email: "suresh.patel@email.com",
-    address: "77 Besant Nagar, Chennai",
-    child: {
-      name: "Aanya Patel",
-      grade: "LKG - A",
-      avatar: "/hero-girl-student.png"
-    },
+    phone: "+91 98410 12345",
+    email: "shalini.joshi@ggpsschool.com",
+    campusOffice: "Primary Wing Staff Room, 1st Floor",
+    assignedClasses: ["Class 2-A (Class Teacher)", "Class 2-A (Hindi)", "Class 2-B (Hindi)"],
+    subjects: ["Hindi Literature", "Language Fluency"],
     documents: [
-      { id: "doc-12", name: "Fee_Receipt_Aug2026.pdf", size: "480 KB", date: "Aug 24, 2026" }
+      { id: "doc-16", name: "Class2A_Reading_Progress.pdf", size: "950 KB", date: "Aug 24, 2026" },
+      { id: "doc-17", name: "Language_Curriculum_Week4.pdf", size: "1.4 MB", date: "Aug 19, 2026" }
     ],
     messages: [
       {
         id: "m-801",
         sender: "contact",
-        text: "Please send the fee receipt for this month.",
+        text: "Good morning Sir, Grade 2 reading assessment marks have been updated on the teacher workspace.",
         time: "Aug 24 10:05 AM"
-      }
-    ]
-  },
-  {
-    id: "conv-9",
-    name: "Aarav Sharma",
-    roleType: "student",
-    tag: "Student • LKG-A",
-    avatar: "/aarav-sharma-avatar.jpg",
-    lastMessage: "Thank you Teacher for the story session!",
-    time: "Aug 22",
-    unreadCount: 1,
-    online: true,
-    phone: "+91 98765 43210 (Parent)",
-    email: "aarav.s@student.ggpsschool.com",
-    address: "12 Green Park, Chennai",
-    child: {
-      name: "Aarav Sharma",
-      grade: "LKG - A",
-      avatar: "/aarav-sharma-avatar.jpg"
-    },
-    documents: [
-      { id: "doc-13", name: "Drawing_Activity_LKG.pdf", size: "1.9 MB", date: "Aug 22, 2026" }
-    ],
-    messages: [
-      {
-        id: "m-901",
-        sender: "contact",
-        text: "Thank you Teacher for the fun story session today! I colored the elephant.",
-        time: "Aug 22 01:30 PM"
-      }
-    ]
-  },
-  {
-    id: "conv-10",
-    name: "Diya Verma",
-    roleType: "student",
-    tag: "Student • UKG-B",
-    avatar: "/hero-girl-student.png",
-    lastMessage: "Submitted my drawing assignment.",
-    time: "Aug 20",
-    unreadCount: 1,
-    online: false,
-    phone: "+91 98401 23456 (Parent)",
-    email: "diya.v@student.ggpsschool.com",
-    address: "45 Anna Nagar, Chennai",
-    child: {
-      name: "Diya Verma",
-      grade: "UKG - B",
-      avatar: "/hero-girl-student.png"
-    },
-    documents: [
-      { id: "doc-14", name: "Art_Portfolio_UKG.pdf", size: "2.3 MB", date: "Aug 20, 2026" }
-    ],
-    messages: [
-      {
-        id: "m-1001",
-        sender: "contact",
-        text: "I submitted my drawing assignment for the arts festival.",
-        time: "Aug 20 04:00 PM"
       }
     ]
   }
@@ -393,7 +359,7 @@ const INITIAL_CONVERSATIONS: Conversation[] = [
 
 export default function ChatPage() {
   const { user } = useAuthStore();
-  const [conversations, setConversations] = useState<Conversation[]>(INITIAL_CONVERSATIONS);
+  const [conversations, setConversations] = useState<StaffConversation[]>(INITIAL_STAFF_CONVERSATIONS);
   const [selectedId, setSelectedId] = useState<string>("conv-1");
   const [activeTab, setActiveTab] = useState<FilterTab>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -416,23 +382,24 @@ export default function ChatPage() {
   }, [activeConversation?.messages]);
 
   // Tab counts
-  const countAll = 12;
-  const countParent = 6;
-  const countTeacher = 4;
-  const countStudent = 2;
+  const countAll = conversations.length;
+  const countClassTeachers = conversations.filter((c) => c.category === "class_teacher").length;
+  const countSubjectFaculty = conversations.filter((c) => c.category === "subject_faculty").length;
+  const countCoordinators = conversations.filter((c) => c.category === "coordinator").length;
 
   // Filter conversations
   const filteredConversations = conversations.filter((c) => {
-    if (activeTab === "parent" && c.roleType !== "parent") return false;
-    if (activeTab === "teacher" && c.roleType !== "teacher") return false;
-    if (activeTab === "student" && c.roleType !== "student") return false;
+    if (activeTab === "class_teacher" && c.category !== "class_teacher") return false;
+    if (activeTab === "subject_faculty" && c.category !== "subject_faculty") return false;
+    if (activeTab === "coordinator" && c.category !== "coordinator") return false;
 
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       const matchName = c.name.toLowerCase().includes(q);
       const matchTag = c.tag.toLowerCase().includes(q);
+      const matchDept = c.department.toLowerCase().includes(q);
       const matchMsg = c.lastMessage.toLowerCase().includes(q);
-      return matchName || matchTag || matchMsg;
+      return matchName || matchTag || matchDept || matchMsg;
     }
     return true;
   });
@@ -508,15 +475,15 @@ export default function ChatPage() {
   const handleQuickAction = (action: string) => {
     switch (action) {
       case "call":
-        toast.success(`Initiating voice call to ${activeConversation.phone}...`, {
+        toast.success(`Initiating internal voice call to ${activeConversation.name} (${activeConversation.phone})...`, {
           icon: "📞"
         });
         break;
       case "email":
-        window.open(`mailto:${activeConversation.email}?subject=GGPS School Update`);
+        window.open(`mailto:${activeConversation.email}?subject=GGPS Academic Administration`);
         break;
       case "meeting":
-        toast.success(`Opening meeting schedule invite with ${activeConversation.name}...`, {
+        toast.success(`Scheduling faculty coordination meeting with ${activeConversation.name}...`, {
           icon: "📅"
         });
         break;
@@ -535,11 +502,11 @@ export default function ChatPage() {
   return (
     <div className="p-4 sm:p-6 lg:p-7 max-w-[1720px] mx-auto space-y-4 select-none">
       {/* ==================================================== */}
-      {/* 1. TOP HEADER TITLE & SUBTITLE */}
+      {/* 1. TOP HEADER TITLE & ACTION BUTTON */}
       {/* ==================================================== */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
         <div className="flex items-center gap-3.5">
-          {/* Blue Chat Bubble Icon with 3 white dots */}
+          {/* Blue Chat Bubble Icon */}
           <div className="w-10 h-10 rounded-2xl bg-white dark:bg-[#00102E] border border-blue-200/90 dark:border-blue-900/60 flex items-center justify-center text-[#0050CB] dark:text-[#38BDF8] shadow-2xs shrink-0">
             <svg
               width="24"
@@ -561,21 +528,49 @@ export default function ChatPage() {
 
           <div>
             <h1 className="text-2xl font-black text-[#000E28] dark:text-white tracking-tight">
-              Messages
+              Staff & Faculty Messages
             </h1>
             <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">
-              Stay connected with parents, teachers and students
+              Internal direct messaging with teachers, coordinators, and school staff
             </p>
           </div>
         </div>
+
+        {/* Quick Link to Circulars & Notices for Parents */}
+        <Link
+          href="/dashboard/circulars"
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-[#0050CB] hover:bg-[#0041A8] text-white text-xs font-bold transition-all shadow-sm hover:shadow-md cursor-pointer shrink-0 self-start sm:self-auto"
+        >
+          <Megaphone className="w-4 h-4" />
+          <span>Publish Parent Circular / Notice</span>
+        </Link>
       </div>
 
       {/* ==================================================== */}
-      {/* 2. FILTER TABS (All Messages, Parent, Teacher, Student) */}
+      {/* 2. POLICY NOTICE BANNER */}
+      {/* ==================================================== */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 py-2.5 rounded-2xl bg-[#E5EEFF] dark:bg-[#001B48]/50 border border-blue-200/80 dark:border-blue-900/50 text-[#000E28] dark:text-blue-100 text-xs">
+        <div className="flex items-center gap-2.5">
+          <span className="w-2 h-2 rounded-full bg-[#0050CB] shrink-0" />
+          <p className="font-medium">
+            <strong className="font-bold text-[#0050CB] dark:text-[#38BDF8]">School Policy:</strong> Direct 1-on-1 messaging is reserved exclusively for internal teachers and staff. To send announcements, alerts, or notices to parents and students, broadcast an official circular.
+          </p>
+        </div>
+        <Link
+          href="/dashboard/circulars"
+          className="text-xs font-bold text-[#0050CB] dark:text-[#38BDF8] hover:underline flex items-center gap-1 shrink-0"
+        >
+          <span>Go to Circulars & Notices</span>
+          <ArrowRight className="w-3.5 h-3.5" />
+        </Link>
+      </div>
+
+      {/* ==================================================== */}
+      {/* 3. FILTER TABS (All Staff, Class Teachers, Subject Faculty, Coordinators) */}
       {/* ==================================================== */}
       <div className="border-b border-slate-200/90 dark:border-slate-800">
         <div className="flex items-center gap-6 sm:gap-8 overflow-x-auto no-scrollbar">
-          {/* TAB 1: ALL MESSAGES */}
+          {/* TAB 1: ALL STAFF */}
           <button
             type="button"
             onClick={() => setActiveTab("all")}
@@ -585,7 +580,7 @@ export default function ChatPage() {
                 : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white font-medium"
             }`}
           >
-            <span>All Messages</span>
+            <span>All Staff</span>
             <span
               className={`text-[11px] font-black px-2 py-0.5 rounded-full transition-colors ${
                 activeTab === "all"
@@ -600,77 +595,77 @@ export default function ChatPage() {
             )}
           </button>
 
-          {/* TAB 2: PARENT MESSAGES */}
+          {/* TAB 2: CLASS TEACHERS */}
           <button
             type="button"
-            onClick={() => setActiveTab("parent")}
+            onClick={() => setActiveTab("class_teacher")}
             className={`relative py-3 flex items-center gap-2 text-xs sm:text-sm font-bold transition-colors cursor-pointer shrink-0 ${
-              activeTab === "parent"
+              activeTab === "class_teacher"
                 ? "text-[#0050CB] dark:text-[#38BDF8]"
                 : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white font-medium"
             }`}
           >
-            <span>Parent Messages</span>
+            <span>Class Teachers</span>
             <span
               className={`text-[11px] font-black px-2 py-0.5 rounded-full transition-colors ${
-                activeTab === "parent"
+                activeTab === "class_teacher"
                   ? "bg-[#0050CB] text-white"
                   : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400"
               }`}
             >
-              {countParent}
+              {countClassTeachers}
             </span>
-            {activeTab === "parent" && (
+            {activeTab === "class_teacher" && (
               <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#0050CB] dark:bg-[#38BDF8] rounded-full" />
             )}
           </button>
 
-          {/* TAB 3: TEACHER MESSAGES */}
+          {/* TAB 3: SUBJECT FACULTY */}
           <button
             type="button"
-            onClick={() => setActiveTab("teacher")}
+            onClick={() => setActiveTab("subject_faculty")}
             className={`relative py-3 flex items-center gap-2 text-xs sm:text-sm font-bold transition-colors cursor-pointer shrink-0 ${
-              activeTab === "teacher"
+              activeTab === "subject_faculty"
                 ? "text-[#0050CB] dark:text-[#38BDF8]"
                 : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white font-medium"
             }`}
           >
-            <span>Teacher Messages</span>
+            <span>Subject Faculty</span>
             <span
               className={`text-[11px] font-black px-2 py-0.5 rounded-full transition-colors ${
-                activeTab === "teacher"
+                activeTab === "subject_faculty"
                   ? "bg-[#0050CB] text-white"
                   : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400"
               }`}
             >
-              {countTeacher}
+              {countSubjectFaculty}
             </span>
-            {activeTab === "teacher" && (
+            {activeTab === "subject_faculty" && (
               <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#0050CB] dark:bg-[#38BDF8] rounded-full" />
             )}
           </button>
 
-          {/* TAB 4: STUDENT MESSAGES */}
+          {/* TAB 4: ACADEMIC COORDINATORS */}
           <button
             type="button"
-            onClick={() => setActiveTab("student")}
+            onClick={() => setActiveTab("coordinator")}
             className={`relative py-3 flex items-center gap-2 text-xs sm:text-sm font-bold transition-colors cursor-pointer shrink-0 ${
-              activeTab === "student"
+              activeTab === "coordinator"
                 ? "text-[#0050CB] dark:text-[#38BDF8]"
                 : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white font-medium"
             }`}
           >
-            <span>Student Messages</span>
+            <span>Academic Coordinators</span>
             <span
               className={`text-[11px] font-black px-2 py-0.5 rounded-full transition-colors ${
-                activeTab === "student"
+                activeTab === "coordinator"
                   ? "bg-[#0050CB] text-white"
                   : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400"
               }`}
             >
-              {countStudent}
+              {countCoordinators}
             </span>
-            {activeTab === "student" && (
+            {activeTab === "coordinator" && (
               <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#0050CB] dark:bg-[#38BDF8] rounded-full" />
             )}
           </button>
@@ -678,9 +673,9 @@ export default function ChatPage() {
       </div>
 
       {/* ==================================================== */}
-      {/* 3. MAIN 3-COLUMN CHAT APPLICATION CONTAINER */}
+      {/* 4. MAIN 3-COLUMN CHAT APPLICATION CONTAINER */}
       {/* ==================================================== */}
-      <div className="bg-white dark:bg-[#000E28] border border-slate-200/90 dark:border-slate-800 rounded-3xl shadow-[0_4px_30px_rgba(0,14,40,0.04)] dark:shadow-[0_4px_30px_rgba(0,0,0,0.6)] overflow-hidden grid grid-cols-1 lg:grid-cols-12 min-h-[720px] h-[calc(100vh-14rem)]">
+      <div className="bg-white dark:bg-[#000E28] border border-slate-200/90 dark:border-slate-800 rounded-3xl shadow-[0_4px_30px_rgba(0,14,40,0.04)] dark:shadow-[0_4px_30px_rgba(0,0,0,0.6)] overflow-hidden grid grid-cols-1 lg:grid-cols-12 min-h-[720px] h-[calc(100vh-16rem)]">
         
         {/* ================================================== */}
         {/* COLUMN 1: CONVERSATION LIST (Left Panel) */}
@@ -694,7 +689,7 @@ export default function ChatPage() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search by name, class or message..."
+                placeholder="Search staff, department or message..."
                 className="w-full pl-9 pr-3 py-2 bg-slate-50/80 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 rounded-xl text-xs font-normal text-slate-800 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-[#0050CB] transition-colors"
               />
             </div>
@@ -702,7 +697,7 @@ export default function ChatPage() {
               type="button"
               onClick={() => toast("Advanced filters coming soon", { icon: "⚙️" })}
               className="p-2 rounded-xl border border-slate-200/80 dark:border-slate-700/80 text-slate-500 hover:text-slate-800 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-colors cursor-pointer"
-              title="Filter conversations"
+              title="Filter staff conversations"
             >
               <SlidersHorizontal className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
             </button>
@@ -766,7 +761,7 @@ export default function ChatPage() {
 
             {filteredConversations.length === 0 && (
               <div className="text-center py-10 text-xs text-slate-400">
-                No messages found matching "{searchQuery}"
+                No staff messages found matching &quot;{searchQuery}&quot;
               </div>
             )}
           </div>
@@ -801,7 +796,7 @@ export default function ChatPage() {
                   )}
                 </div>
                 <p className="text-[11px] font-medium text-slate-400 truncate">
-                  {activeConversation.tag}
+                  {activeConversation.tag} • {activeConversation.department}
                 </p>
               </div>
             </div>
@@ -812,23 +807,23 @@ export default function ChatPage() {
                 type="button"
                 onClick={() => handleQuickAction("call")}
                 className="w-9 h-9 rounded-full bg-slate-50 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-950/60 text-[#0050CB] dark:text-[#38BDF8] border border-slate-200/80 dark:border-slate-700 flex items-center justify-center cursor-pointer transition-colors shadow-2xs"
-                title="Voice Call"
+                title="Internal Voice Call"
               >
                 <Phone className="w-4 h-4" />
               </button>
 
               <button
                 type="button"
-                onClick={() => toast.success(`Starting video call with ${activeConversation.name}...`, { icon: "📹" })}
+                onClick={() => toast.success(`Starting staff video conference with ${activeConversation.name}...`, { icon: "📹" })}
                 className="w-9 h-9 rounded-full bg-slate-50 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-950/60 text-[#0050CB] dark:text-[#38BDF8] border border-slate-200/80 dark:border-slate-700 flex items-center justify-center cursor-pointer transition-colors shadow-2xs"
-                title="Video Call"
+                title="Staff Video Call"
               >
                 <Video className="w-4 h-4" />
               </button>
 
               <button
                 type="button"
-                onClick={() => toast("Conversation options", { icon: "⚙️" })}
+                onClick={() => toast("Staff communication options", { icon: "⚙️" })}
                 className="w-9 h-9 rounded-full text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center cursor-pointer transition-colors"
                 title="More Options"
               >
@@ -898,53 +893,57 @@ export default function ChatPage() {
               onSubmit={handleSendMessage}
               className="bg-slate-50/70 dark:bg-slate-900/50 border border-slate-200/90 dark:border-slate-700/80 rounded-2xl p-2.5 space-y-2 focus-within:border-[#0050CB] dark:focus-within:border-[#0050CB] transition-colors"
             >
-              {/* Attachment icons row */}
-              <div className="flex items-center gap-3 px-1 text-slate-400">
-                <button
-                  type="button"
-                  onClick={() => toast.success("Attach file clicked", { icon: "📎" })}
-                  className="hover:text-[#0050CB] dark:hover:text-[#38BDF8] transition-colors cursor-pointer"
-                  title="Attach file"
-                >
-                  <Paperclip className="w-4 h-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => toast.success("Attach image clicked", { icon: "🖼️" })}
-                  className="hover:text-[#0050CB] dark:hover:text-[#38BDF8] transition-colors cursor-pointer"
-                  title="Attach photo"
-                >
-                  <ImageIcon className="w-4 h-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => toast.success("Attach document clicked", { icon: "📄" })}
-                  className="hover:text-[#0050CB] dark:hover:text-[#38BDF8] transition-colors cursor-pointer"
-                  title="Attach document"
-                >
-                  <FileText className="w-4 h-4" />
-                </button>
-              </div>
-
               {/* Text Input Row */}
               <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setInputText((prev) => prev + " 😊")}
-                  className="text-slate-400 hover:text-amber-500 transition-colors p-1 cursor-pointer"
-                  title="Insert emoji"
-                >
-                  <Smile className="w-5 h-5" />
-                </button>
-
                 <input
                   ref={inputRef}
                   type="text"
                   value={inputText}
                   onChange={(e) => setInputText(e.target.value)}
-                  placeholder="Type a message..."
+                  placeholder={`Write message to ${activeConversation.name}...`}
                   className="flex-1 bg-transparent border-0 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none"
                 />
+              </div>
+
+              {/* Bottom Row of Input Bar: Action Icons + Send Button */}
+              <div className="flex items-center justify-between pt-1">
+                <div className="flex items-center gap-1 sm:gap-2 text-slate-400">
+                  <button
+                    type="button"
+                    onClick={() => toast("Document upload active", { icon: "📎" })}
+                    className="p-1.5 hover:text-[#0050CB] dark:hover:text-[#38BDF8] hover:bg-white dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+                    title="Attach File"
+                  >
+                    <Paperclip className="w-4 h-4" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => toast("Image upload active", { icon: "🖼️" })}
+                    className="p-1.5 hover:text-[#0050CB] dark:hover:text-[#38BDF8] hover:bg-white dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+                    title="Attach Image"
+                  >
+                    <ImageIcon className="w-4 h-4" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => toast("Staff document shared", { icon: "📄" })}
+                    className="p-1.5 hover:text-[#0050CB] dark:hover:text-[#38BDF8] hover:bg-white dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+                    title="Share Staff Document"
+                  >
+                    <FileText className="w-4 h-4" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => toast("Emoji reactions active", { icon: "😊" })}
+                    className="p-1.5 hover:text-[#0050CB] dark:hover:text-[#38BDF8] hover:bg-white dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+                    title="Insert Emoji"
+                  >
+                    <Smile className="w-4 h-4" />
+                  </button>
+                </div>
 
                 <button
                   type="submit"
@@ -965,19 +964,15 @@ export default function ChatPage() {
         </div>
 
         {/* ================================================== */}
-        {/* COLUMN 3: DETAIL PANEL (Right Profile Panel) */}
+        {/* COLUMN 3: DETAIL PANEL (Right Staff Profile Panel) */}
         {/* ================================================== */}
         <div className="lg:col-span-3 xl:col-span-3 bg-white dark:bg-[#000E28] flex flex-col overflow-y-auto p-5 sm:p-6 space-y-6 custom-scrollbar min-h-0">
           
-          {/* SECTION 1: PARENT / CONTACT INFORMATION */}
+          {/* SECTION 1: STAFF INFORMATION */}
           <div>
             <div className="flex items-center justify-between mb-3.5">
               <h3 className="text-xs font-black tracking-wider text-slate-900 dark:text-white uppercase">
-                {activeConversation.roleType === "parent"
-                  ? "Parent Information"
-                  : activeConversation.roleType === "teacher"
-                  ? "Teacher Information"
-                  : "Student Information"}
+                Staff Information
               </h3>
               <button
                 type="button"
@@ -1009,11 +1004,22 @@ export default function ChatPage() {
                     Active
                   </span>
                 </div>
+                <p className="text-[11px] font-semibold text-[#0050CB] dark:text-blue-400 mt-0.5">
+                  ID: {activeConversation.employeeId}
+                </p>
+                <p className="text-[11px] text-slate-400 font-medium">
+                  {activeConversation.designation}
+                </p>
               </div>
             </div>
 
             {/* Contact Details List */}
             <div className="space-y-2.5 text-xs">
+              <div className="flex items-center gap-2.5 text-slate-600 dark:text-slate-300">
+                <Briefcase className="w-3.5 h-3.5 text-[#0050CB] dark:text-[#38BDF8] shrink-0" />
+                <span className="font-medium">{activeConversation.department}</span>
+              </div>
+
               <div className="flex items-center gap-2.5 text-slate-600 dark:text-slate-300">
                 <PhoneCall className="w-3.5 h-3.5 text-[#0050CB] dark:text-[#38BDF8] shrink-0" />
                 <span className="font-medium">{activeConversation.phone}</span>
@@ -1026,64 +1032,47 @@ export default function ChatPage() {
 
               <div className="flex items-start gap-2.5 text-slate-600 dark:text-slate-300">
                 <MapPin className="w-3.5 h-3.5 text-[#0050CB] dark:text-[#38BDF8] shrink-0 mt-0.5" />
-                <span className="font-medium leading-relaxed">{activeConversation.address}</span>
+                <span className="font-medium leading-relaxed">{activeConversation.campusOffice}</span>
               </div>
             </div>
           </div>
 
-          {/* SECTION 2: CHILD / CLASS INFORMATION */}
-          {activeConversation.child && (
-            <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
-              <h3 className="text-xs font-black tracking-wider text-slate-900 dark:text-white uppercase mb-3">
-                Child Information
-              </h3>
-
-              <div className="p-3 rounded-2xl bg-slate-50/80 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/60 flex items-center gap-3">
-                <div className="relative w-11 h-11 rounded-full overflow-hidden bg-slate-200 shrink-0 ring-1 ring-white dark:ring-slate-700">
-                  <img
-                    src={activeConversation.child.avatar}
-                    alt={activeConversation.child.name}
-                    className="w-full h-full object-cover"
-                  />
+          {/* SECTION 2: ASSIGNED CLASSES & SUBJECTS */}
+          <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+            <h3 className="text-xs font-black tracking-wider text-slate-900 dark:text-white uppercase mb-3">
+              Assigned Classes & Academic Roles
+            </h3>
+            <div className="space-y-1.5">
+              {activeConversation.assignedClasses.map((cls, idx) => (
+                <div
+                  key={idx}
+                  className="px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2"
+                >
+                  <BookOpen className="w-3 h-3 text-[#0050CB] dark:text-blue-400 shrink-0" />
+                  <span>{cls}</span>
                 </div>
-
-                <div className="min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <h5 className="font-extrabold text-xs sm:text-sm text-slate-900 dark:text-white truncate">
-                      {activeConversation.child.name}
-                    </h5>
-                    <span className="inline-flex items-center gap-0.5 text-[9px] font-black px-1.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/40 text-[#0050CB] dark:text-[#38BDF8]">
-                      <GraduationCap className="w-2.5 h-2.5" />
-                      Student
-                    </span>
-                  </div>
-                  <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 mt-0.5">
-                    {activeConversation.child.grade}
-                  </p>
-                </div>
-              </div>
+              ))}
             </div>
-          )}
 
-          {activeConversation.classesTaught && (
-            <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
-              <h3 className="text-xs font-black tracking-wider text-slate-900 dark:text-white uppercase mb-3">
-                Assigned Classes
-              </h3>
-              <div className="space-y-1.5">
-                {activeConversation.classesTaught.map((cls, idx) => (
-                  <div
-                    key={idx}
-                    className="px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 text-xs font-semibold text-slate-700 dark:text-slate-300"
+            {/* Subjects Tags */}
+            <div className="mt-3">
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
+                Subjects / Specialization
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {activeConversation.subjects.map((sub, i) => (
+                  <span
+                    key={i}
+                    className="px-2.5 py-1 rounded-lg bg-[#E5EEFF] dark:bg-[#002366]/50 text-[#0050CB] dark:text-blue-300 text-[11px] font-bold border border-blue-200/60 dark:border-blue-800/50"
                   >
-                    {cls}
-                  </div>
+                    {sub}
+                  </span>
                 ))}
               </div>
             </div>
-          )}
+          </div>
 
-          {/* SECTION 3: QUICK ACTIONS (2x2 Buttons Grid) */}
+          {/* SECTION 3: QUICK ACTIONS */}
           <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
             <h3 className="text-xs font-black tracking-wider text-slate-900 dark:text-white uppercase mb-3">
               Quick Actions
@@ -1096,7 +1085,7 @@ export default function ChatPage() {
                 className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/80 hover:border-[#0050CB] hover:bg-blue-50/50 dark:hover:bg-slate-700/60 text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2 transition-all shadow-2xs cursor-pointer"
               >
                 <PhoneCall className="w-3.5 h-3.5 text-[#0050CB] dark:text-[#38BDF8]" />
-                <span className="truncate">Call Parent</span>
+                <span className="truncate">Call Staff</span>
               </button>
 
               <button
@@ -1123,7 +1112,7 @@ export default function ChatPage() {
                 className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/80 hover:border-[#0050CB] hover:bg-blue-50/50 dark:hover:bg-slate-700/60 text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2 transition-all shadow-2xs cursor-pointer"
               >
                 <FileEdit className="w-3.5 h-3.5 text-[#0050CB] dark:text-[#38BDF8]" />
-                <span className="truncate">Add Note</span>
+                <span className="truncate">Add Staff Note</span>
               </button>
             </div>
           </div>
@@ -1132,11 +1121,11 @@ export default function ChatPage() {
           <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-xs font-black tracking-wider text-slate-900 dark:text-white uppercase">
-                Documents & Attachments
+                Staff Files & Curriculum Plans
               </h3>
               <button
                 type="button"
-                onClick={() => toast("Viewing all student documents", { icon: "📂" })}
+                onClick={() => toast("Viewing all faculty documents", { icon: "📂" })}
                 className="text-xs font-bold text-[#0050CB] dark:text-[#38BDF8] hover:underline inline-flex items-center gap-1 cursor-pointer"
               >
                 <span>View All</span>
@@ -1184,7 +1173,7 @@ export default function ChatPage() {
       </div>
 
       {/* ==================================================== */}
-      {/* 4. MODAL: ADD NOTE TO PARENT/STUDENT RECORD */}
+      {/* 5. MODAL: ADD STAFF NOTE */}
       {/* ==================================================== */}
       {noteModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in">
@@ -1203,14 +1192,14 @@ export default function ChatPage() {
             </div>
 
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Attach an administrative remark or follow-up note to this contact record.
+              Attach an internal administrative remark or follow-up note to this faculty record.
             </p>
 
             <textarea
               rows={4}
               value={noteContent}
               onChange={(e) => setNoteContent(e.target.value)}
-              placeholder="e.g. Parent requested rescheduling of upcoming science assessment..."
+              placeholder="e.g. Discussed upcoming curriculum review meeting for Thursday afternoon..."
               className="w-full p-3 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl focus:outline-none focus:border-[#0050CB] text-slate-900 dark:text-white"
             />
 
@@ -1226,7 +1215,7 @@ export default function ChatPage() {
                 type="button"
                 onClick={() => {
                   if (!noteContent.trim()) return;
-                  toast.success("Administrative note saved successfully!", { icon: "📝" });
+                  toast.success("Staff administrative note saved successfully!", { icon: "📝" });
                   setNoteContent("");
                   setNoteModalOpen(false);
                 }}
