@@ -552,7 +552,7 @@ export default function IdCardGeneratorPage() {
   const handleGenerateCard = async () => {
     if (!selectedStudent) {
       toast.error("Please select a student first.");
-      return;
+      return null;
     }
 
     try {
@@ -580,11 +580,14 @@ export default function IdCardGeneratorPage() {
         setActiveGeneratedCard(json.data);
         toast.success(`ID Card ${json.data.cardNumber} generated successfully!`);
         fetchHistory();
+        return json.data;
       } else {
         toast.error(json.message || "Failed to generate ID card.");
+        return null;
       }
     } catch (err: any) {
       toast.error("Error generating ID card: " + err.message);
+      return null;
     } finally {
       setIsGenerating(false);
     }
@@ -662,25 +665,29 @@ export default function IdCardGeneratorPage() {
   };
 
   // 12. Trigger PDF Download
-  const handleDownloadPDF = async () => {
-    if (!activeGeneratedCard) {
-      // If user hasn't pressed generate, generate first or download current state
+  const handleDownloadPDF = async (targetCard?: IdCardItem) => {
+    let cardToDownload: IdCardItem | null = targetCard || activeGeneratedCard;
+    if (!cardToDownload) {
       toast("Generating official certified PDF...", { icon: "ℹ️" });
-      await handleGenerateCard();
-      return;
+      const generated = await handleGenerateCard();
+      if (!generated) return;
+      cardToDownload = generated;
     }
+
+    const card = cardToDownload;
+    if (!card) return;
 
     try {
       const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
-      const res = await authenticatedFetch(`${apiBase}/api/v1/id-cards/${activeGeneratedCard._id}/pdf`);
+      const res = await authenticatedFetch(`${apiBase}/api/v1/id-cards/${card._id}/pdf`);
       if (!res.ok) throw new Error("Could not download PDF");
 
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `GGPS-ID-Card-${selectedStudent?.admissionNumber || activeGeneratedCard.cardNumber}.pdf`;
+      a.download = `GGPS-ID-Card-${selectedStudent?.admissionNumber || card.cardNumber}.pdf`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -1711,8 +1718,16 @@ export default function IdCardGeneratorPage() {
                   }`}>
                     {card.status.toUpperCase()}
                   </span>
+                  <button
+                    onClick={() => handleDownloadPDF(card)}
+                    title="Download ID Card PDF"
+                    className="p-1.5 text-slate-600 hover:text-[#0050CB] hover:bg-blue-50 rounded-lg cursor-pointer transition-colors"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                  </button>
                   <Link
                     href={`/verify/student/${card.verificationToken}`}
+                    title="Public QR Verification Page"
                     className="p-1.5 text-[#0050CB] hover:bg-blue-50 rounded-lg"
                   >
                     <ExternalLink className="w-3.5 h-3.5" />

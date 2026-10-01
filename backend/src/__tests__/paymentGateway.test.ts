@@ -52,6 +52,7 @@ describe('Payment Gateway Integration & Audit Transactions', () => {
     jest.spyOn(StudentParent, 'findOne').mockResolvedValue(null);
     jest.spyOn(Counter, 'findOneAndUpdate').mockResolvedValue({ sequence: 101 } as any);
     jest.spyOn(Notification, 'create').mockResolvedValue({} as any);
+    jest.spyOn(PaymentTransaction, 'findOne').mockResolvedValue(null);
     jest.spyOn(PaymentTransaction, 'create').mockResolvedValue({} as any);
     jest.spyOn(PaymentTransaction, 'findOneAndUpdate').mockResolvedValue({} as any);
 

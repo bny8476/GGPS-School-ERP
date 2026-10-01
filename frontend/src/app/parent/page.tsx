@@ -190,13 +190,6 @@ export default function ParentDashboard() {
                   </button>
                 );
               })}
-
-              <Link
-                href="/parent/children"
-                className="text-xs font-bold text-[#0050CB] dark:text-blue-300 hover:underline px-2 py-1 ml-auto sm:ml-1"
-              >
-                All Children →
-              </Link>
             </div>
           </div>
 

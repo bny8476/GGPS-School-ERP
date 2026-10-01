@@ -45,60 +45,31 @@ export const protect = async (req: Request, res: Response, next: NextFunction): 
   }
 
   if (!token) {
-    if (process.env.NODE_ENV !== 'production') {
-      try {
-        const defaultAdmin: any = await User.findOne({ email: 'admin@school.com' }).populate('role');
-        if (defaultAdmin) {
-          req.user = {
-            id: defaultAdmin._id.toString(),
-            role: typeof defaultAdmin.role === 'object' ? defaultAdmin.role?.name || 'Admin' : defaultAdmin.role || 'Admin',
-            permissions: ['*'],
-          };
-          next();
-          return;
-        }
-      } catch (_) {}
-    }
     res.status(401).json({ success: false, message: 'Not authorized, no token', code: 'NO_TOKEN' });
     return;
   }
 
   try {
-    const secret = process.env.JWT_ACCESS_SECRET || process.env.JWT_SECRET || env.JWT_ACCESS_SECRET;
-    let decoded: JwtPayload;
-    try {
-      decoded = jwt.verify(token, secret) as JwtPayload;
-    } catch (err) {
-      if (process.env.NODE_ENV !== 'production') {
-        const defaultAdmin: any = await User.findOne({ email: 'admin@school.com' }).populate('role');
-        if (defaultAdmin) {
-          req.user = {
-            id: defaultAdmin._id.toString(),
-            role: typeof defaultAdmin.role === 'object' ? defaultAdmin.role?.name || 'Admin' : defaultAdmin.role || 'Admin',
-            permissions: ['*'],
-          };
-          next();
-          return;
-        }
-      }
-      res.status(401).json({ success: false, message: 'Not authorized, invalid or expired token', code: 'INVALID_TOKEN' });
-      return;
+    const secretsToTry = Array.from(
+      new Set(
+        [
+          process.env.JWT_SECRET,
+          process.env.JWT_ACCESS_SECRET,
+          env.JWT_ACCESS_SECRET,
+        ].filter(Boolean) as string[]
+      )
+    );
+
+    let decoded: JwtPayload | undefined;
+    for (const s of secretsToTry) {
+      try {
+        decoded = jwt.verify(token, s) as JwtPayload;
+        if (decoded && decoded.user && decoded.user.id) break;
+      } catch (_) {}
     }
 
     if (!decoded || !decoded.user || !decoded.user.id) {
-      if (process.env.NODE_ENV !== 'production') {
-        const defaultAdmin: any = await User.findOne({ email: 'admin@school.com' }).populate('role');
-        if (defaultAdmin) {
-          req.user = {
-            id: defaultAdmin._id.toString(),
-            role: typeof defaultAdmin.role === 'object' ? defaultAdmin.role?.name || 'Admin' : defaultAdmin.role || 'Admin',
-            permissions: ['*'],
-          };
-          next();
-          return;
-        }
-      }
-      res.status(401).json({ success: false, message: 'Not authorized, invalid token payload', code: 'INVALID_TOKEN' });
+      res.status(401).json({ success: false, message: 'Not authorized, token failed', code: 'INVALID_TOKEN' });
       return;
     }
 
@@ -106,18 +77,6 @@ export const protect = async (req: Request, res: Response, next: NextFunction): 
     if (mongoose.connection.readyState === 1 && mongoose.Types.ObjectId.isValid(decoded.user.id)) {
       const dbUser = await User.findById(decoded.user.id).select('isActive isDeleted status role');
       if (!dbUser || dbUser.isDeleted || dbUser.isActive === false || dbUser.status === 'Suspended') {
-        if (process.env.NODE_ENV !== 'production') {
-          const defaultAdmin: any = await User.findOne({ email: 'admin@school.com' }).populate('role');
-          if (defaultAdmin) {
-            req.user = {
-              id: defaultAdmin._id.toString(),
-              role: typeof defaultAdmin.role === 'object' ? defaultAdmin.role?.name || 'Admin' : defaultAdmin.role || 'Admin',
-              permissions: ['*'],
-            };
-            next();
-            return;
-          }
-        }
         res.status(401).json({
           success: false,
           message: 'Account is deactivated, suspended, or no longer exists',
@@ -133,20 +92,6 @@ export const protect = async (req: Request, res: Response, next: NextFunction): 
 
     next();
   } catch (error) {
-    if (process.env.NODE_ENV !== 'production') {
-      try {
-        const defaultAdmin: any = await User.findOne({ email: 'admin@school.com' }).populate('role');
-        if (defaultAdmin) {
-          req.user = {
-            id: defaultAdmin._id.toString(),
-            role: typeof defaultAdmin.role === 'object' ? defaultAdmin.role?.name || 'Admin' : defaultAdmin.role || 'Admin',
-            permissions: ['*'],
-          };
-          next();
-          return;
-        }
-      } catch (_) {}
-    }
     res.status(401).json({
       success: false,
       message: 'Not authorized, token failed',

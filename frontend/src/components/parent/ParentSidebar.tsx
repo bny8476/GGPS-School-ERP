@@ -408,19 +408,6 @@ export default function ParentSidebar({
         }`}
       >
         {sidebarContent}
-
-        {/* Floating Border Expand Button when Collapsed */}
-        {isCollapsed && (
-          <button
-            type="button"
-            onClick={() => setIsCollapsed(false)}
-            className="absolute -right-3 top-5 z-40 w-6 h-6 rounded-full bg-white dark:bg-[#081329] border border-blue-200 dark:border-white/20 shadow-md shadow-blue-500/10 hidden md:flex items-center justify-center text-slate-500 hover:text-[#0050CB] hover:border-[#0050CB] transition-all cursor-pointer hover:scale-110"
-            title="Expand sidebar"
-            aria-label="Expand sidebar"
-          >
-            <ChevronRight className="w-3.5 h-3.5" />
-          </button>
-        )}
       </aside>
 
       {/* Mobile Slide-Out Drawer */}

@@ -705,7 +705,7 @@ export default function AddStudentModal({
                           </span>
                         </div>
                         <div>
-                          <span className="text-slate-400 block">Student ID (Auto-assigned):</span>
+                          <span className="text-slate-400 block">Student ID:</span>
                           <span className="font-bold text-[#0050CB] dark:text-[#38BDF8] font-mono tracking-wider">
                             {previewStudentId}
                           </span>
@@ -717,7 +717,7 @@ export default function AddStudentModal({
                           </span>
                         </div>
                         <div>
-                          <span className="text-slate-400 block">Admission Number (Auto-assigned):</span>
+                          <span className="text-slate-400 block">Admission Number:</span>
                           <span className="font-bold text-[#000E28] dark:text-white font-mono">
                             {previewAdmissionNo}
                           </span>
@@ -735,13 +735,6 @@ export default function AddStudentModal({
                           </span>
                         </div>
                       </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 p-3 rounded-xl bg-blue-50/70 dark:bg-blue-950/30 border border-blue-200/60 dark:border-blue-900/40 text-xs text-[#0050CB] dark:text-[#38BDF8]">
-                      <AlertCircle className="w-4 h-4 shrink-0 text-[#0050CB]" />
-                      <span>
-                        Student ID ({previewStudentId}) and Admission Number ({previewAdmissionNo}) will be permanently allocated by the server upon enrollment.
-                      </span>
                     </div>
                   </motion.div>
                 )}
