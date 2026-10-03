@@ -29,9 +29,10 @@ import {
   ArrowRight,
   SlidersHorizontal,
   Bookmark,
-  CheckCheck
+  CheckCheck,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { printDocument } from '@/lib/exportUtils';
 
 export type ClassWorkStatus = 'COMPLETED' | 'IN_PROGRESS' | 'UPCOMING';
 
@@ -882,7 +883,7 @@ export default function ClassWorkWorkspace({ students = [], onNavigateTab }: Cla
                   Live Preview: What Parents See on Mobile App
                 </span>
                 <h3 className="text-base font-black text-[#000E28] dark:text-white">
-                  Classroom LKG-A • Daily School Diary (18 September 2026)
+                  Classroom LKG-A • Daily School Diary ({new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date())})
                 </h3>
               </div>
               <div className="flex items-center gap-2">
@@ -1242,14 +1243,14 @@ export default function ClassWorkWorkspace({ students = [], onNavigateTab }: Cla
             </div>
 
             {/* Simulated Paper */}
-            <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 space-y-4 text-xs">
+            <div id="printable-classwork-diary" className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 space-y-4 text-xs">
               <div className="border-b border-slate-200 dark:border-slate-700 pb-3 flex items-center justify-between">
                 <div>
                   <h2 className="font-black text-sm text-slate-900 dark:text-white">
-                    GGSP INTERNATIONAL SCHOOL • DAILY CLASSROOM DIARY
+                    GGPS SCHOOL • DAILY CLASSROOM DIARY
                   </h2>
                   <p className="text-[11px] text-slate-500">
-                    Class LKG - Section A • Teacher: Priya Sharma • Date: 18 September 2026
+                    Class LKG - Section A • Teacher: Priya Sharma • Date: {new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date())}
                   </p>
                 </div>
                 <span className="px-2 py-1 rounded bg-blue-100 text-[#0050CB] font-bold text-[10px]">
@@ -1287,7 +1288,7 @@ export default function ClassWorkWorkspace({ students = [], onNavigateTab }: Cla
               <button
                 type="button"
                 onClick={() => {
-                  window.print();
+                  printDocument('printable-classwork-diary', 'GGPS School - Daily Classroom Diary');
                   setIsPrintModalOpen(false);
                 }}
                 className="px-5 py-2 bg-[#0050CB] hover:bg-[#003da1] text-white rounded-xl font-bold cursor-pointer text-xs shadow-md shadow-blue-500/20 flex items-center gap-1.5"

@@ -121,7 +121,7 @@ export default function InventoryPage() {
             Inventory & Procurement
           </h1>
           <p className="text-slate-500 dark:text-slate-400 mt-1">
-            Global International School • Stock Tracking, Reorder Thresholds & Purchase Orders
+            GGPS School • Stock Tracking, Reorder Thresholds & Purchase Orders
           </p>
         </div>
 

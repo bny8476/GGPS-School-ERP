@@ -185,3 +185,16 @@ class ApiClient {
 
 export const apiClient = new ApiClient();
 export default apiClient;
+
+export async function authFetch(input: string, init: RequestInit = {}): Promise<Response> {
+  const run = (stripAuth: boolean) => {
+    const headers = new Headers(init.headers);
+    if (stripAuth) headers.delete("Authorization"); // stale Bearer must not override the refreshed cookie
+    return fetch(input, { ...init, headers, credentials: "include" });
+  };
+  let res = await run(false);
+  if (res.status === 401 && !input.includes("/auth/login") && !input.includes("/auth/refresh")) {
+    if (await attemptTokenRefresh()) res = await run(true);
+  }
+  return res;
+}

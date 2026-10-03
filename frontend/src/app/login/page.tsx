@@ -233,12 +233,14 @@ export default function LoginPage() {
       const apiBase = getApiBaseUrl();
       let res: Response;
 
+      const cleanEmail = email.trim();
+
       try {
         res = await fetch(`${apiBase}/api/v1/auth/login`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
-          body: JSON.stringify({ email, password }),
+          body: JSON.stringify({ email: cleanEmail, password }),
         });
       } catch (directErr) {
         // Fallback to relative URL proxied by Next.js rewrites
@@ -246,7 +248,7 @@ export default function LoginPage() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
-          body: JSON.stringify({ email, password }),
+          body: JSON.stringify({ email: cleanEmail, password }),
         });
       }
 

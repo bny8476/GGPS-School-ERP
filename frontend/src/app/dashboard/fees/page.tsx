@@ -16,6 +16,7 @@ import AdminStatCard from '@/components/admin/AdminStatCard';
 import AdminDataTable, { Column } from '@/components/admin/AdminDataTable';
 import { downloadFile } from '@/lib/fileDownload';
 import { printDocument, exportToCSV } from '@/lib/exportUtils';
+import { authFetch } from '@/lib/apiClient';
 
 // Types
 interface FeeRecord {
@@ -192,9 +193,9 @@ function FeesFinanceContent() {
       const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
       const [feesRes, expRes, stuRes] = await Promise.all([
-        fetch(`${apiBase}/api/finance/fees`, { headers }).catch(() => null),
-        fetch(`${apiBase}/api/finance/expenses`, { headers }).catch(() => null),
-        fetch(`${apiBase}/api/students`, { headers }).catch(() => null)
+        authFetch(`${apiBase}/api/finance/fees`, { headers }).catch(() => null),
+        authFetch(`${apiBase}/api/finance/expenses`, { headers }).catch(() => null),
+        authFetch(`${apiBase}/api/students`, { headers }).catch(() => null)
       ]);
 
       let loadedFees: FeeRecord[] = [];
@@ -249,7 +250,7 @@ function FeesFinanceContent() {
     try {
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
       const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
-      await fetch(`${apiBase}/api/finance/fees`, {
+      await authFetch(`${apiBase}/api/finance/fees`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token || ''}` },
         body: JSON.stringify(feeForm)
@@ -282,7 +283,7 @@ function FeesFinanceContent() {
     try {
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
       const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
-      await fetch(`${apiBase}/api/finance/fees/${showUpdateFeeModal.fee._id}`, {
+      await authFetch(`${apiBase}/api/finance/fees/${showUpdateFeeModal.fee._id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token || ''}` },
         body: JSON.stringify(updateFeeForm)
@@ -378,7 +379,7 @@ function FeesFinanceContent() {
     try {
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
       const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
-      await fetch(`${apiBase}/api/finance/expenses`, {
+      await authFetch(`${apiBase}/api/finance/expenses`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token || ''}` },
         body: JSON.stringify(expenseForm)
@@ -601,7 +602,7 @@ function FeesFinanceContent() {
         <div className="flex items-center justify-end gap-1.5">
           {/* Download Invoice PDF */}
           <button
-            onClick={() => downloadFile(`/api/finance/fees/${row._id}/pdf`, `GGPS-Fee-Invoice-${row.invoiceNumber || row._id}.pdf`)}
+            onClick={() => downloadFile(`/api/finance/fees/${row._id}/pdf`, `GGPS_Fee_Invoice_${row.invoiceNumber || row._id}.pdf`)}
             title="Download Invoice PDF"
             className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-[#E5EEFF] hover:text-[#0050CB] transition-all cursor-pointer"
           >
@@ -1040,7 +1041,7 @@ function FeesFinanceContent() {
                     <td className="py-3 px-4 text-right">
                       <div className="flex items-center justify-end gap-1.5">
                         <button
-                          onClick={() => downloadFile(`/api/finance/receipts/${f.receiptNumber}/pdf`, `GGPS-Fee-Receipt-${f.receiptNumber}.pdf`)}
+                          onClick={() => downloadFile(`/api/finance/receipts/${f.receiptNumber}/pdf`, `GGPS_Fee_Receipt_${f.receiptNumber}.pdf`)}
                           className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white font-bold text-[11px] transition-all cursor-pointer border border-emerald-200"
                           title="Download Receipt PDF"
                         >
@@ -1629,7 +1630,7 @@ function FeesFinanceContent() {
                 Close
               </button>
               <button
-                onClick={() => downloadFile(`/api/finance/receipts/${showReceiptModal.record?.receiptNumber}/pdf`, `GGPS-Fee-Receipt-${showReceiptModal.record?.receiptNumber || 'REC'}.pdf`)}
+                onClick={() => downloadFile(`/api/finance/receipts/${showReceiptModal.record?.receiptNumber}/pdf`, `GGPS_Fee_Receipt_${showReceiptModal.record?.receiptNumber || 'REC'}.pdf`)}
                 className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs"
               >
                 <Download className="w-4 h-4" />

@@ -12,6 +12,8 @@ import SpotlightCard from "@/components/teacher/SpotlightCard";
 import FeePaymentModal from "@/components/parent/FeePaymentModal";
 import { useParent } from "@/context/ParentContext";
 import toast from "react-hot-toast";
+import { authFetch } from "@/lib/apiClient";
+import { downloadPdf } from "@/lib/fileDownload";
 
 export default function ParentFeesPage() {
   const { selectedChild } = useParent();
@@ -29,7 +31,7 @@ export default function ParentFeesPage() {
     try {
       const token = localStorage.getItem("token");
       const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
-      const res = await fetch(`${apiBase}/api/v1/finance/fees`, {
+      const res = await authFetch(`${apiBase}/api/v1/finance/fees`, {
         headers: {
           "Content-Type": "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -144,24 +146,11 @@ export default function ParentFeesPage() {
     setIsPaymentModalOpen(true);
   };
 
-  const handleDownloadReceipt = (receiptNo: string, amount: number) => {
-    const receiptContent = `GGPS SCHOOL ERP - OFFICIAL FEE RECEIPT
-------------------------------------------------
-Receipt Number: ${receiptNo}
-Student Name:   ${child.firstName} ${child.lastName}
-Grade & Section:${child.grade}
-Amount Paid:    ₹${amount.toLocaleString()}
-Payment Status: SUCCESSFUL / VERIFIED
-Authorized By:  GGPS Directorate of Finance
-------------------------------------------------`;
-    const blob = new Blob([receiptContent], { type: "text/plain" });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `Receipt_${receiptNo}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    toast.success(`Downloaded Receipt ${receiptNo}`);
+  const handleDownloadReceipt = async (receiptNo: string, amount: number) => {
+    await downloadPdf(
+      `/api/v1/finance/receipts/${receiptNo}/pdf`,
+      `GGPS_Fee_Receipt_${receiptNo}.pdf`
+    );
   };
 
   return (

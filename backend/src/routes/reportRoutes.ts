@@ -7,6 +7,7 @@ import {
   getStaffReport,
   exportReport,
 } from '../controllers/reportController';
+import { exportClassRoster } from '../controllers/classController';
 import { protect, authorize } from '../middleware/auth';
 
 const router = express.Router();
@@ -17,6 +18,7 @@ const adminStaffAuth = authorize('SuperAdmin', 'Admin', 'Principal', 'Accountant
 const generalStaffAuth = authorize('SuperAdmin', 'Admin', 'Principal', 'Accountant', 'Teacher');
 
 router.get('/export/:reportType', generalStaffAuth, exportReport);
+router.get('/roster', generalStaffAuth, exportClassRoster);
 
 router.get('/fee-defaulters', adminStaffAuth, getFeeDefaulters);
 router.get('/admissions', adminStaffAuth, getAdmissionAnalytics);
@@ -25,3 +27,4 @@ router.get('/academic', generalStaffAuth, getAcademicReport);
 router.get('/staff', adminStaffAuth, getStaffReport);
 
 export default router;
+

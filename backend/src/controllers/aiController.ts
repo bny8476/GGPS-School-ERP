@@ -62,7 +62,7 @@ export const processAIQuery = async (req: Request, res: Response) => {
           date: { $gte: todayStart },
           status: 'Absent',
         });
-        responseText = `Across Global International School today, ${todayAbsents} absent mark(s) have been submitted out of ${totalStudents} active students enrolled.`;
+        responseText = `Across GGPS School today, ${todayAbsents} absent mark(s) have been submitted out of ${totalStudents} active students enrolled.`;
       }
     }
     // 2. Unpaid Fees / Fee Collection Query

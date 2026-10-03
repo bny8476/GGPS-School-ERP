@@ -4,7 +4,7 @@ import React, { useState, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { 
-  Home, ChevronRight, Calendar, ChevronDown, Check, Download, 
+  Home, ChevronRight, Calendar, ChevronDown, Check, Download, Printer,
   Clock, MapPin, User, Calculator, BookOpen, Sprout, Palette, 
   Languages, Activity, CheckCircle2, Zap, FileText, TrendingUp, 
   UploadCloud, AlertCircle, Lightbulb, Info, CheckCircle, Apple, 
@@ -12,6 +12,8 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { useParent } from "@/context/ParentContext";
+import { downloadFile } from "@/lib/fileDownload";
+import { exportToCSV, printDocument } from "@/lib/exportUtils";
 
 interface TimetablePeriod {
   periodNum?: number;
@@ -766,9 +768,21 @@ export default function TimetablePage() {
     return { completed, ongoing, missed, upcoming };
   }, [academicPeriods]);
 
-  const handleDownloadPDF = () => {
-    toast.success(`Downloading ${child.firstName}'s Timetable PDF...`);
-    window.print();
+  const handleExportScheduleCSV = () => {
+    const rows = academicPeriods.map((p) => ({
+      Period: p.periodLabel || 'Period',
+      Time: p.time,
+      Subject: p.subject,
+      Topic: p.topic,
+      Room: p.room,
+      Teacher: p.teacher || 'Class Faculty',
+      Status: p.status,
+    }));
+    exportToCSV(rows, `GGPS_Timetable_${child.firstName}_${selectedDay}_${selectedAcademicYear.replace(/\s+/g, '_')}`);
+  };
+
+  const handlePrintTimetable = () => {
+    printDocument('printable-timetable-container', `GGPS School Timetable - ${child.firstName} (${selectedDay})`);
   };
 
   return (
@@ -980,15 +994,23 @@ export default function TimetablePage() {
           })}
         </div>
 
-        {/* Right: Download PDF Button */}
-        <div>
+        {/* Right: Print & Export Actions */}
+        <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={handleDownloadPDF}
-            className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 hover:border-[#0050CB]/50 text-slate-700 dark:text-slate-200 hover:text-[#0050CB] bg-white dark:bg-[#07142F] text-xs font-bold flex items-center gap-2 shadow-2xs hover:bg-blue-50/40 dark:hover:bg-white/5 transition-all cursor-pointer"
+            onClick={handlePrintTimetable}
+            className="px-3.5 py-2 rounded-xl border border-slate-200 dark:border-white/10 hover:border-[#0050CB]/50 text-slate-700 dark:text-slate-200 hover:text-[#0050CB] bg-white dark:bg-[#07142F] text-xs font-bold flex items-center gap-1.5 shadow-2xs hover:bg-blue-50/40 dark:hover:bg-white/5 transition-all cursor-pointer"
           >
-            <Download className="w-3.5 h-3.5 text-[#0050CB]" />
-            <span>Download PDF</span>
+            <Printer className="w-3.5 h-3.5 text-slate-500" />
+            <span>Print Routine</span>
+          </button>
+          <button
+            type="button"
+            onClick={handleExportScheduleCSV}
+            className="px-3.5 py-2 rounded-xl bg-[#0050CB] hover:bg-[#003EA3] text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition-all cursor-pointer"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>Export Schedule</span>
           </button>
         </div>
 
@@ -998,7 +1020,7 @@ export default function TimetablePage() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         
         {/* Left Column: Period Timeline (approx 66% width) */}
-        <div className="lg:col-span-8 bg-white dark:bg-[#07142F] rounded-3xl p-5 sm:p-7 border border-slate-100 dark:border-white/10 shadow-xs space-y-4">
+        <div id="printable-timetable-container" className="lg:col-span-8 bg-white dark:bg-[#07142F] rounded-3xl p-5 sm:p-7 border border-slate-100 dark:border-white/10 shadow-xs space-y-4">
           
           {/* Top Title Bar of Timetable */}
           <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
@@ -1293,9 +1315,13 @@ export default function TimetablePage() {
               {/* 1. Download Report Card */}
               <button
                 type="button"
-                onClick={() => {
-                  toast.success("Downloading Student Report Card PDF...");
-                  window.print();
+                onClick={async () => {
+                  const targetId = child._id || 'child-1';
+                  const safeName = `${child.firstName}_${child.lastName || ''}`.trim() || 'Student';
+                  await downloadFile(
+                    `/api/v1/students/${targetId}/report-card`,
+                    `GGPS_ReportCard_${safeName}_2026-2027.pdf`
+                  );
                 }}
                 className="bg-[#F0F7FF] dark:bg-blue-950/30 hover:bg-[#E2F0FE] dark:hover:bg-blue-900/40 border border-[#D8EAFD] dark:border-blue-800/30 rounded-2xl p-3 flex items-center gap-2.5 transition-colors cursor-pointer text-left group"
               >

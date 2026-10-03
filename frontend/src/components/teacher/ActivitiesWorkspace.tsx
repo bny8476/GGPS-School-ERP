@@ -868,7 +868,7 @@ export default function ActivitiesWorkspace({ students = [], onNavigateTab }: Ac
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-black text-[#000E28] dark:text-white uppercase tracking-wider flex items-center gap-2">
               <Calendar className="w-4 h-4 text-[#0050CB]" />
-              <span>Daily Sequence • Today, 19 September 2026</span>
+              <span>Daily Sequence • Today, {new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date())}</span>
             </h3>
             <span className="text-xs text-slate-500">
               Showing {filteredActivities.length} play sessions

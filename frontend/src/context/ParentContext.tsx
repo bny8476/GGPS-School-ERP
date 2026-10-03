@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { io, Socket } from 'socket.io-client';
 import toast from 'react-hot-toast';
 import { getApiBaseUrl } from '@/lib/utils';
+import { authFetch } from '@/lib/apiClient';
 
 export interface Child {
   _id: string;
@@ -352,7 +353,7 @@ export function ParentProvider({ children: reactChildren }: { children: React.Re
       if (token) headers['Authorization'] = `Bearer ${token}`;
 
       // 1. Unread Messages
-      fetch(`${apiBase}/api/v1/messages/unread-count`, { headers, credentials: 'include' })
+      authFetch(`${apiBase}/api/v1/messages/unread-count`, { headers, credentials: 'include' })
         .then((r) => (r.ok ? r.json() : null))
         .then((data) => {
           if (data && typeof data.unreadCount === 'number') {
@@ -362,7 +363,7 @@ export function ParentProvider({ children: reactChildren }: { children: React.Re
         .catch(() => {});
 
       // 2. Unread Notifications
-      fetch(`${apiBase}/api/v1/notifications?read=false&limit=1`, { headers, credentials: 'include' })
+      authFetch(`${apiBase}/api/v1/notifications?read=false&limit=1`, { headers, credentials: 'include' })
         .then((r) => (r.ok ? r.json() : null))
         .then((data) => {
           if (data && typeof data.unreadCount === 'number') {
@@ -386,7 +387,7 @@ export function ParentProvider({ children: reactChildren }: { children: React.Re
       };
 
       // 1. Today's Attendance
-      fetch(`${apiBase}/api/v1/attendance/today?childId=${childId}`, { headers, credentials: 'include' })
+      authFetch(`${apiBase}/api/v1/attendance/today?childId=${childId}`, { headers, credentials: 'include' })
         .then(r => r.ok ? r.json() : null)
         .then(data => {
           if (data && data.status) {
@@ -396,7 +397,7 @@ export function ParentProvider({ children: reactChildren }: { children: React.Re
         .catch(() => {});
 
       // 2. Today's Class Work
-      fetch(`${apiBase}/api/v1/classwork/today?childId=${childId}`, { headers, credentials: 'include' })
+      authFetch(`${apiBase}/api/v1/classwork/today?childId=${childId}`, { headers, credentials: 'include' })
         .then(r => r.ok ? r.json() : null)
         .then(data => {
           if (Array.isArray(data) && data.length > 0) {
@@ -406,7 +407,7 @@ export function ParentProvider({ children: reactChildren }: { children: React.Re
         .catch(() => {});
 
       // 3. Today's Activities
-      fetch(`${apiBase}/api/v1/activities/today?childId=${childId}`, { headers, credentials: 'include' })
+      authFetch(`${apiBase}/api/v1/activities/today?childId=${childId}`, { headers, credentials: 'include' })
         .then(r => r.ok ? r.json() : null)
         .then(data => {
           if (Array.isArray(data) && data.length > 0) {
@@ -416,7 +417,7 @@ export function ParentProvider({ children: reactChildren }: { children: React.Re
         .catch(() => {});
 
       // 4. Today's Daily Diary
-      fetch(`${apiBase}/api/v1/daily-diary/today?childId=${childId}`, { headers, credentials: 'include' })
+      authFetch(`${apiBase}/api/v1/daily-diary/today?childId=${childId}`, { headers, credentials: 'include' })
         .then(r => r.ok ? r.json() : null)
         .then(data => {
           if (data && (data.todayLearning || data.todayActivity)) {
@@ -426,7 +427,7 @@ export function ParentProvider({ children: reactChildren }: { children: React.Re
         .catch(() => {});
 
       // 5. Child-specific Teacher Remarks
-      fetch(`${apiBase}/api/v1/teacher-remarks/child/${childId}`, { headers, credentials: 'include' })
+      authFetch(`${apiBase}/api/v1/teacher-remarks/child/${childId}`, { headers, credentials: 'include' })
         .then(r => r.ok ? r.json() : null)
         .then(data => {
           if (Array.isArray(data) && data.length > 0) {
@@ -436,7 +437,7 @@ export function ParentProvider({ children: reactChildren }: { children: React.Re
         .catch(() => {});
 
       // 6. Child Homework
-      fetch(`${apiBase}/api/v1/homework/child/${childId}`, { headers, credentials: 'include' })
+      authFetch(`${apiBase}/api/v1/homework/child/${childId}`, { headers, credentials: 'include' })
         .then(r => r.ok ? r.json() : null)
         .then(data => {
           if (Array.isArray(data) && data.length > 0) {
@@ -455,18 +456,22 @@ export function ParentProvider({ children: reactChildren }: { children: React.Re
     setIsLoadingChildren(true);
     try {
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      if (!token) {
+        setIsLoadingChildren(false);
+        return;
+      }
       const apiBase = getApiBaseUrl();
       const headers = {
         'Content-Type': 'application/json',
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        'Authorization': `Bearer ${token}`,
       };
 
-      const profilePromise = fetch(`${apiBase}/api/v1/parents/me`, {
+      const profilePromise = authFetch(`${apiBase}/api/v1/parents/me`, {
         headers,
         credentials: 'include',
       }).then(r => r.ok ? r.json() : null).catch(() => null);
 
-      const studentsPromise = fetch(`${apiBase}/api/v1/students`, {
+      const studentsPromise = authFetch(`${apiBase}/api/v1/students`, {
         headers,
         credentials: 'include',
       }).then(r => r.ok ? r.json() : null).catch(() => null);
@@ -704,7 +709,7 @@ export function ParentProvider({ children: reactChildren }: { children: React.Re
     try {
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
       const apiBase = getApiBaseUrl();
-      const res = await fetch(`${apiBase}/api/v1/parents/me`, {
+      const res = await authFetch(`${apiBase}/api/v1/parents/me`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -730,7 +735,7 @@ export function ParentProvider({ children: reactChildren }: { children: React.Re
     try {
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
       const apiBase = getApiBaseUrl();
-      const res = await fetch(`${apiBase}/api/v1/teacher-remarks/${remarkId}/reply`, {
+      const res = await authFetch(`${apiBase}/api/v1/teacher-remarks/${remarkId}/reply`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -760,7 +765,7 @@ export function ParentProvider({ children: reactChildren }: { children: React.Re
     try {
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
       const apiBase = getApiBaseUrl();
-      await fetch(`${apiBase}/api/v1/homework/${homeworkId}/status`, {
+      await authFetch(`${apiBase}/api/v1/homework/${homeworkId}/status`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

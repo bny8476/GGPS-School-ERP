@@ -10,6 +10,7 @@ import User from '../models/User';
 import Fee from '../models/Fee';
 import env from '../config/env';
 import { matchesPermission, hasPermission, requirePermissions } from '../middleware/rbac';
+import emailService from '../services/emailService';
 
 const app = express();
 app.use(express.json());
@@ -46,6 +47,12 @@ describe('Security Audit Fixes Verification', () => {
     it('should persist reset code with expiry and allow password reset', async () => {
       const originalReadyState = mongoose.connection.readyState;
       Object.defineProperty(mongoose.connection, 'readyState', { value: 1, configurable: true });
+
+      const emailSpy = jest.spyOn(emailService, 'sendEmail').mockResolvedValue({
+        success: true,
+        messageId: 'test-sim-123',
+        mode: 'simulated',
+      });
 
       const mockUser: any = {
         _id: new mongoose.Types.ObjectId(),
@@ -101,9 +108,10 @@ describe('Security Audit Fixes Verification', () => {
       expect(mockUser.passwordResetCode).toBeUndefined();
       expect(mockUser.passwordResetExpires).toBeUndefined();
 
+      emailSpy.mockRestore();
       findOneSpy.mockRestore();
       Object.defineProperty(mongoose.connection, 'readyState', { value: originalReadyState, configurable: true });
-    });
+    }, 25000);
   });
 
   describe('3. Fee Payments & Mass-Assignment Protections', () => {

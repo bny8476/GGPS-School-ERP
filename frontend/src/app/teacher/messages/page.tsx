@@ -14,6 +14,7 @@ import {
 import toast from "react-hot-toast";
 import { getSocket, joinRoom, leaveRoom } from "@/lib/socket";
 import { getApiBaseUrl } from "@/lib/utils";
+import { authFetch } from "@/lib/apiClient";
 import { useAuthStore } from "@/stores/authStore";
 
 interface MessageAttachment {
@@ -164,7 +165,7 @@ export default function TeacherMessagesPage() {
       setIsLoadingConversations(true);
       const token = localStorage.getItem("token");
       const apiBase = getApiBaseUrl();
-      const res = await fetch(`${apiBase}/api/v1/messages/conversations`, {
+      const res = await authFetch(`${apiBase}/api/v1/messages/conversations`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -211,7 +212,7 @@ export default function TeacherMessagesPage() {
       setIsLoadingMessages(true);
       const token = localStorage.getItem("token");
       const apiBase = getApiBaseUrl();
-      const res = await fetch(`${apiBase}/api/v1/messages?conversationId=${convId}`, {
+      const res = await authFetch(`${apiBase}/api/v1/messages?conversationId=${convId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -223,7 +224,7 @@ export default function TeacherMessagesPage() {
           setMessages(json.data.map((m: any) => formatServerMessage(m, currentUserId)));
 
           // Mark messages as read on backend
-          fetch(`${apiBase}/api/v1/messages/read`, {
+          authFetch(`${apiBase}/api/v1/messages/read`, {
             method: "PATCH",
             headers: {
               "Content-Type": "application/json",
@@ -250,7 +251,7 @@ export default function TeacherMessagesPage() {
       setIsLoadingContacts(true);
       const token = localStorage.getItem("token");
       const apiBase = getApiBaseUrl();
-      const res = await fetch(`${apiBase}/api/v1/messages/contacts`, {
+      const res = await authFetch(`${apiBase}/api/v1/messages/contacts`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -318,7 +319,7 @@ export default function TeacherMessagesPage() {
         // Mark as read immediately
         const token = localStorage.getItem("token");
         const apiBase = getApiBaseUrl();
-        fetch(`${apiBase}/api/v1/messages/read`, {
+        authFetch(`${apiBase}/api/v1/messages/read`, {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
@@ -462,7 +463,7 @@ export default function TeacherMessagesPage() {
     try {
       const token = localStorage.getItem("token");
       const apiBase = getApiBaseUrl();
-      const res = await fetch(`${apiBase}/api/v1/messages`, {
+      const res = await authFetch(`${apiBase}/api/v1/messages`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -498,7 +499,7 @@ export default function TeacherMessagesPage() {
     try {
       const token = localStorage.getItem("token");
       const apiBase = getApiBaseUrl();
-      const res = await fetch(`${apiBase}/api/v1/messages/conversations`, {
+      const res = await authFetch(`${apiBase}/api/v1/messages/conversations`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -433,3 +433,207 @@ export const generateReportCardPDF = (res: Response, student: StudentPDFData, as
 
   doc.end();
 };
+
+export interface RollCallRosterItem {
+  no?: number | string;
+  rollNo?: string;
+  name: string;
+  admissionNo: string;
+  gender?: string;
+  age?: string;
+  dob?: string;
+  parentName?: string;
+  contact?: string;
+  attendanceStatus?: string;
+  remarks?: string;
+}
+
+export interface RollCallRosterData {
+  className: string;
+  sectionName: string;
+  academicYear: string;
+  classTeacher: string;
+  date: string;
+  students: RollCallRosterItem[];
+}
+
+/**
+ * Utility to generate an Official Class Roll-Call Roster PDF (A4 Landscape, multi-page safe)
+ */
+export const generateRollCallRosterPDF = (
+  res: Response,
+  roster: RollCallRosterData,
+  options?: { inline?: boolean }
+) => {
+  const doc = new PDFDocument({
+    margin: 35,
+    size: 'A4',
+    layout: 'landscape',
+    bufferPages: true,
+  });
+
+  const cleanClass = (roster.className || 'Class').replace(/[^a-zA-Z0-9]/g, '_');
+  const cleanSection = (roster.sectionName || 'A').replace(/[^a-zA-Z0-9]/g, '_');
+  const cleanYear = (roster.academicYear || '2026-2027').replace(/[^a-zA-Z0-9-]/g, '_');
+  const cleanFilename = `GGPS_Roll_Call_Roster_${cleanClass}_${cleanSection}_${cleanYear}.pdf`;
+
+  res.setHeader('Content-Type', 'application/pdf');
+  const dispositionType = options?.inline ? 'inline' : 'attachment';
+  res.setHeader('Content-Disposition', `${dispositionType}; filename="${cleanFilename}"`);
+  doc.pipe(res);
+
+  const pageWidth = 841.89;
+  const margin = 35;
+  const contentWidth = pageWidth - margin * 2; // 771.89 pt -> use 770 pt
+
+  // Column definitions (total width: 770 pt)
+  const columns = [
+    { key: 'no', label: 'NO.', width: 28, align: 'center' as const },
+    { key: 'rollNo', label: 'ROLL', width: 38, align: 'center' as const },
+    { key: 'name', label: 'STUDENT NAME', width: 140, align: 'left' as const },
+    { key: 'admissionNo', label: 'ADMISSION ID', width: 85, align: 'left' as const },
+    { key: 'gender', label: 'GENDER', width: 45, align: 'center' as const },
+    { key: 'dob', label: 'AGE / DOB', width: 85, align: 'left' as const },
+    { key: 'parentName', label: 'PARENT / GUARDIAN', width: 105, align: 'left' as const },
+    { key: 'contact', label: 'CONTACT', width: 85, align: 'left' as const },
+    { key: 'attendanceStatus', label: 'ATTENDANCE', width: 75, align: 'center' as const },
+    { key: 'remarks', label: 'REMARKS', width: 84, align: 'left' as const },
+  ];
+
+  const renderHeader = (isFirstPage: boolean) => {
+    if (isFirstPage) {
+      // Primary School Banner
+      doc.rect(margin, 25, contentWidth, 42).fill('#0050CB');
+      doc.fillColor('#FFFFFF').fontSize(16).font('Helvetica-Bold').text('GGPS SCHOOL', margin, 32, { align: 'center', width: contentWidth });
+      doc.fillColor('#E5EEFF').fontSize(8).font('Helvetica').text('CBSE Affiliation No: 1930412 • Knowledge Park Campus • info@ggps.edu', margin, 51, { align: 'center', width: contentWidth });
+
+      // Title Sub-banner
+      doc.rect(margin, 70, contentWidth, 18).fill('#000E28');
+      doc.fillColor('#FFFFFF').fontSize(8.5).font('Helvetica-Bold').text('OFFICIAL CLASS ROLL-CALL ROSTER', margin, 74, { align: 'center', width: contentWidth });
+
+      // Metadata Info Box
+      const metaY = 92;
+      doc.roundedRect(margin, metaY, contentWidth, 32, 4).fillAndStroke('#F8FAFC', '#CBD5E1');
+
+      doc.font('Helvetica-Bold').fontSize(8).fillColor('#0050CB');
+      doc.text('Class: ', margin + 12, metaY + 7, { continued: true }).font('Helvetica').fillColor('#000E28').text(`${roster.className}`);
+      doc.font('Helvetica-Bold').fillColor('#0050CB').text('Section: ', margin + 12, metaY + 18, { continued: true }).font('Helvetica').fillColor('#000E28').text(`${roster.sectionName}`);
+
+      doc.font('Helvetica-Bold').fillColor('#0050CB').text('Academic Year: ', margin + 150, metaY + 7, { continued: true }).font('Helvetica').fillColor('#000E28').text(`${roster.academicYear}`);
+      doc.font('Helvetica-Bold').fillColor('#0050CB').text('Total Enrolled: ', margin + 150, metaY + 18, { continued: true }).font('Helvetica').fillColor('#000E28').text(`${roster.students.length} Students`);
+
+      doc.font('Helvetica-Bold').fillColor('#0050CB').text('Class Teacher: ', margin + 350, metaY + 7, { continued: true }).font('Helvetica').fillColor('#000E28').text(`${roster.classTeacher}`);
+      doc.font('Helvetica-Bold').fillColor('#0050CB').text('Roll-Call Date: ', margin + 350, metaY + 18, { continued: true }).font('Helvetica').fillColor('#000E28').text(`${roster.date}`);
+
+      doc.font('Helvetica-Bold').fillColor('#FF690C').text('OFFICIAL ATTENDANCE RECORD', margin + 580, metaY + 12, { align: 'right', width: 175 });
+
+      return 130;
+    } else {
+      // Repeating compact header on subsequent pages
+      doc.rect(margin, 25, contentWidth, 20).fill('#0050CB');
+      doc.fillColor('#FFFFFF').fontSize(9).font('Helvetica-Bold').text(`GGPS SCHOOL — ROLL-CALL ROSTER (${roster.className} - ${roster.sectionName} • ${roster.academicYear})`, margin, 30, { align: 'center', width: contentWidth });
+      return 50;
+    }
+  };
+
+  const renderTableHeader = (yPos: number) => {
+    doc.rect(margin, yPos, contentWidth, 20).fill('#0050CB');
+    doc.font('Helvetica-Bold').fontSize(7.5).fillColor('#FFFFFF');
+
+    let currentX = margin;
+    columns.forEach((col) => {
+      doc.text(col.label, currentX, yPos + 6, {
+        width: col.width,
+        align: col.align,
+      });
+      currentX += col.width;
+    });
+
+    return yPos + 20;
+  };
+
+  const startY = renderHeader(true);
+  let currentY = renderTableHeader(startY);
+
+  const rowHeight = 18;
+  const maxY = 520; // Leave room for footer
+
+  if (!roster.students || roster.students.length === 0) {
+    doc.rect(margin, currentY, contentWidth, 40).fill('#F8FAFC');
+    doc.font('Helvetica').fontSize(10).fillColor('#64748B').text('This class currently has no enrolled students.', margin, currentY + 14, { align: 'center', width: contentWidth });
+    currentY += 40;
+  } else {
+    roster.students.forEach((student, idx) => {
+      if (currentY + rowHeight > maxY) {
+        doc.addPage({ margin: 35, size: 'A4', layout: 'landscape' });
+        const nextStartY = renderHeader(false);
+        currentY = renderTableHeader(nextStartY);
+      }
+
+      const isEven = idx % 2 === 0;
+      doc.rect(margin, currentY, contentWidth, rowHeight).fill(isEven ? '#FFFFFF' : '#F8FAFC');
+      doc.moveTo(margin, currentY + rowHeight).lineTo(margin + contentWidth, currentY + rowHeight).stroke('#E2E8F0');
+
+      doc.font('Helvetica').fontSize(7.5).fillColor('#334155');
+      let currentX = margin;
+
+      columns.forEach((col) => {
+        let val = '';
+        if (col.key === 'no') val = String(idx + 1).padStart(2, '0');
+        else if (col.key === 'rollNo') val = String(student.rollNo || idx + 1).padStart(2, '0');
+        else if (col.key === 'name') val = student.name || 'Student';
+        else if (col.key === 'admissionNo') val = student.admissionNo || '-';
+        else if (col.key === 'gender') val = student.gender || '-';
+        else if (col.key === 'dob') val = student.dob ? `${student.age ? student.age + ' • ' : ''}${student.dob}` : (student.age || '-');
+        else if (col.key === 'parentName') val = student.parentName || '-';
+        else if (col.key === 'contact') val = student.contact || '-';
+        else if (col.key === 'attendanceStatus') val = student.attendanceStatus || '[ P ]  [ A ]  [ L ]';
+        else if (col.key === 'remarks') val = student.remarks || '________________';
+
+        const paddingX = 3;
+        doc.text(val, currentX + paddingX, currentY + 5, {
+          width: col.width - paddingX * 2,
+          align: col.align,
+          ellipsis: true,
+        });
+
+        currentX += col.width;
+      });
+
+      currentY += rowHeight;
+    });
+  }
+
+  // Footer on all buffered pages
+  const range = doc.bufferedPageRange();
+  const generatedTime = new Date().toLocaleString('en-GB', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+  for (let i = 0; i < range.count; i++) {
+    doc.switchToPage(i);
+    const footerY = 550;
+    doc.moveTo(margin, footerY).lineTo(margin + contentWidth, footerY).stroke('#CBD5E1');
+
+    doc.font('Helvetica').fontSize(7.5).fillColor('#64748B');
+    doc.text('GGPS School ERP • Official Roll-Call Roster', margin, footerY + 7, {
+      width: 250,
+      align: 'left',
+    });
+    doc.text(`Generated on: ${generatedTime}`, margin + 250, footerY + 7, {
+      width: contentWidth - 500,
+      align: 'center',
+    });
+    doc.text(`Page ${i + 1} of ${range.count}`, margin + contentWidth - 250, footerY + 7, {
+      width: 250,
+      align: 'right',
+    });
+  }
+
+  doc.end();
+};
+

@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { Bot, Send, X, Sparkles, UserCheck, HelpCircle } from "lucide-react";
+import { authFetch } from "@/lib/apiClient";
 
 let widgetMsgCounter = 100;
 const getWidgetMsgId = () => ++widgetMsgCounter;
@@ -45,7 +46,7 @@ export default function GlobalAIAssistantWidget() {
     try {
       const token = localStorage.getItem("token");
       const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
-      const res = await fetch(`${apiBase}/api/ai/assistant`, {
+      const res = await authFetch(`${apiBase}/api/ai/assistant`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

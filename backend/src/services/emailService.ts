@@ -54,7 +54,7 @@ class EmailService {
   }
 
   public async sendEmail(options: SendMailOptions): Promise<SendMailResult> {
-    const sender = process.env.SMTP_FROM || '"Global International School" <noreply@globalinternationalschool.edu>';
+    const sender = process.env.SMTP_FROM || '"GGPS School" <noreply@ggps.edu>';
     const recipients = Array.isArray(options.to) ? options.to.join(', ') : options.to;
 
     // If live SMTP is configured, attempt real dispatch

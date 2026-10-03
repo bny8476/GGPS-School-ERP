@@ -10,6 +10,7 @@ import {
 import toast from "react-hot-toast";
 import { useParent } from "@/context/ParentContext";
 import ReportCardModal from "@/components/parent/ReportCardModal";
+import { printDocument } from "@/lib/exportUtils";
 
 export default function ParentResultsPage() {
   const { selectedChild } = useParent();
@@ -115,7 +116,7 @@ export default function ParentResultsPage() {
       </div>
 
       {/* 4. Subject Breakdown Table */}
-      <div className="bg-white dark:bg-[#07142F] rounded-3xl border border-slate-200/80 dark:border-white/10 shadow-xs overflow-hidden">
+      <div id="printable-results-ledger" className="bg-white dark:bg-[#07142F] rounded-3xl border border-slate-200/80 dark:border-white/10 shadow-xs overflow-hidden">
         <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
           <div>
             <h3 className="text-base font-extrabold text-[#000E28] dark:text-white">
@@ -124,17 +125,26 @@ export default function ParentResultsPage() {
             <p className="text-xs text-slate-400">Continuous comprehensive evaluation metrics</p>
           </div>
 
-          <button
-            type="button"
-            onClick={() => {
-              window.print();
-              toast.success("Printing Report Card...");
-            }}
-            className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-1.5 transition-colors cursor-pointer"
-          >
-            <Printer className="w-3.5 h-3.5" />
-            <span>Print Ledger</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                printDocument("printable-results-ledger", `GGPS School Assessment Ledger - ${child.firstName} ${child.lastName || ''}`);
+              }}
+              className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <Printer className="w-3.5 h-3.5" />
+              <span>Print Ledger</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsReportModalOpen(true)}
+              className="px-3 py-1.5 rounded-xl bg-[#0050CB] hover:bg-[#003EA3] text-white text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Official PDF</span>
+            </button>
+          </div>
         </div>
 
         <div className="overflow-x-auto">

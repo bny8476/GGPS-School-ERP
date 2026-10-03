@@ -106,7 +106,7 @@ export default function HouseSystemPage() {
 
           <div className="p-8 border-4 border-double border-[#0050CB] rounded-2xl bg-gradient-to-br from-amber-50/40 via-white to-slate-50 dark:from-[#000E28] dark:to-slate-900 text-center space-y-6 relative">
             <div className="space-y-1">
-              <div className="text-[10px] font-black tracking-widest text-[#0050CB] uppercase">Global International School</div>
+              <div className="text-[10px] font-black tracking-widest text-[#0050CB] uppercase">GGPS School</div>
               <h3 className="text-2xl font-serif font-black text-[#000E28] dark:text-white tracking-wide">
                 CERTIFICATE OF MERIT
               </h3>

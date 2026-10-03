@@ -9,6 +9,8 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getApiBaseUrl } from '@/lib/utils';
+import { printDocument } from '@/lib/exportUtils';
+import { downloadPdf } from '@/lib/fileDownload';
 
 const RUBRIC_TEMPLATE = [
   { category: 'Motor Skills', skill: 'Holds pencil correctly and traces lines' },
@@ -878,11 +880,27 @@ export default function AssessmentsPage() {
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => window.print()}
+                  onClick={() => printDocument('printable-admin-report-card-modal', 'GGPS School - Official Report Card')}
                   className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-[#0050CB] text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer"
                 >
                   <Printer className="w-3.5 h-3.5" />
                   <span>Print</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const studentId = selectedReportCard.childId?._id || selectedReportCard.childId;
+                    const studentName = selectedReportCard.childId ? `${selectedReportCard.childId.firstName}_${selectedReportCard.childId.lastName}` : 'Student';
+                    if (studentId) {
+                      await downloadPdf(`/api/v1/students/${studentId}/report-card`, `GGPS_Report_Card_${studentName}.pdf`);
+                    } else {
+                      toast.error('Student ID not found');
+                    }
+                  }}
+                  className="px-3 py-1.5 bg-[#0050CB] hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Download PDF</span>
                 </button>
                 <button
                   type="button"
@@ -895,7 +913,7 @@ export default function AssessmentsPage() {
             </div>
 
             {/* Content */}
-            <div className="p-6 overflow-y-auto space-y-5 text-xs">
+            <div id="printable-admin-report-card-modal" className="p-6 overflow-y-auto space-y-5 text-xs">
               <h4 className="font-bold text-slate-500 uppercase tracking-wider text-[11px]">Evaluated Skill Rubrics</h4>
               <div className="space-y-2.5">
                 {selectedReportCard.rubrics?.map((rubric: any, idx: number) => (

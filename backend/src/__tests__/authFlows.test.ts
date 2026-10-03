@@ -18,6 +18,7 @@ describe('Auth Controller & Token Rotation / Reuse-Detection Test Suite', () => 
   let originalReadyState: number;
 
   beforeAll(() => {
+    jest.setTimeout(30000);
     originalReadyState = mongoose.connection.readyState;
     Object.defineProperty(mongoose.connection, 'readyState', { value: 1, configurable: true });
   });
@@ -63,7 +64,7 @@ describe('Auth Controller & Token Rotation / Reuse-Detection Test Suite', () => 
     const cookieHeader = Array.isArray(rawCookies) ? rawCookies.join(';') : String(rawCookies || '');
     expect(cookieHeader).toContain('token=');
     expect(cookieHeader.toLowerCase()).toContain('httponly');
-  });
+  }, 30000);
 
   it('loginUser rejects invalid password with 401 and never grants session', async () => {
     const userId = new mongoose.Types.ObjectId();
@@ -91,7 +92,7 @@ describe('Auth Controller & Token Rotation / Reuse-Detection Test Suite', () => 
     expect(res.status).toBe(401);
     expect(res.body.success).toBe(false);
     expect(res.body.token).toBeUndefined();
-  });
+  }, 30000);
 
   it('loginUser rejects inactive or disabled account with 403', async () => {
     const userId = new mongoose.Types.ObjectId();

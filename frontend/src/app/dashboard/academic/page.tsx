@@ -13,6 +13,7 @@ import {
 import toast from 'react-hot-toast';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import { getApiBaseUrl } from '@/lib/utils';
+import { authFetch } from '@/lib/apiClient';
 
 // Terms Hero Illustration with Foliage, 3D Stacked Books, Graduation Cap, Calendar Sheet & Cursive Script
 function TermsHeroIllustration() {
@@ -786,10 +787,10 @@ function AcademicContent() {
     setIsLoading(true);
     try {
       const [subRes, classRes, teachRes, yearRes] = await Promise.allSettled([
-        fetch(`${apiBase}/api/academic/subjects`, { headers: getHeaders(), credentials: 'include' }),
-        fetch(`${apiBase}/api/classes`, { headers: getHeaders(), credentials: 'include' }),
-        fetch(`${apiBase}/api/users`, { headers: getHeaders(), credentials: 'include' }),
-        fetch(`${apiBase}/api/academic/years`, { headers: getHeaders(), credentials: 'include' }),
+        authFetch(`${apiBase}/api/academic/subjects`, { headers: getHeaders(), credentials: 'include' }),
+        authFetch(`${apiBase}/api/classes`, { headers: getHeaders(), credentials: 'include' }),
+        authFetch(`${apiBase}/api/users`, { headers: getHeaders(), credentials: 'include' }),
+        authFetch(`${apiBase}/api/academic/years`, { headers: getHeaders(), credentials: 'include' }),
       ]);
       
       if (subRes.status === 'fulfilled' && subRes.value.ok) {
@@ -835,7 +836,7 @@ function AcademicContent() {
   const fetchTimetable = async () => {
     if (!selectedClass) return;
     try {
-      const res = await fetch(`${apiBase}/api/academic/timetables/${selectedClass}`, { 
+      const res = await authFetch(`${apiBase}/api/academic/timetables/${selectedClass}`, { 
         headers: getHeaders(),
         credentials: 'include'
       });
@@ -870,7 +871,7 @@ function AcademicContent() {
     e.preventDefault();
     setIsSaving(true);
     try {
-      const res = await fetch(`${apiBase}/api/academic/subjects`, {
+      const res = await authFetch(`${apiBase}/api/academic/subjects`, {
         method: 'POST',
         headers: getHeaders(),
         credentials: 'include',
@@ -895,7 +896,7 @@ function AcademicContent() {
   const handleDeleteSubject = async (id: string) => {
     if (!confirm('Are you sure you want to remove this subject?')) return;
     try {
-      const res = await fetch(`${apiBase}/api/academic/subjects/${id}`, {
+      const res = await authFetch(`${apiBase}/api/academic/subjects/${id}`, {
         method: 'DELETE',
         headers: getHeaders(),
         credentials: 'include'
@@ -913,7 +914,7 @@ function AcademicContent() {
   const handleSaveTimetable = async () => {
     setIsSaving(true);
     try {
-      const res = await fetch(`${apiBase}/api/academic/timetables`, {
+      const res = await authFetch(`${apiBase}/api/academic/timetables`, {
         method: 'POST',
         headers: getHeaders(),
         credentials: 'include',
@@ -966,7 +967,7 @@ function AcademicContent() {
     e.preventDefault();
     setIsSaving(true);
     try {
-      const res = await fetch(`${apiBase}/api/academic/years`, {
+      const res = await authFetch(`${apiBase}/api/academic/years`, {
         method: 'POST',
         headers: getHeaders(),
         credentials: 'include',
@@ -990,7 +991,7 @@ function AcademicContent() {
   // Set Active Academic Year
   const handleSetActiveYear = async (id: string) => {
     try {
-      const res = await fetch(`${apiBase}/api/academic/years/${id}/set-current`, {
+      const res = await authFetch(`${apiBase}/api/academic/years/${id}/set-current`, {
         method: 'PUT',
         headers: getHeaders(),
         credentials: 'include'

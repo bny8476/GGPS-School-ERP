@@ -21,6 +21,7 @@ import {
   ListFilter
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { authFetch } from '@/lib/apiClient';
 
 interface AddStudentModalProps {
   isOpen: boolean;
@@ -169,11 +170,11 @@ export default function AddStudentModal({
         status: formData.status,
       };
 
-      const res = await fetch(`${apiBase}/api/v1/students`, {
+      const res = await authFetch(`${apiBase}/api/v1/students`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token || ''}`,
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         credentials: 'include',
         body: JSON.stringify(payload),

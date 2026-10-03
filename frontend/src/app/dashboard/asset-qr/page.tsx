@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { QrCode, Plus, Printer, ShieldCheck, Laptop, Wrench, Search } from "lucide-react";
+import { printDocument } from "@/lib/exportUtils";
 
 export default function AssetQRPage() {
   const [assets, setAssets] = useState<any[]>([]);
@@ -124,6 +125,7 @@ export default function AssetQRPage() {
         {assets.map((a) => (
           <div
             key={a._id}
+            id={`asset-card-${a._id}`}
             className="p-5 rounded-2xl bg-white dark:bg-[#000E28] border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-4 hover:border-[#0050CB] transition-all"
           >
             <div className="flex justify-between items-start">
@@ -147,7 +149,7 @@ export default function AssetQRPage() {
             <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center text-xs">
               <button
                 type="button"
-                onClick={() => window.print()}
+                onClick={() => printDocument(`asset-card-${a._id}`, `GGPS Asset QR Tag - ${a.assetCode}`)}
                 className="text-[#0050CB] dark:text-[#38BDF8] font-bold hover:underline cursor-pointer flex items-center gap-1"
               >
                 <Printer className="h-3.5 w-3.5" />

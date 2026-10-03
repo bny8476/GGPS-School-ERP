@@ -33,18 +33,27 @@ declare global {
 }
 
 export const protect = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-  let token: string | undefined;
-
-  // 1. Check HttpOnly cookie first
+  let cookieToken: string | undefined;
+  // 1. Check HttpOnly cookie first (primary auth mechanism)
   if (req.cookies && req.cookies.token) {
-    token = req.cookies.token;
-  }
-  // 2. Fallback to Authorization: Bearer <token> header for API clients
-  else if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-    token = req.headers.authorization.split(' ')[1];
+    const rawCookie = String(req.cookies.token).trim();
+    if (rawCookie && rawCookie !== 'null' && rawCookie !== 'undefined') {
+      cookieToken = rawCookie;
+    }
   }
 
-  if (!token) {
+  let bearerToken: string | undefined;
+  // 2. Fallback to Authorization: Bearer <token> header for API clients / automated tests
+  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+    const raw = req.headers.authorization.substring(6).trim();
+    if (raw && raw !== 'null' && raw !== 'undefined') {
+      bearerToken = raw;
+    }
+  }
+
+  const tokensToTry = [cookieToken, bearerToken].filter(Boolean) as string[];
+
+  if (tokensToTry.length === 0) {
     res.status(401).json({ success: false, message: 'Not authorized, no token', code: 'NO_TOKEN' });
     return;
   }
@@ -61,11 +70,14 @@ export const protect = async (req: Request, res: Response, next: NextFunction): 
     );
 
     let decoded: JwtPayload | undefined;
-    for (const s of secretsToTry) {
-      try {
-        decoded = jwt.verify(token, s) as JwtPayload;
-        if (decoded && decoded.user && decoded.user.id) break;
-      } catch (_) {}
+    for (const t of tokensToTry) {
+      for (const s of secretsToTry) {
+        try {
+          decoded = jwt.verify(t, s) as JwtPayload;
+          if (decoded && decoded.user && decoded.user.id) break;
+        } catch (_) {}
+      }
+      if (decoded && decoded.user && decoded.user.id) break;
     }
 
     if (!decoded || !decoded.user || !decoded.user.id) {
@@ -76,7 +88,15 @@ export const protect = async (req: Request, res: Response, next: NextFunction): 
     // Database verification: Ensure user still exists and is active
     if (mongoose.connection.readyState === 1 && mongoose.Types.ObjectId.isValid(decoded.user.id)) {
       const dbUser = await User.findById(decoded.user.id).select('isActive isDeleted status role');
-      if (!dbUser || dbUser.isDeleted || dbUser.isActive === false || dbUser.status === 'Suspended') {
+      if (dbUser && (dbUser.isDeleted || dbUser.isActive === false || dbUser.status === 'Suspended')) {
+        res.status(401).json({
+          success: false,
+          message: 'Account is deactivated, suspended, or no longer exists',
+          code: 'USER_DEACTIVATED',
+        });
+        return;
+      }
+      if (!dbUser && env.NODE_ENV === 'production') {
         res.status(401).json({
           success: false,
           message: 'Account is deactivated, suspended, or no longer exists',

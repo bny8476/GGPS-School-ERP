@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import { authFetch } from '@/lib/apiClient';
 import { 
   Search, 
   Users, 
@@ -111,7 +112,7 @@ export default function CommandPalette() {
       try {
         const token = localStorage.getItem('token');
         const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
-        const res = await fetch(`${apiBase}/api/v1/search?q=${encodeURIComponent(query.trim())}`, {
+        const res = await authFetch(`${apiBase}/api/v1/search?q=${encodeURIComponent(query.trim())}`, {
           headers: {
             'Content-Type': 'application/json',
             ...(token ? { Authorization: `Bearer ${token}` } : {}),

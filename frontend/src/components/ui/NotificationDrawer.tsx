@@ -24,6 +24,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { getApiBaseUrl } from '@/lib/utils';
+import { authFetch } from '@/lib/apiClient';
 
 export interface NotificationItem {
   _id: string;
@@ -126,14 +127,14 @@ export default function NotificationDrawer({ onNavigateTab }: NotificationDrawer
       const headers: Record<string, string> = {};
       if (token) headers['Authorization'] = `Bearer ${token}`;
 
-      let res = await fetch(`${apiBase}/api/v1/notifications`, {
+      let res = await authFetch(`${apiBase}/api/v1/notifications`, {
         headers,
         credentials: 'include',
         signal: controller.signal,
       }).catch(() => null);
 
       if (!res || res.status === 404) {
-        res = await fetch(`${apiBase}/api/notifications`, {
+        res = await authFetch(`${apiBase}/api/notifications`, {
           headers,
           credentials: 'include',
           signal: controller.signal,

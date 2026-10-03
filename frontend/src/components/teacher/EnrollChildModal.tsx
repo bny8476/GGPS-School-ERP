@@ -109,12 +109,14 @@ export default function EnrollChildModal({
       const cleanSection = sectionName.toUpperCase() || 'A';
 
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-        const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
         const res = await fetch(
           `${apiUrl}/api/students/preview-identifiers?academicYear=${cleanYear}&className=${cleanClass}&sectionName=${cleanSection}`,
           {
-            headers: token ? { Authorization: `Bearer ${token}` } : {},
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json',
+            },
           }
         );
 
@@ -198,14 +200,13 @@ export default function EnrollChildModal({
     let studentId = `s-${Date.now()}`;
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 
       const res = await fetch(`${apiUrl}/api/students`, {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify(payload),
       });

@@ -28,6 +28,8 @@ import {
   Maximize2,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { getApiBaseUrl } from "@/lib/utils";
+import { authFetch } from "@/lib/apiClient";
 
 interface ReportCardModalProps {
   isOpen: boolean;
@@ -218,9 +220,37 @@ export default function ReportCardModal({ isOpen, onClose, child }: ReportCardMo
     toast.success("Printing 1-Page Official Report Card...");
   };
 
-  const handleDownloadPDF = () => {
-    toast.success("Opening Print Dialog — Select 'Save as PDF' to save as 1-Page PDF.");
-    executePrint();
+  const handleDownloadPDF = async () => {
+    const studentId = child._id;
+    const toastId = toast.loading("Downloading certified Report Card PDF...");
+    try {
+      if (studentId) {
+        const baseUrl = getApiBaseUrl();
+        const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+        const res = await authFetch(`${baseUrl}/api/v1/students/${studentId}/report-card`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        if (res.ok) {
+          const blob = await res.blob();
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `GGPS_ReportCard_${studentName.replace(/\s+/g, "_")}.pdf`;
+          document.body.appendChild(a);
+          a.click();
+          setTimeout(() => {
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+          }, 300);
+          toast.success("Official Report Card PDF downloaded successfully!", { id: toastId });
+          return;
+        }
+      }
+      toast.error("Unable to generate PDF from server. Please try printing to PDF.", { id: toastId });
+    } catch (e: any) {
+      console.warn("Report card download notice:", e);
+      toast.error("Report card PDF generation failed. Please try again.", { id: toastId });
+    }
   };
 
   return (

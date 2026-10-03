@@ -10,7 +10,7 @@ const INITIAL_NOTES: any[] = [
     title: 'Executive Board Resolution #BR-2026-08: STEAM & AI Innovation Lab',
     content: `## Executive Resolution & Capital Allocation
 
-The Governing Board of **Global International School** hereby ratifies the capital budget allocation for the Phase 2 STEAM Innovation Centre.
+The Governing Board of **GGPS School** hereby ratifies the capital budget allocation for the Phase 2 STEAM Innovation Centre.
 
 ### Key Resolution Directives:
 * **Approved Grant**: $125,000 from the 2026 Development Reserve.

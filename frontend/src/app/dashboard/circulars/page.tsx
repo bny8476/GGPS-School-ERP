@@ -28,6 +28,7 @@ import {
 import toast from 'react-hot-toast';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import { getApiBaseUrl } from '@/lib/utils';
+import { printDocument } from '@/lib/exportUtils';
 
 interface CircularItem {
   _id: string;
@@ -255,11 +256,8 @@ export default function CircularsPage() {
     }
   };
 
-  const handleDownloadNotice = (refNo: string, title: string) => {
-    toast.success(`Generating PDF copy for ${refNo}...`);
-    setTimeout(() => {
-      window.print();
-    }, 400);
+  const handlePrintNotice = (refNo: string, id: string) => {
+    printDocument(`circular-card-${id}`, `GGPS School - Circular ${refNo}`);
   };
 
   // Filtering
@@ -485,6 +483,7 @@ export default function CircularsPage() {
             return (
               <div 
                 key={item._id}
+                id={`circular-card-${item._id}`}
                 className="p-5 rounded-2xl bg-white dark:bg-[#07152F] border border-slate-200 dark:border-slate-800 shadow-2xs hover:border-[#0050CB]/40 transition-all space-y-4"
               >
                 {/* Header Row */}
@@ -565,11 +564,11 @@ export default function CircularsPage() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => handleDownloadNotice(item.refNo, item.title)}
+                      onClick={() => handlePrintNotice(item.refNo, item._id)}
                       className="p-1.5 text-slate-500 hover:text-[#0050CB] hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg transition-colors cursor-pointer"
-                      title="Print / Download PDF Circular"
+                      title="Print Official Circular"
                     >
-                      <Download className="w-4 h-4" />
+                      <Printer className="w-4 h-4" />
                     </button>
                     <button
                       type="button"

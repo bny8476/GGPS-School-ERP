@@ -6,7 +6,7 @@ import {
   GraduationCap, UserCheck, DollarSign, Calendar, HeartPulse, 
   FileText, ArrowLeft, Download, ShieldCheck, Mail, Phone, 
   MapPin, Clock, AlertTriangle, CheckCircle2, ChevronRight,
-  Printer, Send, Edit3, Award, Sparkles, Activity, FileCheck, Upload
+  Printer, Send, Edit3, Award, Sparkles, Activity, FileCheck, Upload, CreditCard
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';
@@ -164,8 +164,8 @@ export default function Student360Profile({ params }: { params: Promise<{ id: st
   };
 
   const handleDownloadReportCard = async () => {
-    const filename = `GGPS-Student-Report-${student?.studentId || studentId}.pdf`;
-    await downloadFile(`/api/assessments/report-card/${studentId}/pdf`, filename);
+    const filename = `GGPS_Report_Card_${student?.firstName || 'Student'}_${student?.lastName || ''}_2026-2027.pdf`.replace(/\s+/g, '_');
+    await downloadFile(`/api/v1/students/${studentId}/report-card`, filename);
   };
 
   const handleVerifyDocument = async (doc: DocumentItem, status: 'Verified' | 'Rejected' | 'Replacement Required') => {
@@ -262,13 +262,13 @@ export default function Student360Profile({ params }: { params: Promise<{ id: st
               <Download className="w-3.5 h-3.5 text-slate-400" />
               <span>Report Card</span>
             </button>
-            <button
-              onClick={() => window.print()}
+            <Link
+              href={`/dashboard/id-cards?studentId=${student._id || studentId}`}
               className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#001438] hover:bg-slate-50 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all shadow-xs"
             >
-              <Printer className="w-3.5 h-3.5 text-slate-400" />
-              <span>Print Badge</span>
-            </button>
+              <CreditCard className="w-3.5 h-3.5 text-slate-400" />
+              <span>ID Badge</span>
+            </Link>
             <button
               onClick={() => toast.success(`Drafting announcement to ${student.emergencyContact || 'Guardian'}`)}
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#0050CB] hover:bg-[#0041A8] text-white text-xs font-bold transition-all shadow-xs"

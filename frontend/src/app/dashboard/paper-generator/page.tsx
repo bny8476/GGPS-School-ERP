@@ -2,6 +2,8 @@
 
 import React, { useState } from "react";
 import { FileText, Sparkles, Printer, Download, RefreshCw, CheckCircle2, Sliders, Layers } from "lucide-react";
+import { printDocument } from "@/lib/exportUtils";
+import toast from "react-hot-toast";
 
 export default function PaperGeneratorPage() {
   const [subject, setSubject] = useState("Phonics & English");
@@ -64,6 +66,52 @@ export default function PaperGeneratorPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleExportWordDoc = () => {
+    if (!paper) return;
+    const content = `
+      <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+      <head><meta charset='utf-8'><title>${paper.title}</title>
+      <style>
+        body { font-family: 'Calibri', 'Segoe UI', Arial, sans-serif; margin: 40px; color: #1e293b; }
+        .header { text-align: center; border-bottom: 2px solid #0050CB; padding-bottom: 12px; margin-bottom: 20px; }
+        h1 { color: #0050CB; margin: 0; font-size: 22px; }
+        h2 { font-size: 14px; color: #475569; margin: 5px 0; }
+        .meta { display: flex; justify-content: space-between; font-weight: bold; font-size: 13px; margin: 15px 0; border-bottom: 1px solid #cbd5e1; padding-bottom: 8px; }
+        .section-title { background: #f1f5f9; padding: 6px 10px; font-weight: bold; font-size: 14px; margin-top: 20px; }
+        .q-item { margin: 10px 0 10px 15px; font-size: 13px; }
+      </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>GGPS SCHOOL</h1>
+          <h2>${paper.title}</h2>
+          <div class="meta">
+            <span>Grade: ${grade}</span>
+            <span>Duration: ${paper.duration || '45 Mins'}</span>
+            <span>Max Marks: ${paper.marks || totalMarks}</span>
+          </div>
+        </div>
+        ${paper.sections?.map((s: any) => `
+          <div class="section-title">${s.name}</div>
+          ${s.questions?.map((q: string) => `<p class="q-item">${q}</p>`).join('')}
+        `).join('')}
+      </body>
+      </html>
+    `;
+    const blob = new Blob(['\ufeff', content], { type: 'application/msword' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `GGPS_Question_Paper_${subject.replace(/[^a-zA-Z0-9]/g, '_')}_${grade}.doc`;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 200);
+    toast.success('Question paper exported as Word (.doc) document!');
   };
 
   return (
@@ -170,18 +218,20 @@ export default function PaperGeneratorPage() {
             {paper && (
               <div className="flex gap-2">
                 <button
-                  onClick={() => window.print()}
+                  type="button"
+                  onClick={() => printDocument('printable-question-paper', paper.title)}
                   className="px-3 py-1.5 bg-[#E5EEFF] text-[#0050CB] text-xs font-bold rounded-lg flex items-center gap-1.5 hover:bg-[#0050CB] hover:text-white transition-all cursor-pointer"
                 >
                   <Printer className="h-3.5 w-3.5" />
                   <span>Print Paper</span>
                 </button>
                 <button
-                  onClick={() => window.print()}
+                  type="button"
+                  onClick={handleExportWordDoc}
                   className="px-3 py-1.5 bg-[#0050CB] hover:bg-[#0041A8] text-white text-xs font-bold rounded-lg flex items-center gap-1.5 cursor-pointer transition-colors"
                 >
                   <Download className="h-3.5 w-3.5" />
-                  <span>Export PDF</span>
+                  <span>Export Word (.doc)</span>
                 </button>
               </div>
             )}
@@ -193,7 +243,7 @@ export default function PaperGeneratorPage() {
               <p className="text-xs font-bold">Configure parameters on the left and click "Generate Question Paper".</p>
             </div>
           ) : (
-            <div className="p-6 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl space-y-6 font-serif">
+            <div id="printable-question-paper" className="p-6 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl space-y-6 font-serif">
               {/* Header */}
               <div className="text-center border-b border-slate-200 dark:border-slate-800 pb-4 space-y-1">
                 <h3 className="text-lg font-black uppercase text-[#000E28] dark:text-white">{paper.title}</h3>

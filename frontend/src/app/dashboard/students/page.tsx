@@ -55,18 +55,27 @@ function StudentsDirectoryContent() {
     setIsLoading(true);
     try {
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-      const headers = { 'Authorization': `Bearer ${token || ''}` };
       const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
       
-      const [studentsRes, parentsRes] = await Promise.all([
-        fetch(`${apiBase}/api/v1/students`, { headers }).catch(() => null),
-        fetch(`${apiBase}/api/v1/parents`, { headers }).catch(() => null)
-      ]);
-
       let loadedStudents: StudentRecord[] = [];
-      if (studentsRes && studentsRes.ok) {
-        const json = await studentsRes.json();
-        loadedStudents = Array.isArray(json) ? json : json.data || [];
+
+      if (token) {
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        };
+        const [studentsRes, parentsRes] = await Promise.all([
+          fetch(`${apiBase}/api/v1/students`, { headers, credentials: 'include' }).catch(() => null),
+          fetch(`${apiBase}/api/v1/parents`, { headers, credentials: 'include' }).catch(() => null)
+        ]);
+
+        if (studentsRes && studentsRes.ok) {
+          const json = await studentsRes.json();
+          loadedStudents = Array.isArray(json) ? json : json.data || [];
+        }
+        if (parentsRes && parentsRes.ok) {
+          setParents(await parentsRes.json());
+        }
       }
 
       if (!loadedStudents || loadedStudents.length === 0) {
@@ -83,9 +92,6 @@ function StudentsDirectoryContent() {
       }
 
       setStudents(loadedStudents);
-      if (parentsRes && parentsRes.ok) {
-        setParents(await parentsRes.json());
-      }
     } catch (error) {
       console.error('Error fetching students:', error);
       toast.error('Failed to load students');

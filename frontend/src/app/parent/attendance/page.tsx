@@ -12,6 +12,7 @@ import {
 import toast from "react-hot-toast";
 import { useParent } from "@/context/ParentContext";
 import ReportCardModal from "@/components/parent/ReportCardModal";
+import { authFetch } from "@/lib/apiClient";
 
 interface DayAttendance {
   day: string;
@@ -47,7 +48,7 @@ export default function AttendancePage() {
       const token = localStorage.getItem("token");
       const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
       const childId = child._id;
-      const res = await fetch(`${apiBase}/api/v1/attendance?childId=${childId}`, {
+      const res = await authFetch(`${apiBase}/api/v1/attendance?childId=${childId}`, {
         headers: {
           "Content-Type": "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),

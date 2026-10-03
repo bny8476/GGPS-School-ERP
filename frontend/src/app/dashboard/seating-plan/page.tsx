@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { Users, Grid, Sparkles, Printer, ShieldCheck, CheckCircle2 } from "lucide-react";
+import { printDocument } from "@/lib/exportUtils";
 
 export default function SeatingPlanPage() {
   const [hall, setHall] = useState("Main Examination Hall A");
@@ -113,8 +114,8 @@ export default function SeatingPlanPage() {
             </div>
             {generated && (
               <button
-                onClick={() => window.print()}
-                className="px-3 py-1.5 bg-[#0050CB] text-white text-xs font-bold rounded-xl flex items-center gap-1.5 cursor-pointer shadow-sm"
+                onClick={() => printDocument("printable-seating-plan", `GGPS School - Seating Plan (${hall})`)}
+                className="px-3 py-1.5 bg-[#0050CB] text-white text-xs font-bold rounded-xl flex items-center gap-1.5 cursor-pointer shadow-sm hover:bg-[#003EA3] transition-colors"
               >
                 <Printer className="h-3.5 w-3.5" />
                 <span>Print Door Seating Sheet</span>
@@ -122,7 +123,7 @@ export default function SeatingPlanPage() {
             )}
           </div>
 
-          <div className="border border-slate-200 dark:border-slate-800 rounded-2xl p-6 bg-slate-50 dark:bg-slate-900 space-y-4">
+          <div id="printable-seating-plan" className="border border-slate-200 dark:border-slate-800 rounded-2xl p-6 bg-slate-50 dark:bg-slate-900 space-y-4">
             <div className="text-center py-2 bg-slate-200 dark:bg-slate-800 rounded-xl font-bold text-xs uppercase tracking-widest text-slate-600 dark:text-slate-300">
               [ FRONT PODIUM / ACTIVITY BOARD ]
             </div>

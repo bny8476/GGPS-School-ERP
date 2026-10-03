@@ -9,6 +9,7 @@ import {
 import toast from "react-hot-toast";
 import QRCode from "qrcode";
 import GGPSLogo from "@/components/parent/GGPSLogo";
+import { authFetch } from "@/lib/apiClient";
 
 interface IdCardParentModalProps {
   isOpen: boolean;
@@ -44,7 +45,7 @@ export default function IdCardParentModal({ isOpen, onClose, child }: IdCardPare
         const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
         
         // Try querying by child._id first
-        let res = await fetch(`${apiBase}/api/v1/id-cards?studentId=${child._id}&status=active`, {
+        let res = await authFetch(`${apiBase}/api/v1/id-cards?studentId=${child._id}&status=active`, {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
 
@@ -53,7 +54,7 @@ export default function IdCardParentModal({ isOpen, onClose, child }: IdCardPare
 
         // If not found by child._id, try query without studentId filter (backend will filter by parent's linked children)
         if (!foundCard) {
-          res = await fetch(`${apiBase}/api/v1/id-cards?status=active`, {
+          res = await authFetch(`${apiBase}/api/v1/id-cards?status=active`, {
             headers: token ? { Authorization: `Bearer ${token}` } : {},
           });
           data = await res.json();
@@ -101,7 +102,7 @@ export default function IdCardParentModal({ isOpen, onClose, child }: IdCardPare
     try {
       const token = localStorage.getItem("token");
       const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
-      const res = await fetch(`${apiBase}/api/v1/id-cards/${idCard._id}/pdf`, {
+      const res = await authFetch(`${apiBase}/api/v1/id-cards/${idCard._id}/pdf`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
 
@@ -127,7 +128,55 @@ export default function IdCardParentModal({ isOpen, onClose, child }: IdCardPare
   };
 
   const handlePrint = () => {
-    window.print();
+    const el = document.getElementById("id-card-printable-container");
+    if (!el) {
+      window.print();
+      return;
+    }
+    const iframe = document.createElement("iframe");
+    iframe.style.position = "fixed";
+    iframe.style.top = "-9999px";
+    iframe.style.left = "-9999px";
+    iframe.style.width = "210mm";
+    iframe.style.height = "297mm";
+    iframe.style.border = "none";
+    document.body.appendChild(iframe);
+    const doc = iframe.contentWindow?.document;
+    if (!doc) {
+      document.body.removeChild(iframe);
+      window.print();
+      return;
+    }
+    doc.open();
+    doc.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>GGPS_Student_ID_Card</title>
+          <style>
+            @page { size: A4 portrait; margin: 15mm; }
+            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #fff !important; }
+            .print-wrap { width: 340px; margin: 20px auto; }
+          </style>
+          <script src="https://cdn.tailwindcss.com"></script>
+        </head>
+        <body>
+          <div style="text-align: center; margin-bottom: 20px;">
+            <h2 style="color: #0050CB; font-size: 20px; font-weight: 800; margin: 0;">GGPS SCHOOL</h2>
+            <p style="color: #64748B; font-size: 11px; margin: 3px 0 0 0;">Official Student Identity Card • CR80 PVC Standard</p>
+          </div>
+          <div class="print-wrap">${el.innerHTML}</div>
+        </body>
+      </html>
+    `);
+    doc.close();
+    setTimeout(() => {
+      iframe.contentWindow?.focus();
+      iframe.contentWindow?.print();
+      setTimeout(() => {
+        document.body.removeChild(iframe);
+      }, 1500);
+    }, 500);
   };
 
   return (
@@ -247,7 +296,7 @@ export default function IdCardParentModal({ isOpen, onClose, child }: IdCardPare
               </div>
 
               {/* PVC Card Display (Scaled exact standard proportions) */}
-              <div className="flex justify-center py-4 bg-gradient-to-b from-slate-100/70 to-slate-200/50 dark:from-[#000E28]/60 dark:to-[#000E28]/90 p-6 rounded-3xl border border-slate-200 dark:border-slate-800">
+              <div id="id-card-printable-container" className="flex justify-center py-4 bg-gradient-to-b from-slate-100/70 to-slate-200/50 dark:from-[#000E28]/60 dark:to-[#000E28]/90 p-6 rounded-3xl border border-slate-200 dark:border-slate-800">
                 <AnimatePresence mode="wait">
                   {activeSide === "front" ? (
                     <motion.div

@@ -1,12 +1,12 @@
-# Global International — School Management ERP
+# GGPS School — School Management ERP
 
-> Production-ready, enterprise-grade School Management System powering **Global International**.
+> Production-ready, enterprise-grade School Management System powering **GGPS School**.
 
 ---
 
 ## 🌟 Overview
 
-**Global International School ERP** is a unified digital platform built for administration, principals, teachers, students, parents, guardians, accountants, HR, librarians, and transport managers. 
+**GGPS School ERP** is a unified digital platform built for administration, principals, teachers, parents, guardians, accountants, HR, librarians, and transport managers. 
 
 Built with Next.js 16 (App Router) on the frontend and Express 5 + Mongoose on the backend, it features dynamic role-based workspaces, data-level authorization, real-time messaging, comprehensive academic tracking, and financial workflows.
 
@@ -17,7 +17,7 @@ Built with Next.js 16 (App Router) on the frontend and Express 5 + Mongoose on t
 - 👨‍🎓 **Student 360° Profile & Academic History:** Academic, attendance, fee ledger, exam results, medical history, transport, and activity timeline.
 - 🏫 **Academic Management & Conflict-Free Timetable:** Classrooms, sections, subjects, syllabus progress, and routine conflict detection.
 - 💳 **Fee Collection & Automated Receipts:** Multiple payment methods (Cash, Card, UPI, Gateway), discounts, late fees, and computer-generated PDF receipts.
-- 📊 **Multi-Role Dashboards:** Dynamic views tailored for Admin, Teacher, Student, and Parent roles.
+- 📊 **Multi-Role Dashboards:** Dynamic views tailored for Admin, Teacher, and Parent roles.
 - 🔒 **Enterprise RBAC & Security:** JWT authentication, fail-fast env validation, role-based data filtering, and central audit logging (`AuditLog`).
 - 💬 **Communication Suite:** Real-time Socket.IO chat, announcements, events calendar, and notification center.
 - 📚 **Operations & HR:** Library book cataloging, hostel room occupancy, transport vehicle routing, staff payroll lifecycle, and support tickets.
@@ -38,8 +38,8 @@ Built with Next.js 16 (App Router) on the frontend and Express 5 + Mongoose on t
 Create `.env` inside `backend/`:
 
 ```env
-PORT=5000
-MONGO_URI=mongodb://localhost:27017/global_international_erp
+PORT=5001
+MONGO_URI=mongodb://localhost:27017/ggps_school_erp
 JWT_SECRET=your_super_secret_jwt_key
 FRONTEND_URL=http://localhost:3000
 ```
@@ -49,12 +49,9 @@ FRONTEND_URL=http://localhost:3000
 ## ⚡ Quick Start
 
 ```bash
-# Install dependencies at root and backend
+# Install dependencies at root, backend, and frontend
 npm install
-cd backend && npm install && cd ..
-
-# Boot dev servers concurrently (Frontend on 3000, Backend on 5000)
-npm run dev:all
+npm run dev
 ```
 
 ---
@@ -69,9 +66,9 @@ GET /api/health
 ```json
 {
   "status": "ok",
-  "service": "Global International School ERP",
+  "service": "GGPS School ERP",
   "database": "connected",
-  "timestamp": "2026-09-11T14:30:00.000Z"
+  "timestamp": "2026-10-01T16:00:00.000Z"
 }
 ```
 
@@ -79,4 +76,4 @@ GET /api/health
 
 ## 📜 License
 
-© 2026 **Global International School ERP**. All rights reserved.
+© 2026 **GGPS School ERP**. All rights reserved.

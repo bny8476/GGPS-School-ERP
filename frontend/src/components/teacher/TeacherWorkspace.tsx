@@ -104,9 +104,12 @@ import HomeworkWorkspace from './HomeworkWorkspace';
 import ExamsMarksWorkspace from './ExamsMarksWorkspace';
 import TeacherHomeWorkspace from './TeacherHomeWorkspace';
 import EnrollChildModal from './EnrollChildModal';
+import RollCallRosterModal from './RollCallRosterModal';
 import { getApiBaseUrl } from '@/lib/utils';
+import { authFetch } from '@/lib/apiClient';
 import { useAuthStore } from '@/stores/authStore';
 import { getSocket, joinRoom, leaveRoom } from '@/lib/socket';
+import { printDocument } from '@/lib/exportUtils';
 import {
   PremiumCard,
   CardHeader,
@@ -142,7 +145,7 @@ export type TeacherTab =
   | 'NOTIFICATIONS'
   | 'MY ACCOUNT';
 
-interface StudentCardData {
+export interface StudentCardData {
   id: string;
   rollNo: string;
   admissionNo?: string;
@@ -1120,6 +1123,7 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
   const [searchQuery, setSearchQuery] = useState('');
   const [students, setStudents] = useState<StudentCardData[]>(mockStudentsList);
   const [selectedStudent, setSelectedStudent] = useState<StudentCardData | null>(null);
+  const [isRosterModalOpen, setIsRosterModalOpen] = useState(false);
 
   useEffect(() => {
     if (initialTab) {
@@ -1127,18 +1131,41 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
     }
   }, [initialTab]);
 
+  const getAuthHeaders = (): Record<string, string> => {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('token');
+      if (token && token !== 'null' && token !== 'undefined') {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+    }
+    return headers;
+  };
+
   // Load real students from backend database
   useEffect(() => {
     const fetchRealStudents = async () => {
       try {
-        const token = localStorage.getItem('token');
         const baseUrl = getApiBaseUrl();
-        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-        if (token) headers['Authorization'] = `Bearer ${token}`;
 
-        const res = await fetch(`${baseUrl}/api/v1/students`, { headers });
-        if (res.ok) {
-          const apiStudents = await res.json();
+        const res = await authFetch(`${baseUrl}/api/v1/students`, {
+          method: "GET",
+          credentials: "include",
+          headers: getAuthHeaders(),
+        });
+
+        if (res.status === 401) {
+          console.warn("Unauthorized: authentication cookie or token is missing or expired");
+          return;
+        }
+
+        if (!res.ok) {
+          throw new Error(`Failed to fetch students: ${res.status}`);
+        }
+
+        const apiStudents = await res.json();
           if (Array.isArray(apiStudents) && apiStudents.length > 0) {
             const mappedStudents: StudentCardData[] = apiStudents.map((s: any, idx: number) => {
               const p = s.parentId || {};
@@ -1174,7 +1201,6 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
               return [...mappedStudents, ...remainingMock];
             });
           }
-        }
       } catch (err) {
         console.warn('Real students load notice:', err);
       }
@@ -1260,9 +1286,6 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
   const submitAttendanceToBackend = async () => {
     try {
       const baseUrl = getApiBaseUrl();
-      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (token) headers['Authorization'] = `Bearer ${token}`;
 
       const records = students.map((s) => ({
         studentId: s.id,
@@ -1273,9 +1296,10 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
         teacherRemark: s.arrivalNote || (s.status === 'Late' ? 'Arrived late' : undefined),
       }));
 
-      await fetch(`${baseUrl}/api/v1/attendance`, {
+      await authFetch(`${baseUrl}/api/v1/attendance`, {
         method: 'POST',
-        headers,
+        credentials: 'include',
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           className: 'LKG',
           sectionName: 'Section A',
@@ -1293,13 +1317,11 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
   const submitClassWorkToBackend = async (subject: string, topic: string, whatWasTaught: string) => {
     try {
       const baseUrl = getApiBaseUrl();
-      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (token) headers['Authorization'] = `Bearer ${token}`;
 
-      await fetch(`${baseUrl}/api/v1/classwork`, {
+      await authFetch(`${baseUrl}/api/v1/classwork`, {
         method: 'POST',
-        headers,
+        credentials: 'include',
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           subject,
           topic,
@@ -1321,13 +1343,11 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
   const submitActivityToBackend = async (title: string, category: string, description: string) => {
     try {
       const baseUrl = getApiBaseUrl();
-      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (token) headers['Authorization'] = `Bearer ${token}`;
 
-      await fetch(`${baseUrl}/api/v1/activities`, {
+      await authFetch(`${baseUrl}/api/v1/activities`, {
         method: 'POST',
-        headers,
+        credentials: 'include',
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           title,
           category,
@@ -1348,13 +1368,11 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
   const submitHomeworkToBackend = async (subject: string, title: string, instructions: string, dueDate: string) => {
     try {
       const baseUrl = getApiBaseUrl();
-      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (token) headers['Authorization'] = `Bearer ${token}`;
 
-      await fetch(`${baseUrl}/api/v1/homework`, {
+      await authFetch(`${baseUrl}/api/v1/homework`, {
         method: 'POST',
-        headers,
+        credentials: 'include',
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           subject,
           title,
@@ -1375,15 +1393,12 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
   const submitRemarkToBackend = async (studentId: string, category: string, content: string) => {
     try {
       const baseUrl = getApiBaseUrl();
-      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (token) headers['Authorization'] = `Bearer ${token}`;
-
       const targetStudent = students.find((s) => s.id === studentId);
 
-      await fetch(`${baseUrl}/api/v1/teacher-remarks`, {
+      await authFetch(`${baseUrl}/api/v1/teacher-remarks`, {
         method: 'POST',
-        headers,
+        credentials: 'include',
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           studentId: targetStudent?.id || 'c10101010101010101010101',
           studentName: targetStudent?.name || 'Aarav Sharma',
@@ -1865,13 +1880,10 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
     setIsSubmittingLeave(true);
     try {
       const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
-      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-      const res = await fetch(`${apiBase}/api/leaves`, {
+      const res = await authFetch(`${apiBase}/api/leaves`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
+        credentials: 'include',
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           startDate: newLeaveForm.startDate,
           endDate: newLeaveForm.endDate,
@@ -1946,13 +1958,10 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
   const handleCancelLeave = async (leaveId: string) => {
     try {
       const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
-      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-      await fetch(`${apiBase}/api/leaves/${leaveId}`, {
+      await authFetch(`${apiBase}/api/leaves/${leaveId}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
+        credentials: 'include',
+        headers: getAuthHeaders(),
         body: JSON.stringify({ status: 'Cancelled', adminRemark: 'Withdrawn by teacher before sanction' }),
       });
     } catch (err) {
@@ -2288,10 +2297,10 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
 
     // Fetch live messages from API
     try {
-      const token = localStorage.getItem('token');
       const apiBase = getApiBaseUrl();
-      fetch(`${apiBase}/api/v1/messages?conversationId=${thread.id}`, {
-        headers: { Authorization: `Bearer ${token}` },
+      authFetch(`${apiBase}/api/v1/messages?conversationId=${thread.id}`, {
+        credentials: 'include',
+        headers: getAuthHeaders(),
       })
         .then((res) => res.json())
         .then((json) => {
@@ -2307,12 +2316,10 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
             setSelectedParentForChat((prev) => (prev ? { ...prev, messages: mapped } : null));
 
             // Mark read on server
-            fetch(`${apiBase}/api/v1/messages/read`, {
+            authFetch(`${apiBase}/api/v1/messages/read`, {
               method: 'PATCH',
-              headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
-              },
+              credentials: 'include',
+              headers: getAuthHeaders(),
               body: JSON.stringify({ conversationId: thread.id }),
             }).catch(() => {});
           }
@@ -2370,14 +2377,11 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
     }
 
     // Call real backend API
-    const token = localStorage.getItem('token');
     const apiBase = getApiBaseUrl();
-    fetch(`${apiBase}/api/v1/messages`, {
+    authFetch(`${apiBase}/api/v1/messages`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
+      credentials: 'include',
+      headers: getAuthHeaders(),
       body: JSON.stringify({
         conversationId: selectedParentForChat.id,
         message: textToSend,
@@ -2434,14 +2438,11 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
     setSelectedParentForChat(updatedThread);
 
     // Call real backend API
-    const token = localStorage.getItem('token');
     const apiBase = getApiBaseUrl();
-    fetch(`${apiBase}/api/v1/messages`, {
+    authFetch(`${apiBase}/api/v1/messages`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
+      credentials: 'include',
+      headers: getAuthHeaders(),
       body: JSON.stringify({
         conversationId: selectedParentForChat.id,
         message: cannedText,
@@ -2795,13 +2796,10 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
     setIsSavingProfile(true);
     try {
       const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
-      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-      const res = await fetch(`${apiBase}/api/auth/profile`, {
+      const res = await authFetch(`${apiBase}/api/auth/profile`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
+        credentials: 'include',
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           firstName: teacherProfile.firstName,
           lastName: teacherProfile.lastName,
@@ -2842,13 +2840,10 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
     setIsChangingPassword(true);
     try {
       const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
-      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-      const res = await fetch(`${apiBase}/api/auth/change-password`, {
+      const res = await authFetch(`${apiBase}/api/auth/change-password`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
+        credentials: 'include',
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           currentPassword: passwordForm.currentPassword,
           newPassword: passwordForm.newPassword,
@@ -2879,7 +2874,7 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
     setIsSendingForgotReset(true);
     try {
       const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
-      const res = await fetch(`${apiBase}/api/auth/forgot-password`, {
+      const res = await authFetch(`${apiBase}/api/auth/forgot-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: forgotEmail }),
@@ -2913,7 +2908,7 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
   const handleLogout = async () => {
     try {
       const apiBase = getApiBaseUrl();
-      await fetch(`${apiBase}/api/v1/auth/logout`, {
+      await authFetch(`${apiBase}/api/v1/auth/logout`, {
         method: 'POST',
         credentials: 'include',
       });
@@ -3034,19 +3029,23 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
       `"${s.status}"`
     ]);
 
-    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
-    const encodedUri = encodeURI(csvContent);
+    const csvContent = '\uFEFF' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const blobUrl = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', 'Class_LKG_A_Roster.csv');
+    link.href = blobUrl;
+    link.download = 'GGPS_Roll_Call_Roster_LKG_A_2026-2027.csv';
     document.body.appendChild(link);
     link.click();
-    document.body.removeChild(link);
-    toast.success('Class LKG-A Roster exported to CSV!');
+    setTimeout(() => {
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+    }, 300);
+    toast.success('Roll-call roster CSV exported successfully!');
   };
 
   const handlePrintClassRoster = () => {
-    window.print();
+    setIsRosterModalOpen(true);
   };
 
   const filteredStudents = useMemo(() => {
@@ -3621,8 +3620,8 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
               </div>
 
               {/* Sub-Nav Toolbar with Actionable Sub-Tabs */}
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-2">
-                <div className="flex items-center gap-4 sm:gap-6 border-b sm:border-b-0 border-slate-200 dark:border-slate-800 w-full sm:w-auto overflow-x-auto pb-1">
+              <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3 pt-2">
+                <div className="flex items-center gap-3 sm:gap-6 border-b sm:border-b-0 border-slate-200 dark:border-slate-800 shrink-0">
                   <button
                     onClick={() => {
                       setSubTab('children');
@@ -3669,9 +3668,9 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
                   </button>
                 </div>
 
-                <div className="flex items-center gap-3 w-full sm:w-auto">
-                  <div className="relative flex-1 sm:w-72">
-                    <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                <div className="flex items-center gap-2.5 w-full sm:w-auto shrink-0 justify-start sm:justify-end">
+                  <div className="relative w-44 sm:w-48 lg:w-52">
+                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
                     <input
                       type="text"
                       value={searchQuery}
@@ -3679,14 +3678,14 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
                         setSearchQuery(e.target.value);
                         setClassPage(1);
                       }}
-                      placeholder="Search name, roll, address, blood..."
-                      className="w-full pl-9 pr-3 py-2 bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-700 dark:text-slate-200 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                      placeholder="Search name, roll..."
+                      className="w-full pl-8 pr-3 py-1.5 bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-700 dark:text-slate-200 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                     />
                   </div>
 
                   <button
                     onClick={() => setIsClassFilterOpen((prev) => !prev)}
-                    className={`p-2 rounded-xl border transition-colors cursor-pointer relative ${isClassFilterOpen || classGenderFilter !== 'ALL' || classHealthFilter !== 'ALL' || classAttendanceFilter !== 'ALL'
+                    className={`p-2 rounded-xl border transition-colors cursor-pointer relative shrink-0 ${isClassFilterOpen || classGenderFilter !== 'ALL' || classHealthFilter !== 'ALL' || classAttendanceFilter !== 'ALL'
                         ? 'bg-[#E5EEFF] dark:bg-blue-950/50 border-[#0050CB] text-[#0050CB] dark:text-blue-300'
                         : 'bg-white dark:bg-[#111827] border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100'
                       }`}
@@ -3700,9 +3699,9 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
 
                   <button
                     onClick={() => setAddChildModalOpen(true)}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#0050CB] hover:bg-blue-700 text-white font-bold text-xs shadow-md shadow-blue-500/20 transition-all cursor-pointer shrink-0"
+                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#0050CB] hover:bg-blue-700 text-white font-bold text-xs shadow-md shadow-blue-500/20 transition-all cursor-pointer shrink-0"
                   >
-                    <Plus className="w-4 h-4" />
+                    <Plus className="w-3.5 h-3.5" />
                     <span>Add Child</span>
                   </button>
                 </div>
@@ -4653,7 +4652,7 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
                 /* ========================================================================= */
                 /* MONTHLY ATTENDANCE HISTORY VIEW                                           */
                 /* ========================================================================= */
-                <div className="space-y-4">
+                <div id="printable-monthly-register" className="space-y-4">
                   {/* OPTION A: UNIFIED MONTH NAVIGATOR BAR */}
                   <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-3 sm:p-3.5 shadow-xs flex flex-wrap items-center justify-between gap-3">
                     {/* Left: Unified Integrated Month Selector Group */}
@@ -4716,7 +4715,7 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
                     {/* Right: Compact Clean Actions */}
                     <div className="flex items-center gap-2 ml-auto">
                       <button
-                        onClick={() => window.print()}
+                        onClick={() => printDocument('printable-monthly-register', 'GGPS School - Monthly Attendance Register')}
                         className="px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
                         title="Print Monthly Attendance Register"
                       >
@@ -8397,7 +8396,7 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
                       <div className="space-y-3">
                         <div className="p-3.5 rounded-2xl bg-slate-50/80 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
                           <div className="flex items-center justify-between">
-                            <span className="font-bold text-slate-800 dark:text-slate-200 text-sm">Global International School</span>
+                            <span className="font-bold text-slate-800 dark:text-slate-200 text-sm">GGPS School</span>
                             <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-[#0050CB]">Present</span>
                           </div>
                           <span className="text-slate-500 font-medium block mt-0.5">Primary Class Teacher (LKG - Section A)</span>
@@ -9879,6 +9878,17 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
           </div>
         )}
       </AnimatePresence>
+
+      {/* OFFICIAL ROLL-CALL ROSTER PREVIEW & EXPORT MODAL */}
+      <RollCallRosterModal
+        isOpen={isRosterModalOpen}
+        onClose={() => setIsRosterModalOpen(false)}
+        className="LKG"
+        sectionName="A"
+        academicYear="2026–2027"
+        classTeacher={user?.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : 'Priya Sharma'}
+        students={students}
+      />
 
       {/* GLOBAL ⌘K COMMAND PALETTE */}
       <TeacherCommandPalette

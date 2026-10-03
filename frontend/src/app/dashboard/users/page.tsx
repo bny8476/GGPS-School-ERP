@@ -247,11 +247,13 @@ function UsersPageContent() {
     lastName: "",
     email: "",
     password: "",
+    confirmPassword: "",
     roleName: "Teacher",
     designation: "",
     phoneNumber: "",
   });
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   // New Custom Role Form
@@ -460,11 +462,13 @@ function UsersPageContent() {
       lastName: "",
       email: "",
       password: "",
+      confirmPassword: "",
       roleName: "Teacher",
       designation: "",
       phoneNumber: "",
     });
     setShowPassword(false);
+    setShowConfirmPassword(false);
     setIsCreateModalOpen(true);
   };
 
@@ -478,6 +482,7 @@ function UsersPageContent() {
       lastName: user.lastName,
       email: user.email,
       password: "",
+      confirmPassword: "",
       roleName: roleStr,
       designation: user.designation || "",
       phoneNumber: user.phoneNumber || "",
@@ -488,8 +493,22 @@ function UsersPageContent() {
   // Handle Create User Submit
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.firstName || !formData.email || !formData.password) {
-      toast.error("Please fill in first name, email, and password.");
+    const trimmedFirst = formData.firstName.trim();
+    const trimmedLast = formData.lastName.trim();
+    const trimmedEmail = formData.email.trim();
+
+    if (!trimmedFirst || !trimmedLast || !trimmedEmail || !formData.password) {
+      toast.error("Please fill in first name, last name, institutional email, and password.");
+      return;
+    }
+
+    if (formData.password.length < 6) {
+      toast.error("Password must be at least 6 characters long.");
+      return;
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      toast.error("Passwords do not match. Please verify both password fields.");
       return;
     }
 
@@ -504,46 +523,28 @@ function UsersPageContent() {
         method: "POST",
         headers,
         credentials: "include",
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          firstName: trimmedFirst,
+          lastName: trimmedLast,
+          email: trimmedEmail,
+          password: formData.password,
+          roleName: formData.roleName,
+          designation: formData.designation?.trim(),
+          phoneNumber: formData.phoneNumber?.trim(),
+        }),
       });
 
       if (res.ok) {
-        toast.success(`User ${formData.firstName} provisioned successfully!`);
+        const data = await res.json();
+        toast.success(data.message || `User ${trimmedFirst} provisioned successfully!`);
         setIsCreateModalOpen(false);
         fetchUsers();
       } else {
-        const newUser: UserItem = {
-          _id: `USR-${Date.now().toString().slice(-4)}`,
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          email: formData.email,
-          role: { name: formData.roleName },
-          designation: formData.designation || "Staff Member",
-          phoneNumber: formData.phoneNumber,
-          isActive: true,
-          status: "Active",
-          createdAt: new Date().toISOString(),
-        };
-        setUsers((prev) => [newUser, ...prev]);
-        toast.success(`User created: ${formData.firstName}`);
-        setIsCreateModalOpen(false);
+        const errData = await res.json().catch(() => ({}));
+        toast.error(errData.message || `Failed to create user (${res.status} ${res.statusText})`);
       }
     } catch {
-      const newUser: UserItem = {
-        _id: `USR-${Date.now().toString().slice(-4)}`,
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        email: formData.email,
-        role: { name: formData.roleName },
-        designation: formData.designation || "Staff Member",
-        phoneNumber: formData.phoneNumber,
-        isActive: true,
-        status: "Active",
-        createdAt: new Date().toISOString(),
-      };
-      setUsers((prev) => [newUser, ...prev]);
-      toast.success(`User ${formData.firstName} created.`);
-      setIsCreateModalOpen(false);
+      toast.error("Network or server connection failed. Please ensure backend is reachable.");
     } finally {
       setIsSaving(false);
     }
@@ -1563,9 +1564,10 @@ function UsersPageContent() {
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-bold uppercase text-slate-500 mb-1">Last Name</label>
+                  <label className="block text-[11px] font-bold uppercase text-slate-500 mb-1">Last Name *</label>
                   <input
                     type="text"
+                    required
                     value={formData.lastName}
                     onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
                     className="w-full px-3 py-2 bg-slate-50 dark:bg-[#001438] border border-slate-200 dark:border-slate-700 rounded-xl font-semibold text-slate-800 dark:text-white focus:outline-none focus:border-[#0050CB]"
@@ -1586,24 +1588,46 @@ function UsersPageContent() {
                 />
               </div>
 
-              <div>
-                <label className="block text-[11px] font-bold uppercase text-slate-500 mb-1">Temporary Password *</label>
-                <div className="relative">
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    required
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    className="w-full px-3 py-2 pr-10 bg-slate-50 dark:bg-[#001438] border border-slate-200 dark:border-slate-700 rounded-xl font-semibold text-slate-800 dark:text-white focus:outline-none focus:border-[#0050CB]"
-                    placeholder="Min 6 characters"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                  >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold uppercase text-slate-500 mb-1">Temporary Password *</label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      required
+                      value={formData.password}
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                      className="w-full px-3 py-2 pr-9 bg-slate-50 dark:bg-[#001438] border border-slate-200 dark:border-slate-700 rounded-xl font-semibold text-slate-800 dark:text-white focus:outline-none focus:border-[#0050CB]"
+                      placeholder="Min 6 characters"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold uppercase text-slate-500 mb-1">Confirm Password *</label>
+                  <div className="relative">
+                    <input
+                      type={showConfirmPassword ? "text" : "password"}
+                      required
+                      value={formData.confirmPassword}
+                      onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                      className="w-full px-3 py-2 pr-9 bg-slate-50 dark:bg-[#001438] border border-slate-200 dark:border-slate-700 rounded-xl font-semibold text-slate-800 dark:text-white focus:outline-none focus:border-[#0050CB]"
+                      placeholder="Re-type password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    >
+                      {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
                 </div>
               </div>
 

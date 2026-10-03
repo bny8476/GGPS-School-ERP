@@ -30,6 +30,7 @@ import {
   SendHorizontal,
 } from "lucide-react";
 import EmergencyBanner from "@/components/ui/EmergencyBanner";
+import { printDocument } from "@/lib/exportUtils";
 
 interface EmailItem {
   _id?: string;
@@ -111,23 +112,23 @@ To avoid late processing surcharges or disruption in online learning portal acce
 
 Payment Options:
 1. Online Payment: Click below to access the GIS Parent Secure Payment Gateway.
-2. Direct Wire Transfer: Global International Trust Bank (Acct: 4402-9912-001, Ref: [Admission No]).
+2. Direct Wire Transfer: GGPS Educational Trust (HDFC Bank, Acct: 4402-9912-001, Ref: [Admission No]).
 
 If payment has already been remitted in the last 24 hours, please disregard this notice.
 
 Sincerely,
 Office of Finance & Bursar
-Global International School`,
+GGPS School`,
   },
   {
     id: "admission_letter",
     name: "Admission Acceptance Letter",
     category: "admission_letter",
     badge: "Admissions",
-    subject: "Official Letter of Admission: Welcome to Global International School - [Student Name]",
+    subject: "Official Letter of Admission: Welcome to GGPS School - [Student Name]",
     defaultBody: `Dear [Parent Name],
 
-On behalf of the Governing Board and Academic Faculty of Global International School, it gives us immense pleasure to offer [Student Name] formal admission to Grade [Grade] for the Academic Session 2026-2027.
+On behalf of the Governing Board and Academic Faculty of GGPS School, it gives us immense pleasure to offer [Student Name] formal admission to Grade [Grade] for the Academic Session 2026-2027.
 
 Admission Particulars:
 • Student Name: [Student Name]
@@ -146,7 +147,7 @@ We warmly welcome your family into our vibrant scholastic community!
 Warm regards,
 Dr. Marcus Vance, Ph.D.
 Principal & Head of School
-Global International School`,
+GGPS School`,
   },
   {
     id: "report_card",
@@ -156,7 +157,7 @@ Global International School`,
     subject: "Official Term Examination Report Card Released: [Student Name] (Grade [Grade])",
     defaultBody: `Dear Parent / Guardian,
 
-The Academic Examination Board of Global International School has published the official Semester Assessment Results and Progress Portfolio for [Student Name] (Grade [Grade]).
+The Academic Examination Board of GGPS School has published the official Semester Assessment Results and Progress Portfolio for [Student Name] (Grade [Grade]).
 
 Performance Snapshot:
 • Semester Grade Average (GPA): [GPA / Marks %]
@@ -173,7 +174,7 @@ Congratulations to [Student Name] on their hard work this semester!
 
 Cordially,
 Academic Examination Board
-Global International School`,
+GGPS School`,
   },
   {
     id: "disciplinary_memo",
@@ -189,7 +190,7 @@ Summary of Observation:
 [Incident Summary]
 
 School Code of Conduct Policy:
-Global International School strictly enforces principles of mutual respect, safety, and academic integrity as outlined in Section 4.2 of the Student Handbook.
+GGPS School strictly enforces principles of mutual respect, safety, and academic integrity as outlined in Section 4.2 of the Student Handbook.
 
 Required Action:
 In accordance with school policy, a mandatory in-person conference has been scheduled with the Dean of Students on [Mandatory Parent Conference Date] at 09:30 AM in Office 204.
@@ -198,7 +199,7 @@ Please confirm receipt of this memo and your availability for the scheduled meet
 
 Respectfully,
 Dean of Student Affairs
-Global International School`,
+GGPS School`,
   },
   {
     id: "general_notice",
@@ -219,7 +220,7 @@ Thank you for your continuous partnership in fostering excellence.
 
 Best regards,
 Administration Directorate
-Global International School`,
+GGPS School`,
   },
 ];
 
@@ -243,7 +244,7 @@ Please ensure all department reports are synchronized in the ERP beforehand.
 
 Warm regards,
 Dr. Marcus Vance
-Principal | Global International School`,
+Principal | GGPS School`,
     category: "general_notice",
     folder: "inbox",
     priority: "high",
@@ -272,7 +273,7 @@ We have pre-scheduled automated fee reminder dispatches for parents with pending
 
 Regards,
 Accounting & Bursar Department
-Global International School`,
+GGPS School`,
     category: "fee_reminder",
     folder: "inbox",
     priority: "normal",
@@ -992,7 +993,7 @@ export default function EmailPage() {
         {/* ========================================================================= */}
         <div className="lg:col-span-5 p-6 flex flex-col justify-between overflow-y-auto max-h-[640px]">
           {selectedMail ? (
-            <div className="space-y-6">
+            <div id="printable-email-pane" className="space-y-6">
               {/* Message Header */}
               <div className="border-b border-slate-100 dark:border-slate-800 pb-5 space-y-4">
                 <div className="flex items-start justify-between gap-3">
@@ -1015,7 +1016,7 @@ export default function EmailPage() {
                       <Star className={`w-4 h-4 ${selectedMail.starred ? "text-amber-500 fill-amber-500" : ""}`} />
                     </button>
                     <button
-                      onClick={() => window.print()}
+                      onClick={() => printDocument('printable-email-pane', 'GGPS School Email - ' + selectedMail.subject)}
                       title="Print Email"
                       className="p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                     >
@@ -1085,7 +1086,7 @@ export default function EmailPage() {
               <div className="space-y-4">
                 <div className="p-5 rounded-2xl bg-white dark:bg-[#00102e] border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4 font-sans text-xs sm:text-sm text-slate-800 dark:text-slate-200 leading-relaxed">
                   <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 text-[11px] text-slate-400">
-                    <span className="font-bold text-[#0050CB] dark:text-[#38BDF8]">GLOBAL INTERNATIONAL SCHOOL</span>
+                    <span className="font-bold text-[#0050CB] dark:text-[#38BDF8]">GGPS SCHOOL</span>
                     <span>Administrative Communication</span>
                   </div>
 
@@ -1095,7 +1096,7 @@ export default function EmailPage() {
 
                   <div className="pt-4 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-400 space-y-1">
                     <p className="font-bold text-slate-600 dark:text-slate-300">Office of Academic Administration</p>
-                    <p>Global International School • Campus Drive, Knowledge Park • Tel: +1 (800) 555-0199</p>
+                    <p>GGPS School • Plot 42, Knowledge Avenue • Tel: +91 98765 43210</p>
                   </div>
                 </div>
               </div>

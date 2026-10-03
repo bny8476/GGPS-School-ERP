@@ -37,6 +37,8 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
+import { printDocument } from '@/lib/exportUtils';
+import { downloadPdf } from '@/lib/fileDownload';
 
 export interface ExamPaper {
   id: string;
@@ -507,8 +509,7 @@ export default function ExamsMarksWorkspace({ students = [], onNavigateTab }: Ex
 
             <button
               onClick={() => {
-                toast.success('Preparing printable term evaluation ledger...');
-                window.print();
+                printDocument('printable-exam-ledger', 'GGPS School - Term Examination Ledger');
               }}
               className="px-3 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold border border-white/20 backdrop-blur-md transition-all flex items-center justify-center gap-1.5 cursor-pointer"
               title="Print Ledger"
@@ -673,7 +674,7 @@ export default function ExamsMarksWorkspace({ students = [], onNavigateTab }: Ex
       {/* SUB-TAB 1: GRADEBOOK & MARKS ENTRY GRID                                   */}
       {/* ========================================================================= */}
       {activeSubTab === 'GRADEBOOK' && (
-        <div className="space-y-4">
+        <div id="printable-exam-ledger" className="space-y-4">
           {/* Top Control Strip: Search student, Total count, Lock All button */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-white dark:bg-[#000E28]/40 p-4 rounded-2xl border border-slate-200 dark:border-slate-800">
             <div className="flex items-center gap-3">
@@ -1175,7 +1176,7 @@ export default function ExamsMarksWorkspace({ students = [], onNavigateTab }: Ex
 
           {/* Printable Report Card Card */}
           {selectedReportCardEntry && (
-            <div className="bg-white dark:bg-[#000E28] rounded-3xl border border-slate-200 dark:border-slate-800 p-8 shadow-xl max-w-3xl mx-auto space-y-6">
+            <div id="printable-student-report-card-modal" className="bg-white dark:bg-[#000E28] rounded-3xl border border-slate-200 dark:border-slate-800 p-8 shadow-xl max-w-3xl mx-auto space-y-6">
               {/* Header */}
               <div className="flex items-start justify-between border-b border-slate-200 pb-5">
                 <div>
@@ -1283,13 +1284,28 @@ export default function ExamsMarksWorkspace({ students = [], onNavigateTab }: Ex
               </div>
 
               {/* Bottom Actions */}
-              <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                <button
-                  onClick={() => window.print()}
-                  className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-1.5 cursor-pointer"
-                >
-                  <Printer className="w-4 h-4" /> Print Report Card
-                </button>
+              <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => printDocument('printable-student-report-card-modal', `GGPS Report Card - ${selectedReportCardEntry.studentName}`)}
+                    className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Printer className="w-4 h-4" /> Print Report Card
+                  </button>
+                  <button
+                    onClick={async () => {
+                      const studentId = selectedReportCardEntry.studentId || 'student-1';
+                      const safeName = selectedReportCardEntry.studentName.replace(/\s+/g, '_');
+                      await downloadPdf(
+                        `/api/v1/students/${studentId}/report-card`,
+                        `GGPS_Report_Card_${safeName}_2026-2027.pdf`
+                      );
+                    }}
+                    className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs"
+                  >
+                    <Download className="w-4 h-4" /> Download PDF
+                  </button>
+                </div>
 
                 <button
                   onClick={() => {

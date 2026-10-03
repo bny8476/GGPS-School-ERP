@@ -761,7 +761,7 @@ function TeachersContent() {
       {/* FOOTER */}
       <footer className="pt-6 border-t border-slate-200/80 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500 font-semibold">
         <div>
-          <span className="font-black text-[#000E28] dark:text-white">Global International School ERP</span> &copy; 2026. All rights reserved.
+          <span className="font-black text-[#000E28] dark:text-white">GGPS School ERP</span> &copy; 2026. All rights reserved.
         </div>
         <div className="flex items-center gap-3">
           <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1.5">

@@ -5,6 +5,12 @@ import User from '../models/User';
 import Role from '../models/Role';
 import Parent from '../models/Parent';
 import {
+  normalizeEmail,
+  hashPassword,
+  comparePassword,
+  validatePasswordPolicy,
+} from '../services/passwordService';
+import {
   generateAccessToken,
   generateRefreshToken,
   rotateRefreshToken,
@@ -26,7 +32,7 @@ export const registerUser = async (req: Request, res: Response) => {
       return res.status(400).json({ success: false, message: 'Please provide all required fields' });
     }
 
-    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedEmail = normalizeEmail(email);
 
     // Check if user exists
     const userExists = await User.findOne({ email: normalizedEmail });
@@ -42,8 +48,7 @@ export const registerUser = async (req: Request, res: Response) => {
     }
 
     // Hash password
-    const salt = await bcrypt.genSalt(10);
-    const passwordHash = await bcrypt.hash(password, salt);
+    const passwordHash = await hashPassword(password);
 
     // Create user
     const user = await User.create({
@@ -111,7 +116,7 @@ export const loginUser = async (req: Request, res: Response) => {
       return res.status(400).json({ success: false, message: 'Please provide both email and password' });
     }
 
-    const normalizedEmail = String(email).trim().toLowerCase();
+    const normalizedEmail = normalizeEmail(email);
 
     // 1. Try MongoDB database authentication
     if (mongoose.connection.readyState !== 1) {
@@ -122,7 +127,7 @@ export const loginUser = async (req: Request, res: Response) => {
     }
 
     const user = await User.findOne({ email: normalizedEmail, isDeleted: { $ne: true } }).populate('role');
-    if (user && (await bcrypt.compare(password, user.passwordHash))) {
+    if (user && (await comparePassword(password, user.passwordHash))) {
       // Enforce active / not suspended check
       if (user.isActive === false || user.status === 'Suspended') {
         return res.status(403).json({
@@ -335,13 +340,12 @@ export const changePassword = async (req: Request, res: Response) => {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
 
-    const isMatch = await bcrypt.compare(currentPassword, user.passwordHash);
+    const isMatch = await comparePassword(currentPassword, user.passwordHash);
     if (!isMatch) {
       return res.status(400).json({ success: false, message: 'Current password does not match our records' });
     }
 
-    const salt = await bcrypt.genSalt(10);
-    user.passwordHash = await bcrypt.hash(newPassword, salt);
+    user.passwordHash = await hashPassword(newPassword);
     await user.save();
 
     return res.json({
@@ -378,7 +382,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
         const { emailService } = await import('../services/emailService');
         await emailService.sendEmail({
           to: normalizedEmail,
-          subject: 'Password Reset Request — Global International School ERP',
+          subject: 'Password Reset Request — GGPS School ERP',
           text: `Your one-time password reset code is: ${resetCode}. It will expire in 15 minutes.`,
           html: `<p>Your one-time password reset code is: <strong>${resetCode}</strong>. It will expire in 15 minutes.</p>`,
         });
@@ -466,8 +470,7 @@ export const resetPassword = async (req: Request, res: Response) => {
       });
     }
 
-    const salt = await bcrypt.genSalt(10);
-    user.passwordHash = await bcrypt.hash(String(newPassword), salt);
+    user.passwordHash = await hashPassword(String(newPassword));
     user.passwordResetCode = undefined;
     user.passwordResetExpires = undefined;
     await user.save();

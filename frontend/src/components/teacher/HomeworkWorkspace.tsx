@@ -36,6 +36,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
+import { printDocument } from '@/lib/exportUtils';
 
 export type HomeworkStatus = 'ACTIVE' | 'DUE_SOON' | 'COMPLETED' | 'OVERDUE';
 export type SubmissionStatus = 'PENDING' | 'SUBMITTED' | 'REVIEWED' | 'REVISION_REQUESTED';
@@ -533,8 +534,7 @@ export default function HomeworkWorkspace({ students = [], onNavigateTab }: Home
 
             <button
               onClick={() => {
-                toast.success('Preparing printable weekly homework diary agenda...');
-                window.print();
+                printDocument('printable-homework-roster', 'GGPS School - Weekly Homework & Task Schedule');
               }}
               className="px-3 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold border border-white/20 backdrop-blur-md transition-all flex items-center justify-center gap-1.5 cursor-pointer"
               title="Print Homework Schedule"
@@ -691,7 +691,7 @@ export default function HomeworkWorkspace({ students = [], onNavigateTab }: Home
       {/* TAB 1: ASSIGNMENTS ROSTER                                                 */}
       {/* ========================================================================= */}
       {activeSubTab === 'ASSIGNMENTS' && (
-        <div className="space-y-4">
+        <div id="printable-homework-roster" className="space-y-4">
           {/* Filters strip: Subjects and Status Pills */}
           <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-50 dark:bg-slate-900/40 p-3 rounded-2xl border border-slate-200/80 dark:border-slate-800">
             <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-0.5">

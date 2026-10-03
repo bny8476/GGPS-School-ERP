@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import TeacherWorkspace, { TeacherTab } from "@/components/teacher/TeacherWorkspace";
 import { useAuthStore } from "@/stores/authStore";
+import { authFetch } from "@/lib/apiClient";
 
 interface TeacherPortalPageProps {
   initialTab?: TeacherTab;
@@ -15,15 +16,17 @@ export default function TeacherPortalPage({ initialTab = "HOME" }: TeacherPortal
 
   const fetchStats = async () => {
     try {
-      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
       const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
-      const res = await fetch(`${apiBase}/api/v1/dashboard/stats`, {
+      const res = await authFetch(`${apiBase}/api/v1/dashboard/stats`, {
+        method: "GET",
+        credentials: "include",
         headers: {
-          Authorization: `Bearer ${token || ""}`,
           "Content-Type": "application/json",
         },
-        credentials: "include",
       });
+      if (res.status === 401) {
+        return;
+      }
       if (res.ok) {
         const data = await res.json();
         setStats(data);

@@ -143,7 +143,7 @@ export default function DigitalClassroomPage() {
             Digital Classroom & Learning Hub
           </h1>
           <p className="text-slate-500 dark:text-slate-400 mt-1">
-            Global International School • Courseware, Online Assessments & Academic Risk Monitoring
+            GGPS School • Courseware, Online Assessments & Academic Risk Monitoring
           </p>
         </div>
 

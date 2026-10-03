@@ -91,7 +91,7 @@ export default function VisitorsPage() {
             Security Checkpoint & Gate Pass Log
           </h1>
           <p className="text-slate-500 dark:text-slate-400 mt-1">
-            Global International School • Campus Entry Verification & Visitor Management
+            GGPS School • Campus Entry Verification & Visitor Management
           </p>
         </div>
 

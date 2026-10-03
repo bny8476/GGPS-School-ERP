@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeAll, afterAll, jest } from '@jest/globals';
 import request from 'supertest';
 import mongoose from 'mongoose';
 import express from 'express';
@@ -36,7 +37,7 @@ describe('Payment Gateway Integration & Audit Transactions', () => {
     mockFeeId = new mongoose.Types.ObjectId();
 
     jest.spyOn(User, 'findById').mockReturnValue({
-      select: jest.fn().mockResolvedValue({
+      select: (jest.fn() as any).mockResolvedValue({
         _id: parentId,
         isActive: true,
         isDeleted: false,
@@ -47,7 +48,7 @@ describe('Payment Gateway Integration & Audit Transactions', () => {
     jest.spyOn(Parent, 'findOne').mockResolvedValue(null);
     jest.spyOn(Student, 'findOne').mockResolvedValue(null);
     jest.spyOn(Student, 'findById').mockReturnValue({
-      select: jest.fn().mockResolvedValue({ firstName: 'Alice', lastName: 'Student' }),
+      select: (jest.fn() as any).mockResolvedValue({ firstName: 'Alice', lastName: 'Student' }),
     } as any);
     jest.spyOn(StudentParent, 'findOne').mockResolvedValue(null);
     jest.spyOn(Counter, 'findOneAndUpdate').mockResolvedValue({ sequence: 101 } as any);
@@ -175,7 +176,7 @@ describe('Payment Gateway Integration & Audit Transactions', () => {
       amountPaid: 0,
       status: 'Pending',
       paymentHistory: [] as any[],
-      save: jest.fn().mockResolvedValue(true),
+      save: (jest.fn() as any).mockResolvedValue(true),
     };
 
     jest.spyOn(Fee, 'findById').mockResolvedValue(mockFee as any);

@@ -284,32 +284,35 @@ export default function IdCardGeneratorPage() {
     return res;
   };
 
-  // Ensure valid session token on initial mount
-  useEffect(() => {
-    const ensureSession = async () => {
-      if (typeof window === "undefined") return;
-      const token = localStorage.getItem("token");
-      if (!token) {
-        try {
-          const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
-          const loginRes = await fetch(`${apiBase}/api/v1/auth/login`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-            body: JSON.stringify({ email: "admin@school.com", password: "password123" }),
-          });
-          if (loginRes.ok) {
-            const data = await loginRes.json();
-            if (data.token) {
-              localStorage.setItem("token", data.token);
-              localStorage.setItem("user", JSON.stringify(data));
-            }
+  // Ensure valid session token
+  const ensureSession = React.useCallback(async (): Promise<string | null> => {
+    if (typeof window === "undefined") return null;
+    let token = localStorage.getItem("token");
+    if (!token) {
+      try {
+        const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+        const loginRes = await fetch(`${apiBase}/api/v1/auth/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ email: "admin@school.com", password: "password123" }),
+        });
+        if (loginRes.ok) {
+          const data = await loginRes.json();
+          if (data.token) {
+            localStorage.setItem("token", data.token);
+            localStorage.setItem("user", JSON.stringify(data));
+            token = data.token;
           }
-        } catch (_) {}
-      }
-    };
-    ensureSession();
+        }
+      } catch (_) {}
+    }
+    return token;
   }, []);
+
+  useEffect(() => {
+    ensureSession();
+  }, [ensureSession]);
 
   // 1. Fetch School Branding from backend
   useEffect(() => {
@@ -387,6 +390,7 @@ export default function IdCardGeneratorPage() {
   useEffect(() => {
     const loadDefaultStudent = async () => {
       try {
+        await ensureSession();
         const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
         // Look specifically for Aarav first

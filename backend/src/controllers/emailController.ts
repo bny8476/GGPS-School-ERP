@@ -36,7 +36,7 @@ Please ensure all department reports are synchronized in the ERP beforehand.
 
 Warm regards,
 Dr. Marcus Vance
-Principal | Global International School`,
+Principal | GGPS School`,
     category: 'general_notice',
     folder: 'inbox',
     priority: 'high',
@@ -48,8 +48,8 @@ Principal | Global International School`,
   },
   {
     sender: 'Finance & Bursar Office',
-    senderEmail: 'bursar@globalinternationalschool.edu',
-    recipients: ['superadmin@globalinternationalschool.edu'],
+    senderEmail: 'bursar@ggps.edu',
+    recipients: ['superadmin@ggps.edu'],
     subject: 'Quarterly Term 2 Fee Reconciliation Summary',
     preview: 'The quarterly fee reconciliation for Q3 2026 has been generated. Total collections stand at 94.2%...',
     body: `Dear Administrator,
@@ -64,7 +64,7 @@ We have pre-scheduled automated fee reminder dispatches for parents with pending
 
 Regards,
 Accounting & Bursar Department
-Global International School`,
+GGPS School`,
     category: 'fee_reminder',
     folder: 'inbox',
     priority: 'normal',
@@ -77,7 +77,7 @@ Global International School`,
   {
     sender: 'Eleanor Harrison (Parent)',
     senderEmail: 'e.harrison@gmail.com',
-    recipients: ['admissions@globalinternationalschool.edu', 'superadmin@globalinternationalschool.edu'],
+    recipients: ['admissions@ggps.edu', 'superadmin@ggps.edu'],
     subject: 'Inquiry regarding Pre-KG Kindergarten Admission',
     preview: 'Good morning, I would like to confirm receipt of Leo Harrison’s application dossier and schedule an orientation slot...',
     body: `Dear Admissions & Admin Team,
@@ -131,7 +131,7 @@ export const wrapSchoolBrandedHtml = (title: string, category: string, bodyConte
 <body>
   <div class="container">
     <div class="header">
-      <div class="logo-badge">Global International School</div>
+      <div class="logo-badge">GGPS School</div>
       <h1>Official Institutional Dispatch</h1>
       <p>${title}</p>
     </div>
@@ -140,9 +140,9 @@ export const wrapSchoolBrandedHtml = (title: string, category: string, bodyConte
       ${bodyContent}
     </div>
     <div class="footer">
-      <strong>Global International School • Academic Administration Office</strong><br>
-      Campus Drive, Knowledge Park • Tel: +1 (800) 555-0199 • admissions@globalinternationalschool.edu<br>
-      <em>${footerNote || 'This is an official administrative broadcast sent from the GIS School ERP Portal.'}</em>
+      <strong>GGPS School • Academic Administration Office</strong><br>
+      Plot 42, Knowledge Avenue • Tel: +91 98765 43210 • admissions@ggps.edu<br>
+      <em>${footerNote || 'This is an official administrative broadcast sent from the GGPS School ERP Portal.'}</em>
     </div>
   </div>
 </body>
@@ -173,23 +173,23 @@ To avoid late processing surcharges or disruption in online learning portal acce
 
 Payment Options:
 1. Online Payment: Click below to access the GIS Parent Secure Payment Gateway.
-2. Direct Wire Transfer: Global International Trust Bank (Acct: 4402-9912-001, Ref: [Admission No]).
+2. Direct Wire Transfer: GGPS Educational Trust (HDFC Bank, Acct: 4402-9912-001, Ref: [Admission No]).
 
 If payment has already been remitted in the last 24 hours, please disregard this notice.
 
 Sincerely,
 Office of Finance & Bursar
-Global International School`,
+GGPS School`,
   },
   {
     id: 'admission_letter',
     name: 'Admission Acceptance Letter',
     category: 'admission_letter',
     badge: 'Admissions',
-    subject: 'Official Letter of Admission: Welcome to Global International School - [Student Name]',
+    subject: 'Official Letter of Admission: Welcome to GGPS School - [Student Name]',
     defaultBody: `Dear [Parent Name],
 
-On behalf of the Governing Board and Academic Faculty of Global International School, it gives us immense pleasure to offer [Student Name] formal admission to Grade [Grade] for the Academic Session [Academic Year].
+On behalf of the Governing Board and Academic Faculty of GGPS School, it gives us immense pleasure to offer [Student Name] formal admission to Grade [Grade] for the Academic Session [Academic Year].
 
 Admission Particulars:
 • Student Name: [Student Name]
@@ -208,7 +208,7 @@ We warmly welcome your family into our vibrant scholastic community!
 Warm regards,
 Dr. Marcus Vance, Ph.D.
 Principal & Head of School
-Global International School`,
+GGPS School`,
   },
   {
     id: 'report_card',
@@ -218,7 +218,7 @@ Global International School`,
     subject: 'Official Term Examination Report Card Released: [Student Name] (Grade [Grade])',
     defaultBody: `Dear Parent / Guardian,
 
-The Academic Examination Board of Global International School has published the official Semester Assessment Results and Progress Portfolio for [Student Name] (Grade [Grade]).
+The Academic Examination Board of GGPS School has published the official Semester Assessment Results and Progress Portfolio for [Student Name] (Grade [Grade]).
 
 Performance Snapshot:
 • Semester Grade Average (GPA): [GPA / Marks %]
@@ -235,7 +235,7 @@ Congratulations to [Student Name] on their hard work this semester!
 
 Cordially,
 Academic Examination Board
-Global International School`,
+GGPS School`,
   },
   {
     id: 'disciplinary_memo',
@@ -251,7 +251,7 @@ Summary of Observation:
 [Incident Summary]
 
 School Code of Conduct Policy:
-Global International School strictly enforces principles of mutual respect, safety, and academic integrity as outlined in Section 4.2 of the Student Handbook.
+GGPS School strictly enforces principles of mutual respect, safety, and academic integrity as outlined in Section 4.2 of the Student Handbook.
 
 Required Action:
 In accordance with school policy, a mandatory in-person conference has been scheduled with the Dean of Students on [Mandatory Parent Conference Date] at 09:30 AM in Office 204.
@@ -260,7 +260,7 @@ Please confirm receipt of this memo and your availability for the scheduled meet
 
 Respectfully,
 Dean of Student Affairs
-Global International School`,
+GGPS School`,
   },
   {
     id: 'general_notice',
@@ -281,7 +281,7 @@ Thank you for your continuous partnership in fostering excellence.
 
 Best regards,
 Administration Directorate
-Global International School`,
+GGPS School`,
   },
 ];
 

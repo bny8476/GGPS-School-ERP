@@ -7,6 +7,7 @@ import {
   Download, ArrowRight, ArrowLeft, Loader2, Sparkles, CheckCircle2 
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { authFetch } from "@/lib/apiClient";
 
 interface InvoiceItem {
   id: string;
@@ -80,7 +81,7 @@ export default function FeePaymentModal({
         let gatewayOrderId = `ORD_${Date.now()}`;
         let gatewaySignature = "";
 
-        const orderRes = await fetch(`${apiBase}/api/v1/finance/fees/${activeInv.id}/create-payment-order`, {
+        const orderRes = await authFetch(`${apiBase}/api/v1/finance/fees/${activeInv.id}/create-payment-order`, {
           method: "POST",
           headers: authHeaders,
           credentials: "include",
@@ -98,7 +99,7 @@ export default function FeePaymentModal({
         const gatewayPaymentId = `PAY_${Date.now()}_${Math.floor(Math.random() * 9000 + 1000)}`;
 
         // 2. Settle fee with verified gateway signature
-        const payRes = await fetch(`${apiBase}/api/v1/finance/fees/${activeInv.id}/pay`, {
+        const payRes = await authFetch(`${apiBase}/api/v1/finance/fees/${activeInv.id}/pay`, {
           method: "POST",
           headers: authHeaders,
           credentials: "include",

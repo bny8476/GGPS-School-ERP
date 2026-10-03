@@ -7,7 +7,7 @@ export const getHealth = (req: Request, res: Response): void => {
 
   res.status(200).json({
     status: isConnected ? 'ok' : 'degraded',
-    service: 'Global International School ERP',
+    service: 'GGPS School ERP',
     database: isConnected ? 'connected' : 'disconnected',
     timestamp: new Date().toISOString(),
   });

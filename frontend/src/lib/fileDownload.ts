@@ -120,3 +120,58 @@ export async function downloadFile(
     return { success: false, error: msg };
   }
 }
+
+/**
+ * Sanitize filename by stripping illegal path characters
+ */
+export function sanitizeFilename(name: string): string {
+  return name.replace(/[/\\?%*:|"<>]/g, '_').trim();
+}
+
+/**
+ * Centralized PDF file downloader
+ */
+export async function downloadPdf(
+  fileIdOrUrl: string,
+  fallbackFilename: string = 'GGPS_Document.pdf',
+  options?: DownloadOptions
+) {
+  const safeName = sanitizeFilename(fallbackFilename.endsWith('.pdf') ? fallbackFilename : `${fallbackFilename}.pdf`);
+  return downloadFile(fileIdOrUrl, safeName, options);
+}
+
+/**
+ * Centralized CSV file downloader
+ */
+export async function downloadCsv(
+  fileIdOrUrl: string,
+  fallbackFilename: string = 'GGPS_Export.csv',
+  options?: DownloadOptions
+) {
+  const safeName = sanitizeFilename(fallbackFilename.endsWith('.csv') ? fallbackFilename : `${fallbackFilename}.csv`);
+  return downloadFile(fileIdOrUrl, safeName, options);
+}
+
+/**
+ * Centralized Excel file downloader
+ */
+export async function downloadExcel(
+  fileIdOrUrl: string,
+  fallbackFilename: string = 'GGPS_Export.xlsx',
+  options?: DownloadOptions
+) {
+  const safeName = sanitizeFilename(fallbackFilename.endsWith('.xlsx') ? fallbackFilename : `${fallbackFilename}.xlsx`);
+  return downloadFile(fileIdOrUrl, safeName, options);
+}
+
+/**
+ * Centralized Image file downloader
+ */
+export async function downloadImage(
+  fileIdOrUrl: string,
+  fallbackFilename: string = 'GGPS_Asset.png',
+  options?: DownloadOptions
+) {
+  return downloadFile(fileIdOrUrl, sanitizeFilename(fallbackFilename), options);
+}
+

@@ -13,6 +13,7 @@ import {
 import toast from 'react-hot-toast';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import AdminStatCard from '@/components/admin/AdminStatCard';
+import { authFetch } from '@/lib/apiClient';
 
 function AttendanceContent() {
   const searchParams = useSearchParams();
@@ -87,8 +88,8 @@ function AttendanceContent() {
       const entityType = isStaffTab ? 'User' : 'Student';
 
       const [entitiesRes, attRes] = await Promise.all([
-        fetch(`${apiBase}/api/${isStaffTab ? 'users' : 'students'}`, { headers }).catch(() => null),
-        fetch(`${apiBase}/api/attendance?date=${selectedDate}&entityType=${entityType}`, { headers }).catch(() => null)
+        authFetch(`${apiBase}/api/${isStaffTab ? 'users' : 'students'}`, { headers }).catch(() => null),
+        authFetch(`${apiBase}/api/attendance?date=${selectedDate}&entityType=${entityType}`, { headers }).catch(() => null)
       ]);
       
       let loadedEntities: any[] = [];
@@ -190,7 +191,7 @@ function AttendanceContent() {
         status: attendanceData[id]
       }));
 
-      await fetch(`${apiBase}/api/attendance`, {
+      await authFetch(`${apiBase}/api/attendance`, {
         method: 'POST',
         headers,
         body: JSON.stringify({ records })

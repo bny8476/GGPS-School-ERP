@@ -14,6 +14,7 @@ import {
 import toast from "react-hot-toast";
 import { getSocket, joinRoom, leaveRoom } from "@/lib/socket";
 import { getApiBaseUrl } from "@/lib/utils";
+import { authFetch } from "@/lib/apiClient";
 import { useParent } from "@/context/ParentContext";
 import { useAuthStore } from "@/stores/authStore";
 
@@ -169,7 +170,7 @@ export default function ParentMessagesPage() {
       setIsLoadingConversations(true);
       const token = localStorage.getItem("token");
       const apiBase = getApiBaseUrl();
-      const res = await fetch(`${apiBase}/api/v1/messages/conversations`, {
+      const res = await authFetch(`${apiBase}/api/v1/messages/conversations`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -218,7 +219,7 @@ export default function ParentMessagesPage() {
       setIsLoadingMessages(true);
       const token = localStorage.getItem("token");
       const apiBase = getApiBaseUrl();
-      const res = await fetch(`${apiBase}/api/v1/messages?conversationId=${convId}`, {
+      const res = await authFetch(`${apiBase}/api/v1/messages?conversationId=${convId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -230,7 +231,7 @@ export default function ParentMessagesPage() {
           setMessages(json.data.map((m: any) => formatServerMessage(m, currentUserId)));
 
           // Mark messages as read on backend
-          fetch(`${apiBase}/api/v1/messages/read`, {
+          authFetch(`${apiBase}/api/v1/messages/read`, {
             method: "PATCH",
             headers: {
               "Content-Type": "application/json",
@@ -259,7 +260,7 @@ export default function ParentMessagesPage() {
       setIsLoadingContacts(true);
       const token = localStorage.getItem("token");
       const apiBase = getApiBaseUrl();
-      const res = await fetch(`${apiBase}/api/v1/messages/contacts`, {
+      const res = await authFetch(`${apiBase}/api/v1/messages/contacts`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -328,7 +329,7 @@ export default function ParentMessagesPage() {
         // Mark as read immediately since user is actively viewing
         const token = localStorage.getItem("token");
         const apiBase = getApiBaseUrl();
-        fetch(`${apiBase}/api/v1/messages/read`, {
+        authFetch(`${apiBase}/api/v1/messages/read`, {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
@@ -474,7 +475,7 @@ export default function ParentMessagesPage() {
     try {
       const token = localStorage.getItem("token");
       const apiBase = getApiBaseUrl();
-      const res = await fetch(`${apiBase}/api/v1/messages`, {
+      const res = await authFetch(`${apiBase}/api/v1/messages`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -510,7 +511,7 @@ export default function ParentMessagesPage() {
     try {
       const token = localStorage.getItem("token");
       const apiBase = getApiBaseUrl();
-      const res = await fetch(`${apiBase}/api/v1/messages/conversations`, {
+      const res = await authFetch(`${apiBase}/api/v1/messages/conversations`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -31,6 +31,8 @@ import {
   X
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { exportToCSV, printDocument } from '@/lib/exportUtils';
+import { downloadPdf } from '@/lib/fileDownload';
 
 export type AssessmentCycle = 'TERM_1_FORMATIVE' | 'BASELINE_DIAGNOSTIC' | 'TERM_1_SUMMATIVE';
 
@@ -1370,21 +1372,35 @@ export default function AssessmentWorkspace({ students = [], onNavigateTab }: As
             <div className="space-y-2 text-xs font-bold">
               <button
                 onClick={() => {
-                  toast.success('Downloading Class Ledger as Excel / CSV spreadsheet...');
+                  const rows = evaluationRecords.map((r) => ({
+                    'Roll No': r.rollNo,
+                    'Pupil Name': r.name,
+                    'Language & Literacy': r.scores.LANGUAGE,
+                    'Math & Logic': r.scores.MATH_LOGIC,
+                    'Fine Motor': r.scores.FINE_MOTOR,
+                    'Gross Motor': r.scores.GROSS_MOTOR,
+                    'Social Emotional': r.scores.SOCIAL_EMOTIONAL,
+                    'Evaluation Notes': r.teacherRemarks,
+                    'Last Evaluated': r.lastUpdated,
+                  }));
+                  exportToCSV(rows, 'GGPS_Assessment_Evaluation_Ledger');
                   setIsExportModalOpen(false);
                 }}
-                className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-[#0050CB] flex items-center justify-between cursor-pointer"
+                className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-[#0050CB] flex items-center justify-between cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
               >
-                <span>Spreadsheet Data (.CSV / Excel)</span>
+                <span>Spreadsheet Data (.CSV)</span>
                 <FileText className="w-4 h-4 text-emerald-600" />
               </button>
 
               <button
-                onClick={() => {
-                  toast.success('Generating official Accreditation PDF Dossier...');
+                onClick={async () => {
+                  await downloadPdf(
+                    '/api/v1/reports/export/academic?format=pdf',
+                    'GGPS_Assessment_Academic_Report.pdf'
+                  );
                   setIsExportModalOpen(false);
                 }}
-                className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-[#0050CB] flex items-center justify-between cursor-pointer"
+                className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-[#0050CB] flex items-center justify-between cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
               >
                 <span>Accreditation Report (.PDF)</span>
                 <Download className="w-4 h-4 text-[#0050CB]" />
@@ -1415,9 +1431,91 @@ export default function AssessmentWorkspace({ students = [], onNavigateTab }: As
               </button>
             </div>
 
-            <p className="text-xs text-slate-500">
-              Formatting card for #{activeChildRecord.rollNo} {activeChildRecord.name} for high-contrast official paper printing.
-            </p>
+            {/* Printable Holistic Card Document */}
+            <div id="printable-assessment-progress-card" className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4 text-xs font-sans">
+              <div className="border-b-2 border-[#0050CB] pb-3 flex items-center justify-between">
+                <div>
+                  <h2 className="font-black text-base text-[#000E28] dark:text-white uppercase tracking-tight">
+                    GGPS SCHOOL • HOLISTIC PROGRESS CARD
+                  </h2>
+                  <p className="text-[11px] text-slate-500">
+                    Class LKG - Section A • Academic Session 2026–2027 • Term 1 Formative Assessment
+                  </p>
+                </div>
+                <span className="px-2.5 py-1 rounded-full bg-blue-50 text-[#0050CB] font-black text-[10px] uppercase">
+                  Verified Record
+                </span>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+                <div>
+                  <span className="text-[10px] text-slate-400 font-bold block uppercase">Pupil Name</span>
+                  <span className="font-extrabold text-slate-800 dark:text-white text-sm">{activeChildRecord.name}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-400 font-bold block uppercase">Roll / Admission</span>
+                  <span className="font-extrabold text-slate-800 dark:text-white">#{activeChildRecord.rollNo} • {activeChildRecord.studentId || 'GGPS-STU'}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-400 font-bold block uppercase">Class Teacher</span>
+                  <span className="font-extrabold text-slate-800 dark:text-white">Priya Sharma</span>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <h4 className="font-extrabold text-xs text-[#0050CB] uppercase tracking-wide">Developmental Rubrics & Domains</h4>
+                <div className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-slate-100 dark:bg-slate-800 font-bold text-slate-600 dark:text-slate-300 border-b border-slate-200">
+                      <tr>
+                        <th className="py-2 px-3">Domain</th>
+                        <th className="py-2 px-3">Skill / Focus Area</th>
+                        <th className="py-2 px-3 text-right">Performance Level</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                      <tr>
+                        <td className="py-2 px-3 font-semibold">Language & Phonics</td>
+                        <td className="py-2 px-3 text-slate-500">Letter Recognition & Pronunciation</td>
+                        <td className="py-2 px-3 text-right font-black text-emerald-600">Exemplary (A+)</td>
+                      </tr>
+                      <tr>
+                        <td className="py-2 px-3 font-semibold">Numeracy & Logic</td>
+                        <td className="py-2 px-3 text-slate-500">Counting & Sorting Objects 1-20</td>
+                        <td className="py-2 px-3 text-right font-black text-emerald-600">Exemplary (A+)</td>
+                      </tr>
+                      <tr>
+                        <td className="py-2 px-3 font-semibold">Creative & Visual Arts</td>
+                        <td className="py-2 px-3 text-slate-500">Sponge Painting & Clay Modeling</td>
+                        <td className="py-2 px-3 text-right font-black text-[#0050CB]">Proficient (A)</td>
+                      </tr>
+                      <tr>
+                        <td className="py-2 px-3 font-semibold">Motor & Physical Development</td>
+                        <td className="py-2 px-3 text-slate-500">Scissors Grip, Pencil Grasp, Balance</td>
+                        <td className="py-2 px-3 text-right font-black text-emerald-600">Exemplary (A+)</td>
+                      </tr>
+                      <tr>
+                        <td className="py-2 px-3 font-semibold">Social & Emotional Growth</td>
+                        <td className="py-2 px-3 text-slate-500">Sharing, Turn-Taking, Empathy</td>
+                        <td className="py-2 px-3 text-right font-black text-[#0050CB]">Proficient (A)</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200">
+                <span className="font-bold text-slate-500 block uppercase text-[9px]">Class Teacher Observations:</span>
+                <p className="text-slate-700 dark:text-slate-200 mt-0.5 italic">
+                  {activeChildRecord.teacherRemarks || 'Consistently cheerful, punctual, and helpful during circle time activities.'}
+                </p>
+              </div>
+
+              <div className="pt-3 border-t border-slate-200 flex items-center justify-between text-[10px] text-slate-400">
+                <span>GGPS School Directorate of Academic Evaluation</span>
+                <span>Principal Verification Seal: Affixed</span>
+              </div>
+            </div>
 
             <div className="flex items-center justify-end gap-2 pt-2">
               <button
@@ -1429,14 +1527,29 @@ export default function AssessmentWorkspace({ students = [], onNavigateTab }: As
               </button>
               <button
                 type="button"
+                onClick={async () => {
+                  const studentId = activeChildRecord.studentId || 'student-1';
+                  const safeName = activeChildRecord.name.replace(/\s+/g, '_');
+                  await downloadPdf(
+                    `/api/v1/students/${studentId}/report-card`,
+                    `GGPS_Report_Card_${safeName}_2026-2027.pdf`
+                  );
+                }}
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold cursor-pointer text-xs shadow-md shadow-emerald-500/20 flex items-center gap-1.5"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Download PDF</span>
+              </button>
+              <button
+                type="button"
                 onClick={() => {
-                  window.print();
+                  printDocument('printable-assessment-progress-card', `GGPS Progress Card - ${activeChildRecord.name}`);
                   setIsPrintReportModalOpen(false);
                 }}
                 className="px-5 py-2 bg-[#0050CB] hover:bg-[#003da1] text-white rounded-xl font-bold cursor-pointer text-xs shadow-md shadow-blue-500/20 flex items-center gap-1.5"
               >
                 <Printer className="w-3.5 h-3.5" />
-                <span>Send to Printer</span>
+                <span>Print Progress Card</span>
               </button>
             </div>
           </div>

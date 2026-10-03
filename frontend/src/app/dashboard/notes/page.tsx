@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import EmergencyBanner from "@/components/ui/EmergencyBanner";
 import toast from "react-hot-toast";
+import { printDocument } from "@/lib/exportUtils";
 
 interface NoteComment {
   id: string;
@@ -42,7 +43,7 @@ const FALLBACK_NOTES: NoteItem[] = [
     title: "Executive Board Resolution #BR-2026-08: STEAM & AI Innovation Lab",
     content: `## Executive Resolution & Capital Allocation
 
-The Governing Board of **Global International School** hereby ratifies the capital budget allocation for the Phase 2 STEAM Innovation Centre.
+The Governing Board of **GGPS School** hereby ratifies the capital budget allocation for the Phase 2 STEAM Innovation Centre.
 
 ### Key Resolution Directives:
 * **Approved Grant**: $125,000 from the 2026 Development Reserve.
@@ -342,8 +343,8 @@ export default function NotesPage() {
   const handlePrintPDF = (note: NoteItem) => {
     setPdfNote(note);
     setTimeout(() => {
-      window.print();
-    }, 250);
+      printDocument('printable-note-letterhead', `GGPS Memo - ${note.title}`);
+    }, 200);
   };
 
   // Privacy styling badge
@@ -1002,16 +1003,16 @@ export default function NotesPage() {
       {/* 1-CLICK PRINTABLE SCHOOL LETTERHEAD TEMPLATE (FOR WINDOW.PRINT / PDF)     */}
       {/* ========================================================================= */}
       {pdfNote && (
-        <div className="print-only hidden p-10 font-serif text-black max-w-3xl mx-auto space-y-6">
+        <div id="printable-note-letterhead" className="print-only p-10 font-serif text-black max-w-3xl mx-auto space-y-6">
           {/* Letterhead Banner */}
           <div className="border-b-2 border-black pb-4 flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-black uppercase tracking-wider">GLOBAL INTERNATIONAL SCHOOL</h1>
+              <h1 className="text-2xl font-black uppercase tracking-wider">GGPS SCHOOL</h1>
               <p className="text-xs tracking-widest text-slate-600">OFFICE OF THE GOVERNING BOARD & SUPER ADMIN</p>
-              <p className="text-[10px] text-slate-500">Campus Drive, Knowledge Park • contact@globalinternationalschool.edu</p>
+              <p className="text-[10px] text-slate-500">Plot 42, Knowledge Avenue • contact@ggps.edu</p>
             </div>
             <div className="text-right text-xs">
-              <p className="font-bold">REF: GIS-MEMO-2026</p>
+              <p className="font-bold">REF: GGPS-MEMO-2026</p>
               <p>Date: {new Date().toLocaleDateString([], { dateStyle: "long" })}</p>
               <p className="font-bold uppercase text-[10px]">{pdfNote.privacy.replace("_", " ")}</p>
             </div>
@@ -1043,7 +1044,7 @@ export default function NotesPage() {
             <div className="space-y-1 text-right">
               <div className="w-40 border-b border-black ml-auto"></div>
               <p className="font-bold">Super Admin Directorate</p>
-              <p className="text-slate-500 text-[10px]">Global International School</p>
+              <p className="text-slate-500 text-[10px]">GGPS School</p>
             </div>
           </div>
         </div>

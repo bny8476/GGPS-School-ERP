@@ -3,44 +3,79 @@ import User from '../models/User';
 import Role from '../models/Role';
 import Employee from '../models/Employee';
 import TeacherProfile from '../models/TeacherProfile';
-import bcrypt from 'bcryptjs';
+import Parent from '../models/Parent';
+import {
+  normalizeEmail,
+  hashPassword,
+  validatePasswordPolicy,
+} from '../services/passwordService';
+import { ROLE_PERMISSIONS } from '../config/permissions';
 
-// Helper to sync Employee & TeacherProfile from User
+// Helper to sync Employee & TeacherProfile or Parent from User
 const syncEmployeeAndTeacher = async (userDoc: any, payload: any) => {
   try {
-    const isStaffRole = userDoc.role?.name !== 'Parent';
-    if (isStaffRole) {
-      const employee = await Employee.findOneAndUpdate(
+    const roleName = userDoc.role?.name || payload.roleName || '';
+    const isParentRole = roleName === 'Parent';
+
+    if (isParentRole) {
+      // Sync or create Parent profile record
+      await Parent.findOneAndUpdate(
+        {
+          $or: [
+            { userId: userDoc._id },
+            { primaryEmail: userDoc.email },
+          ],
+        },
+        {
+          userId: userDoc._id,
+          fatherName: `${userDoc.firstName} ${userDoc.lastName}`.trim(),
+          motherName: payload.motherName || 'Mother',
+          primaryEmail: userDoc.email,
+          address: payload.address || 'Registered Address',
+          fatherContact: userDoc.phoneNumber || payload.phoneNumber || '',
+        },
+        { upsert: true, new: true, setDefaultsOnInsert: true }
+      );
+      return;
+    }
+
+    // Otherwise, it is a staff role (Teacher, Admin, Principal, etc.)
+    const employeeCode = payload.employeeCode || `EMP-${userDoc._id.toString().slice(-6).toUpperCase()}`;
+    const employee = await Employee.findOneAndUpdate(
+      { userId: userDoc._id },
+      {
+        userId: userDoc._id,
+        employeeCode,
+        firstName: userDoc.firstName,
+        lastName: userDoc.lastName,
+        designation: payload.designation || userDoc.designation || 'Staff Member',
+        qualification: payload.qualification || userDoc.qualification,
+        experienceYears: payload.experienceYears ?? userDoc.experienceYears ?? 0,
+        salary: payload.salary ?? userDoc.salary ?? 0,
+        joiningDate: payload.joinDate ? new Date(payload.joinDate) : (userDoc.joinDate || new Date()),
+        performanceNotes: payload.performanceNotes || userDoc.performanceNotes,
+        employmentStatus: userDoc.isActive === false ? 'Terminated' : 'Active',
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    if (
+      roleName === 'Teacher' ||
+      payload.teachingAssignments ||
+      (userDoc.teachingAssignments && userDoc.teachingAssignments.length > 0)
+    ) {
+      await TeacherProfile.findOneAndUpdate(
         { userId: userDoc._id },
         {
           userId: userDoc._id,
-          firstName: userDoc.firstName,
-          lastName: userDoc.lastName,
-          designation: payload.designation || userDoc.designation || 'Staff Member',
-          qualification: payload.qualification || userDoc.qualification,
-          experienceYears: payload.experienceYears ?? userDoc.experienceYears ?? 0,
-          salary: payload.salary ?? userDoc.salary ?? 0,
-          joiningDate: payload.joinDate ? new Date(payload.joinDate) : (userDoc.joinDate || new Date()),
-          performanceNotes: payload.performanceNotes || userDoc.performanceNotes,
-          employmentStatus: userDoc.isActive === false ? 'Terminated' : 'Active',
+          employeeId: employee._id,
+          teachingAssignments: payload.teachingAssignments || userDoc.teachingAssignments || [],
         },
-        { upsert: true, new: true }
+        { upsert: true, new: true, setDefaultsOnInsert: true }
       );
-
-      if (payload.teachingAssignments || userDoc.teachingAssignments?.length > 0) {
-        await TeacherProfile.findOneAndUpdate(
-          { userId: userDoc._id },
-          {
-            userId: userDoc._id,
-            employeeId: employee._id,
-            teachingAssignments: payload.teachingAssignments || userDoc.teachingAssignments || [],
-          },
-          { upsert: true, new: true }
-        );
-      }
     }
   } catch (err) {
-    console.warn('Non-blocking Employee/TeacherProfile sync warning:', err);
+    console.warn('Non-blocking Employee/TeacherProfile/Parent sync warning:', err);
   }
 };
 
@@ -58,53 +93,141 @@ export const getUsers = async (req: Request, res: Response) => {
   }
 };
 
-// @desc    Create a staff member
+// @desc    Create a staff member or parent user
 // @route   POST /api/users
 export const createUser = async (req: Request, res: Response) => {
   try {
-    const { firstName, lastName, email, password, roleName, salary, designation, joinDate, qualification, experienceYears, performanceNotes, teachingAssignments, assignedClass } = req.body;
-
-    const userExists = await User.findOne({ email });
-    if (userExists) {
-      return res.status(400).json({ message: 'User already exists' });
-    }
-
-    // Find or create role
-    let role = await Role.findOne({ name: roleName || 'Teacher' });
-    if (!role) {
-      role = await Role.create({ name: roleName || 'Teacher', permissions: [] });
-    }
-
-    const salt = await bcrypt.genSalt(10);
-    const passwordHash = await bcrypt.hash(password, salt);
-
-    const user = await User.create({
+    const {
       firstName,
       lastName,
       email,
-      passwordHash,
-      role: role._id,
+      password,
+      roleName,
+      phoneNumber,
       salary,
       designation,
+      joinDate,
       qualification,
       experienceYears,
       performanceNotes,
       teachingAssignments,
       assignedClass,
-      joinDate: joinDate ? new Date(joinDate) : undefined,
+      schoolId,
+      campusId,
+      status,
+      isActive,
+    } = req.body;
+
+    const trimmedFirst = firstName ? String(firstName).trim() : '';
+    const trimmedLast = lastName ? String(lastName).trim() : '';
+
+    if (!trimmedFirst || !trimmedLast || !email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'First name, last name, institutional email, and password are all required.',
+      });
+    }
+
+    const passwordValidation = validatePasswordPolicy(password);
+    if (!passwordValidation.valid) {
+      return res.status(400).json({
+        success: false,
+        message: passwordValidation.error || 'Password must be at least 6 characters long.',
+      });
+    }
+
+    const normalizedEmail = normalizeEmail(email);
+
+    const userExists = await User.findOne({ email: normalizedEmail });
+    if (userExists) {
+      return res.status(400).json({
+        success: false,
+        message: `An account with email ${normalizedEmail} already exists.`,
+      });
+    }
+
+    // Canonicalize role name
+    const rawRole = (roleName || 'Teacher').trim();
+    const canonicalRoleName =
+      rawRole.toLowerCase() === 'superadmin' ? 'SuperAdmin' :
+      rawRole.toLowerCase() === 'admin' ? 'Admin' :
+      rawRole.toLowerCase() === 'principal' ? 'Principal' :
+      rawRole.toLowerCase() === 'teacher' ? 'Teacher' :
+      rawRole.toLowerCase() === 'parent' ? 'Parent' :
+      rawRole.toLowerCase() === 'accountant' ? 'Accountant' :
+      rawRole.charAt(0).toUpperCase() + rawRole.slice(1);
+
+    // Find or create role with canonical permissions
+    let role = await Role.findOne({ name: canonicalRoleName });
+    const defaultPermissions = ROLE_PERMISSIONS[canonicalRoleName] || [];
+    if (!role) {
+      role = await Role.create({
+        name: canonicalRoleName,
+        permissions: defaultPermissions,
+      });
+    } else if (!role.permissions || role.permissions.length === 0) {
+      role.permissions = defaultPermissions;
+      await role.save();
+    }
+
+    const passwordHash = await hashPassword(password);
+
+    // Resolve tenant relationships
+    const resolvedSchoolId = schoolId || req.user?.schoolId;
+    const resolvedCampusId = campusId || req.user?.campusId;
+
+    const user = await User.create({
+      firstName: trimmedFirst,
+      lastName: trimmedLast,
+      email: normalizedEmail,
+      passwordHash,
+      role: role._id,
+      phoneNumber: phoneNumber ? String(phoneNumber).trim() : undefined,
+      isActive: isActive !== false,
+      status: status || (isActive === false ? 'Inactive' : 'Active'),
+      isDeleted: false,
+      schoolId: resolvedSchoolId,
+      campusId: resolvedCampusId,
+      salary,
+      designation: designation ? String(designation).trim() : undefined,
+      qualification: qualification ? String(qualification).trim() : undefined,
+      experienceYears: experienceYears ?? 0,
+      performanceNotes,
+      teachingAssignments,
+      assignedClass: assignedClass ? String(assignedClass).trim() : undefined,
+      joinDate: joinDate ? new Date(joinDate) : new Date(),
     });
 
-    // Relational Sync: Employee & TeacherProfile
-    await syncEmployeeAndTeacher(user, req.body);
+    // Relational Sync: Employee & TeacherProfile or Parent
+    await syncEmployeeAndTeacher(user, { ...req.body, roleName: canonicalRoleName });
 
     res.status(201).json({
+      success: true,
+      message: `${canonicalRoleName} account created successfully.`,
+      user: {
+        _id: user._id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        role: { _id: role._id, name: canonicalRoleName },
+        designation: user.designation,
+        phoneNumber: user.phoneNumber,
+        isActive: user.isActive,
+        status: user.status,
+        createdAt: user.createdAt,
+      },
       _id: user._id,
       firstName: user.firstName,
       lastName: user.lastName,
       email: user.email,
+      role: { _id: role._id, name: canonicalRoleName },
     });
-  } catch (error) {
-    res.status(400).json({ message: 'Invalid user data', error });
+  } catch (error: any) {
+    res.status(400).json({
+      success: false,
+      message: error?.message || 'Invalid user data',
+      error,
+    });
   }
 };
 
@@ -119,11 +242,38 @@ export const updateUser = async (req: Request, res: Response) => {
       return res.status(403).json({ message: 'User not authorized to update this profile' });
     }
 
-    const { firstName, lastName, email, phoneNumber, roleName, isActive, salary, designation, joinDate, qualification, experienceYears, performanceNotes, teachingAssignments, assignedClass } = req.body;
+    const {
+      firstName,
+      lastName,
+      email,
+      password,
+      phoneNumber,
+      roleName,
+      isActive,
+      status,
+      salary,
+      designation,
+      joinDate,
+      qualification,
+      experienceYears,
+      performanceNotes,
+      teachingAssignments,
+      assignedClass,
+    } = req.body;
     
     // Everyone can update basic profile info
-    const updates: Record<string, unknown> = { firstName, lastName, email };
-    if (phoneNumber !== undefined) updates.phoneNumber = phoneNumber;
+    const updates: Record<string, unknown> = {};
+    if (firstName !== undefined) updates.firstName = String(firstName).trim();
+    if (lastName !== undefined) updates.lastName = String(lastName).trim();
+    if (email !== undefined) updates.email = normalizeEmail(email);
+    if (password) {
+      const passwordValidation = validatePasswordPolicy(password);
+      if (!passwordValidation.valid) {
+        return res.status(400).json({ success: false, message: passwordValidation.error });
+      }
+      updates.passwordHash = await hashPassword(password);
+    }
+    if (phoneNumber !== undefined) updates.phoneNumber = String(phoneNumber).trim();
     if (designation !== undefined) updates.designation = designation;
     if (qualification !== undefined) updates.qualification = qualification;
     if (experienceYears !== undefined) updates.experienceYears = experienceYears;
@@ -132,9 +282,24 @@ export const updateUser = async (req: Request, res: Response) => {
     // Only Admin/SuperAdmin can change roles and active status
     if (isAdmin) {
       if (isActive !== undefined) updates.isActive = isActive;
+      if (status !== undefined) updates.status = status;
       if (roleName) {
-        let role = await Role.findOne({ name: roleName });
-        if (!role) role = await Role.create({ name: roleName, permissions: [] });
+        const canonicalRoleName =
+          roleName.toLowerCase() === 'superadmin' ? 'SuperAdmin' :
+          roleName.toLowerCase() === 'admin' ? 'Admin' :
+          roleName.toLowerCase() === 'principal' ? 'Principal' :
+          roleName.toLowerCase() === 'teacher' ? 'Teacher' :
+          roleName.toLowerCase() === 'parent' ? 'Parent' :
+          roleName.toLowerCase() === 'accountant' ? 'Accountant' :
+          roleName.charAt(0).toUpperCase() + roleName.slice(1);
+
+        let role = await Role.findOne({ name: canonicalRoleName });
+        if (!role) {
+          role = await Role.create({
+            name: canonicalRoleName,
+            permissions: ROLE_PERMISSIONS[canonicalRoleName] || [],
+          });
+        }
         updates.role = role._id;
       }
       if (salary !== undefined) updates.salary = salary;
@@ -149,12 +314,12 @@ export const updateUser = async (req: Request, res: Response) => {
       .populate('teachingAssignments.subjectId', 'name');
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    // Relational Sync: Employee & TeacherProfile
+    // Relational Sync: Employee & TeacherProfile or Parent
     await syncEmployeeAndTeacher(user, req.body);
     
     res.json(user);
-  } catch (error) {
-    res.status(400).json({ message: 'Invalid data', error });
+  } catch (error: any) {
+    res.status(400).json({ message: error?.message || 'Invalid data', error });
   }
 };
 

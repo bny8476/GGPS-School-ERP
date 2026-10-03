@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { authFetch } from "@/lib/apiClient";
 
 let formIdCounter = 100;
 const getFormId = () => ++formIdCounter;
@@ -64,7 +65,7 @@ export default function FormBuilderPage() {
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("/api/enterprise/forms", {
+      const res = await authFetch("/api/enterprise/forms", {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {

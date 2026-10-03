@@ -33,9 +33,10 @@ import {
   Copy,
   Edit3,
   ExternalLink,
-  Users
+  Users,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { printDocument } from '@/lib/exportUtils';
 
 export type LessonDay = 'MONDAY' | 'TUESDAY' | 'WEDNESDAY' | 'THURSDAY' | 'FRIDAY';
 export type LessonPeriod = 'CIRCLE_TIME' | 'PHONICS' | 'MATH_LOGIC' | 'THEME_EVS' | 'CREATIVE_PLAY';
@@ -1553,14 +1554,14 @@ export default function LessonPlanWorkspace({ onNavigateTab }: LessonPlanWorkspa
             </div>
 
             {/* Print Document Paper Simulation */}
-            <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 space-y-4 text-xs">
+            <div id="printable-runsheet-paper" className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 space-y-4 text-xs">
               <div className="border-b border-slate-200 dark:border-slate-700 pb-3 flex items-center justify-between">
                 <div>
                   <h2 className="font-black text-sm text-slate-900 dark:text-white">
-                    GGSP INTERNATIONAL SCHOOL • TEACHER DAILY RUN-SHEET
+                    GGPS SCHOOL • TEACHER DAILY RUN-SHEET
                   </h2>
                   <p className="text-[11px] text-slate-500">
-                    Class LKG - Section A • Primary Teacher: Priya Sharma • Date: 18 September 2026
+                    Class LKG - Section A • Primary Teacher: Priya Sharma • Date: {new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date())}
                   </p>
                 </div>
                 <span className="px-2 py-1 rounded bg-emerald-100 text-emerald-800 font-bold text-[10px]">
@@ -1609,7 +1610,7 @@ export default function LessonPlanWorkspace({ onNavigateTab }: LessonPlanWorkspa
               <button
                 type="button"
                 onClick={() => {
-                  window.print();
+                  printDocument('printable-runsheet-paper', 'GGPS School - Teacher Daily Run-Sheet');
                   setIsPrintModalOpen(false);
                 }}
                 className="px-5 py-2 bg-[#0050CB] hover:bg-[#003da1] text-white rounded-xl font-bold cursor-pointer transition-all text-xs shadow-md shadow-blue-500/20 flex items-center gap-1.5"

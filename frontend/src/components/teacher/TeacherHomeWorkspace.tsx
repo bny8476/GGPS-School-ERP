@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Calendar as CalendarIcon,
   Users,
@@ -94,6 +94,53 @@ export default function TeacherHomeWorkspace({
   onOpenTimetableModal,
   onSelectStudent
 }: TeacherHomeWorkspaceProps) {
+  // Realtime Live Date & Greeting
+  const [currentDateStr, setCurrentDateStr] = useState<string>(() => {
+    try {
+      return new Intl.DateTimeFormat('en-GB', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      }).format(new Date());
+    } catch {
+      return '';
+    }
+  });
+
+  const [greeting, setGreeting] = useState<string>(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good Morning';
+    if (hour < 17) return 'Good Afternoon';
+    return 'Good Evening';
+  });
+
+  useEffect(() => {
+    const updateDateTime = () => {
+      const now = new Date();
+      const formatted = new Intl.DateTimeFormat('en-GB', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      }).format(now);
+      setCurrentDateStr(formatted);
+
+      const hour = now.getHours();
+      if (hour < 12) {
+        setGreeting('Good Morning');
+      } else if (hour < 17) {
+        setGreeting('Good Afternoon');
+      } else {
+        setGreeting('Good Evening');
+      }
+    };
+
+    updateDateTime();
+    const timer = setInterval(updateDateTime, 30000);
+    return () => clearInterval(timer);
+  }, []);
+
   // Single-Source Real Metric Aggregations
   const totalEnrolled = students.length || 28;
   const presentCount = students.filter((s) => s.status === 'Present').length || 26;
@@ -162,16 +209,19 @@ export default function TeacherHomeWorkspace({
             <span>Lead Educator Dashboard</span>
           </div>
           <h1 className="text-2xl lg:text-3xl font-black text-white tracking-tight">
-            Good Morning, Priya! 👋
+            {greeting}, Priya! 👋
           </h1>
           <p className="text-xs lg:text-sm text-blue-100/90 leading-relaxed font-medium">
             Your classroom is energized and ready for another inspiring day of discovery.
           </p>
 
           <div className="pt-2 flex flex-wrap items-center gap-2.5">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white/10 text-xs font-semibold text-white border border-white/15 backdrop-blur-md">
+            <span
+              suppressHydrationWarning
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white/10 text-xs font-semibold text-white border border-white/15 backdrop-blur-md"
+            >
               <CalendarIcon className="w-3.5 h-3.5 text-[#FF690C]" />
-              Tuesday, 22 September 2026
+              {currentDateStr || 'Today'}
             </span>
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-500/20 text-xs font-bold text-emerald-300 border border-emerald-400/30">
               LKG - Section A

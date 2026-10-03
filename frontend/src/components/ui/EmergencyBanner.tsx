@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { AlertTriangle, X, ShieldAlert, BellRing } from 'lucide-react';
 import { getApiBaseUrl } from '@/lib/utils';
+import { authFetch } from '@/lib/apiClient';
 
 interface IBroadcast {
   _id: string;
@@ -21,7 +22,7 @@ export function EmergencyBanner() {
     try {
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
       const apiBase = getApiBaseUrl();
-      const res = await fetch(`${apiBase}/api/broadcasts/active`, {
+      const res = await authFetch(`${apiBase}/api/broadcasts/active`, {
         headers: {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },

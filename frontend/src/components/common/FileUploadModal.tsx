@@ -104,6 +104,7 @@ export default function FileUploadModal({
 
       const xhr = new XMLHttpRequest();
       xhr.open('POST', `${apiBase}/api/v1/files/upload`, true);
+      xhr.withCredentials = true;
       if (token) {
         xhr.setRequestHeader('Authorization', `Bearer ${token}`);
       }
