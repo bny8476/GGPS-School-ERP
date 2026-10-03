@@ -56,6 +56,7 @@ import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { ThemeProvider, useTheme } from '@/context/ThemeContext';
 import CommandPalette from '@/components/ui/CommandPalette';
 import NotificationDrawer from '@/components/ui/NotificationDrawer';
+import { useCurrentTime } from '@/lib/date';
 
 interface NavSubItem {
   href: string;
@@ -90,29 +91,18 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   const [campusDropdownOpen, setCampusDropdownOpen] = useState(false);
   const [academicYearDropdownOpen, setAcademicYearDropdownOpen] = useState(false);
   const [selectedCampus, setSelectedCampus] = useState('GGPS Main Campus');
-  const [selectedAcademicYear, setSelectedAcademicYear] = useState('AY 2025 - 2026');
-  const [currentDateStr, setCurrentDateStr] = useState<string>('');
+
+  // Real-time live date, time, and academic session from centralized hook
+  const { dateHeaderStr, timeStr, academicYearFormatted } = useCurrentTime({ intervalMs: 15000 });
+  const [selectedAcademicYear, setSelectedAcademicYear] = useState('');
 
   const { theme, toggleTheme, direction, setDirection } = useTheme();
   const { t } = useLanguage();
 
   useEffect(() => {
     setMounted(true);
-    const updateDate = () => {
-      const now = new Date();
-      setCurrentDateStr(
-        now.toLocaleDateString('en-US', {
-          weekday: 'short',
-          month: 'short',
-          day: 'numeric',
-          year: 'numeric',
-        })
-      );
-    };
-    updateDate();
-    const interval = setInterval(updateDate, 30000);
-    return () => clearInterval(interval);
-  }, []);
+    setSelectedAcademicYear(academicYearFormatted);
+  }, [academicYearFormatted]);
 
   useEffect(() => {
     const userStr = localStorage.getItem('user');
@@ -763,15 +753,19 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             {/* Language Switcher Pill */}
             <LanguageSwitcher />
 
-            {/* Date Picker / Current Date Button matching screenshot */}
+            {/* Live Real-Time Date & Clock Button */}
             <Link
               href="/dashboard/calendar"
               className="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 shadow-2xs transition-colors"
-              title="View Academic Calendar"
+              title="View Academic Calendar & Live Clock"
             >
               <Calendar className="w-3.5 h-3.5 text-[#0050CB]" />
-              <span suppressHydrationWarning>{currentDateStr || 'Today'}</span>
-              <ChevronDown className="w-3 h-3 text-slate-400" />
+              <span suppressHydrationWarning>{dateHeaderStr}</span>
+              <span className="text-slate-300 dark:text-slate-600">•</span>
+              <Clock className="w-3.5 h-3.5 text-[#FF690C]" />
+              <span className="font-mono text-[11px] font-bold text-[#0050CB] dark:text-[#38BDF8]" suppressHydrationWarning>
+                {timeStr}
+              </span>
             </Link>
 
             {/* Admin Profile Dropdown Pill */}

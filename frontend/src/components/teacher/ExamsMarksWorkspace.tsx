@@ -39,6 +39,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { printDocument } from '@/lib/exportUtils';
 import { downloadPdf } from '@/lib/fileDownload';
+import { getCurrentAcademicYearFormatted, formatMediumDate, toSchoolISODate } from '@/lib/date';
 
 export interface ExamPaper {
   id: string;
@@ -78,6 +79,17 @@ export interface ExamsMarksWorkspaceProps {
   onNavigateTab?: (tab: string) => void;
 }
 
+const getExamDate = (offsetDays: number) => {
+  const d = new Date();
+  d.setDate(d.getDate() + offsetDays);
+  return d.toLocaleDateString('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric'
+  });
+};
+
 // Initial realistic exam papers
 const initialExamPapers: ExamPaper[] = [
   {
@@ -85,7 +97,7 @@ const initialExamPapers: ExamPaper[] = [
     title: 'English Reading, Phonics & Letter Recognition',
     subject: 'English & Phonics',
     category: 'TERM_SUMMATIVE',
-    date: '22 Sep 2026',
+    date: getExamDate(-3),
     timeSlot: '09:30 AM - 10:45 AM',
     room: 'Room 102 (Classroom A)',
     invigilator: 'Ms. Ananya Roy',
@@ -100,7 +112,7 @@ const initialExamPapers: ExamPaper[] = [
     title: 'Early Mathematics, Shapes & Object Counting',
     subject: 'Early Mathematics',
     category: 'TERM_SUMMATIVE',
-    date: '25 Sep 2026',
+    date: getExamDate(4),
     timeSlot: '10:00 AM - 11:15 AM',
     room: 'Room 102 (Classroom A)',
     invigilator: 'Ms. Ananya Roy & Mr. R. Sharma',
@@ -115,7 +127,7 @@ const initialExamPapers: ExamPaper[] = [
     title: 'Rhyme Recitation, Storytelling & Oral Expression',
     subject: 'Oral & General Awareness',
     category: 'ORAL_PRACTICAL',
-    date: '28 Sep 2026',
+    date: getExamDate(7),
     timeSlot: '11:15 AM - 12:30 PM',
     room: 'Activity Hall 1',
     invigilator: 'Ms. Ananya Roy',
@@ -249,7 +261,7 @@ export default function ExamsMarksWorkspace({ students = [], onNavigateTab }: Ex
   const [newExamTitle, setNewExamTitle] = useState('');
   const [newExamSubject, setNewExamSubject] = useState('English & Phonics');
   const [newExamCategory, setNewExamCategory] = useState<'TERM_SUMMATIVE' | 'PERIODIC_DIAGNOSTIC' | 'ORAL_PRACTICAL'>('TERM_SUMMATIVE');
-  const [newExamDate, setNewExamDate] = useState('2026-10-02');
+  const [newExamDate, setNewExamDate] = useState(() => toSchoolISODate());
   const [newExamTime, setNewExamTime] = useState('09:30 AM - 10:45 AM');
   const [newExamRoom, setNewExamRoom] = useState('Room 102 (Classroom A)');
   const [newExamMaxWritten, setNewExamMaxWritten] = useState(15);
@@ -1186,7 +1198,7 @@ export default function ExamsMarksWorkspace({ students = [], onNavigateTab }: Ex
                   <h2 className="text-xl font-black text-slate-800 dark:text-white">
                     Official Term 1 Academic Performance Card
                   </h2>
-                  <p className="text-xs text-slate-500">Academic Session 2026–2027 • Class LKG-A</p>
+                  <p className="text-xs text-slate-500">Academic Session {getCurrentAcademicYearFormatted()} • Class LKG-A</p>
                 </div>
 
                 <div className="text-right">

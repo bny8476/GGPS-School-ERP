@@ -23,6 +23,7 @@ import {
   RotateCcw,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { getCurrentAcademicYearFormatted } from '@/lib/date';
 
 interface LeaveItem {
   _id: string;
@@ -50,10 +51,37 @@ export default function LeavesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
+  // Dynamic date ranges based on current month and session
+  const dateRanges = useMemo(() => {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+    
+    const formatRange = (d: Date) => {
+      const start = new Date(d.getFullYear(), d.getMonth(), 1);
+      const end = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+      const startStr = start.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', month: 'short', day: 'numeric', year: 'numeric' });
+      const endStr = end.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', month: 'short', day: 'numeric', year: 'numeric' });
+      return `${startStr} - ${endStr}`;
+    };
+
+    const currentMonthRange = formatRange(now);
+    const prevMonth1 = formatRange(new Date(currentYear, currentMonth - 1, 1));
+    const prevMonth2 = formatRange(new Date(currentYear, currentMonth - 2, 1));
+    const fullAY = `Full Academic Year ${getCurrentAcademicYearFormatted()}`;
+
+    return [currentMonthRange, prevMonth1, prevMonth2, fullAY];
+  }, []);
+
   // Filters
   const [activeFilter, setActiveFilter] = useState<'All' | 'Pending' | 'Approved' | 'Rejected'>('All');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedDateRange, setSelectedDateRange] = useState('Sep 1, 2026 - Sep 30, 2026');
+  const [selectedDateRange, setSelectedDateRange] = useState<string>(() => {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), 1);
+    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    return `${start.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', month: 'short', day: 'numeric', year: 'numeric' })} - ${end.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', month: 'short', day: 'numeric', year: 'numeric' })}`;
+  });
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
   const [showDateDropdown, setShowDateDropdown] = useState(false);
 
@@ -470,7 +498,7 @@ export default function LeavesPage() {
             </button>
             {showDateDropdown && (
               <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-[#07152F] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl py-1.5 z-30 text-xs">
-                {['Sep 1, 2026 - Sep 30, 2026', 'Aug 1, 2026 - Aug 31, 2026', 'Jul 1, 2026 - Jul 31, 2026', 'Full Academic Year 2026-27'].map((range) => (
+                {dateRanges.map((range) => (
                   <button
                     key={range}
                     onClick={() => { setSelectedDateRange(range); setShowDateDropdown(false); }}

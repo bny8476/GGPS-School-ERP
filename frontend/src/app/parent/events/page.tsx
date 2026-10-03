@@ -244,9 +244,15 @@ const formatDateString = (key: string) => {
 
 export default function SchoolEventsPage() {
   const [activeTab, setActiveTab] = useState<"Upcoming" | "All Events" | "Past Events">("Upcoming");
-  const [currentYear, setCurrentYear] = useState<number>(2026);
-  const [currentMonth, setCurrentMonth] = useState<number>(8); // 8 = September (0-indexed)
-  const [selectedDateKey, setSelectedDateKey] = useState<string | null>("2026-09-10");
+  const [currentYear, setCurrentYear] = useState<number>(() => new Date().getFullYear());
+  const [currentMonth, setCurrentMonth] = useState<number>(() => new Date().getMonth());
+  const [selectedDateKey, setSelectedDateKey] = useState<string | null>(() => {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  });
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [stayUpdatedEnabled, setStayUpdatedEnabled] = useState(true);
 

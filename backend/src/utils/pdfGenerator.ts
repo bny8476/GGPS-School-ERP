@@ -1,5 +1,6 @@
 import { Response } from 'express';
 import PDFDocument from 'pdfkit';
+import { formatMediumDate, formatDateTime, getCurrentAcademicYearFormatted } from './dateUtils';
 
 export interface PayslipData {
   month: string;
@@ -68,7 +69,7 @@ export const generatePayslipPDF = (res: Response, payrollData: PayslipData) => {
   doc.text(`Pay Period: ${payrollData.month}`, 65, staffY + 45);
   doc.text(`Disbursement Status: ${payrollData.status}`, 320, staffY + 30);
   if (payrollData.paymentDate) {
-    doc.text(`Disbursement Date: ${new Date(payrollData.paymentDate).toLocaleDateString('en-GB')}`, 320, staffY + 45);
+    doc.text(`Disbursement Date: ${formatMediumDate(payrollData.paymentDate)}`, 320, staffY + 45);
   }
 
   doc.y = staffY + 95;
@@ -146,8 +147,8 @@ export const generateFeeInvoicePDF = (res: Response, invoice: any) => {
   doc.font('Helvetica-Bold').fontSize(9).fillColor('#0050CB').text('INVOICE DETAILS', 62, metaY + 10);
   doc.font('Helvetica').fontSize(8.5).fillColor('#000E28');
   doc.text(`Invoice No: ${invoiceNo}`, 62, metaY + 26);
-  doc.text(`Issue Date: ${new Date(invoice.createdAt || Date.now()).toLocaleDateString('en-GB')}`, 62, metaY + 40);
-  doc.text(`Due Date: ${invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString('en-GB') : 'Immediate'}`, 62, metaY + 54);
+  doc.text(`Issue Date: ${formatMediumDate(invoice.createdAt || new Date())}`, 62, metaY + 40);
+  doc.text(`Due Date: ${invoice.dueDate ? formatMediumDate(invoice.dueDate) : 'Immediate'}`, 62, metaY + 54);
 
   const student = invoice.studentId || {};
   const studentName = `${student.firstName || ''} ${student.lastName || ''}`.trim() || 'Enrolled Student';
@@ -239,7 +240,7 @@ export const generatePaymentReceiptPDF = (res: Response, receipt: any) => {
 
   doc.font('Helvetica').fontSize(9).fillColor('#334155');
   doc.text(`Receipt Number: ${receiptNo}`, 65, boxY + 30);
-  doc.text(`Payment Date: ${new Date(receipt.paidAt || Date.now()).toLocaleDateString('en-GB')}`, 65, boxY + 48);
+  doc.text(`Payment Date: ${formatMediumDate(receipt.paidAt || new Date())}`, 65, boxY + 48);
 
   doc.text(`Payment Mode: ${receipt.paymentMethod || 'Online / UPI'}`, 320, boxY + 30);
   doc.text(`Transaction Ref: ${receipt.transactionId || 'TXN-DIRECT-SETTLED'}`, 320, boxY + 48);
@@ -318,7 +319,7 @@ export const generateReportExportPDF = (
   // Header Banner
   doc.rect(40, 30, 762, 45).fill('#0050CB');
   doc.fillColor('#FFFFFF').fontSize(16).font('Helvetica-Bold').text('GGPS SCHOOL - ADMINISTRATIVE REPORTING CONSOLE', 40, 42, { align: 'center', width: 762 });
-  doc.fillColor('#E5EEFF').fontSize(8.5).font('Helvetica').text(`Official Export: ${title} • Generated on ${new Date().toLocaleString('en-GB')}`, 40, 60, { align: 'center', width: 762 });
+  doc.fillColor('#E5EEFF').fontSize(8.5).font('Helvetica').text(`Official Export: ${title} • Generated on ${formatDateTime(new Date())}`, 40, 60, { align: 'center', width: 762 });
 
   doc.y = 90;
 
@@ -398,7 +399,7 @@ export const generateReportCardPDF = (res: Response, student: StudentPDFData, as
   doc.text(`Student Name: ${student.firstName} ${student.lastName}`, 65, stuY + 15);
   doc.text(`Admission No: ${student.admissionNumber || 'N/A'}`, 65, stuY + 32);
   doc.text(`Class & Section: ${student.className || 'N/A'} - ${student.section || 'A'}`, 320, stuY + 15);
-  doc.text(`Date of Birth: ${student.dateOfBirth ? new Date(student.dateOfBirth).toLocaleDateString('en-GB') : 'N/A'}`, 320, stuY + 32);
+  doc.text(`Date of Birth: ${student.dateOfBirth ? formatMediumDate(student.dateOfBirth) : 'N/A'}`, 320, stuY + 32);
 
   doc.y = stuY + 85;
 
@@ -408,7 +409,7 @@ export const generateReportCardPDF = (res: Response, student: StudentPDFData, as
   } else {
     assessments.forEach((assessment) => {
       doc.font('Helvetica-Bold').fontSize(12).fillColor('#0050CB').text(assessment.term);
-      doc.font('Helvetica').fontSize(9).fillColor('#64748B').text(`Evaluation Date: ${new Date(assessment.date).toLocaleDateString('en-GB')}`);
+      doc.font('Helvetica').fontSize(9).fillColor('#64748B').text(`Evaluation Date: ${formatMediumDate(assessment.date)} • Session: ${getCurrentAcademicYearFormatted()}`);
       doc.moveDown(0.5);
 
       assessment.rubrics.forEach((rubric: RubricData) => {
@@ -474,7 +475,7 @@ export const generateRollCallRosterPDF = (
 
   const cleanClass = (roster.className || 'Class').replace(/[^a-zA-Z0-9]/g, '_');
   const cleanSection = (roster.sectionName || 'A').replace(/[^a-zA-Z0-9]/g, '_');
-  const cleanYear = (roster.academicYear || '2026-2027').replace(/[^a-zA-Z0-9-]/g, '_');
+  const cleanYear = (roster.academicYear || getCurrentAcademicYearFormatted()).replace(/[^a-zA-Z0-9-]/g, '_');
   const cleanFilename = `GGPS_Roll_Call_Roster_${cleanClass}_${cleanSection}_${cleanYear}.pdf`;
 
   res.setHeader('Content-Type', 'application/pdf');

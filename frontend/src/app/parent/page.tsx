@@ -32,6 +32,7 @@ import TodayDiaryRemarkCard from "@/components/parent/TodayDiaryRemarkCard";
 import QuickActionsCard from "@/components/parent/QuickActionsCard";
 import ClassPerformanceCard from "@/components/parent/ClassPerformanceCard";
 import { useParent } from "@/context/ParentContext";
+import { useCurrentTime } from "@/lib/date";
 
 export default function ParentDashboard() {
   const {
@@ -46,6 +47,8 @@ export default function ParentDashboard() {
     teacherRemarks,
   } = useParent();
 
+  const { dateLongStr, academicYearFormatted } = useCurrentTime();
+
   const [isFeeModalOpen, setIsFeeModalOpen] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
@@ -59,12 +62,7 @@ export default function ParentDashboard() {
     studentPhoto: "/aarav-profile-avatar.png",
   };
 
-  const currentDateFormatted = new Date().toLocaleDateString("en-GB", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
+  const currentDateFormatted = dateLongStr;
 
   return (
     <div className="space-y-5 pb-12 font-sans antialiased text-slate-800 dark:text-slate-100">

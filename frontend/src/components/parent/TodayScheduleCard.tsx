@@ -13,6 +13,7 @@ import {
   Clock,
   Sparkles,
 } from "lucide-react";
+import { formatHeaderDate } from "@/lib/date";
 
 export interface ScheduleItem {
   id: string;
@@ -106,8 +107,9 @@ export default function TodayScheduleCard({
   schedule = DEFAULT_SCHEDULE,
   isLoading = false,
   className = "",
-  currentDate = "Mon, 16 Jun 2025",
+  currentDate,
 }: TodayScheduleCardProps) {
+  const displayDate = currentDate || formatHeaderDate();
   const prefersReducedMotion = useReducedMotion();
   const [activeItemId, setActiveItemId] = useState<string | null>(null);
 
@@ -234,8 +236,8 @@ export default function TodayScheduleCard({
           title="View GGPS Timetable"
           className="group/date flex items-center gap-1.5 bg-blue-50/80 dark:bg-white/5 hover:bg-blue-100/70 dark:hover:bg-white/10 px-2.5 py-1 rounded-xl border border-blue-100/80 dark:border-white/10 transition-colors shadow-2xs"
         >
-          <span className="text-[12px] sm:text-[13px] font-semibold text-[#2867C7] dark:text-blue-300">
-            {currentDate}
+          <span className="text-[12px] sm:text-[13px] font-semibold text-[#2867C7] dark:text-blue-300" suppressHydrationWarning>
+            {displayDate}
           </span>
           <CalendarDays className="w-3.5 h-3.5 text-[#2867C7] dark:text-blue-300 transition-transform duration-200 group-hover/date:rotate-6" />
         </Link>

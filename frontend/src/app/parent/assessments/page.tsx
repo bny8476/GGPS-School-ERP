@@ -11,6 +11,7 @@ import {
 import toast from "react-hot-toast";
 import ReportCardModal from "@/components/parent/ReportCardModal";
 import { useParent } from "@/context/ParentContext";
+import { getCurrentAcademicYearFormatted, getAcademicYearDisplayOptions } from "@/lib/date";
 
 interface SubjectScore {
   name: string;
@@ -53,7 +54,7 @@ export default function ParentAssessmentsPage() {
   const [activeExamFilter, setActiveExamFilter] = useState<string>("All Exams");
   const [selectedSubjectFilter, setSelectedSubjectFilter] = useState<string>("All Subjects");
   const [isSubjectDropdownOpen, setIsSubjectDropdownOpen] = useState(false);
-  const [selectedAcademicYear, setSelectedAcademicYear] = useState<string>("2025 - 2026");
+  const [selectedAcademicYear, setSelectedAcademicYear] = useState<string>(() => getCurrentAcademicYearFormatted());
   const [isYearDropdownOpen, setIsYearDropdownOpen] = useState(false);
 
   // Modals state
@@ -334,7 +335,7 @@ export default function ParentAssessmentsPage() {
 
               {isYearDropdownOpen && (
                 <div className="absolute right-0 mt-1.5 w-44 rounded-2xl bg-white dark:bg-[#07142F] border border-slate-200 dark:border-slate-800 shadow-lg py-1.5 z-30">
-                  {["2025 - 2026", "2024 - 2025"].map((yr) => (
+                  {getAcademicYearDisplayOptions().map((yr) => (
                     <button
                       key={yr}
                       type="button"

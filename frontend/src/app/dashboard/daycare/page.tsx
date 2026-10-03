@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import toast from "react-hot-toast";
+import { formatMediumDate, formatShortDate } from "@/lib/date";
 
 export default function DaycarePage() {
   const [logs, setLogs] = useState<any[]>([]);
@@ -290,7 +291,7 @@ export default function DaycarePage() {
         {/* Date Selector Pill */}
         <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 shrink-0">
           <Calendar className="w-4 h-4 text-[#0050CB] dark:text-[#38BDF8]" />
-          <span>Apr 22, 2025 - Apr 22, 2025</span>
+          <span suppressHydrationWarning>{formatShortDate()}</span>
         </div>
 
         {/* Class Dropdown */}
@@ -585,7 +586,7 @@ export default function DaycarePage() {
                 <Calendar className="w-4 h-4 text-[#0050CB] dark:text-[#38BDF8]" />
                 <h3 className="text-sm font-black text-[#000E28] dark:text-white">Today's Summary</h3>
               </div>
-              <span className="text-[11px] font-semibold text-slate-400">Apr 22, 2025</span>
+              <span className="text-[11px] font-semibold text-slate-400" suppressHydrationWarning>{formatMediumDate()}</span>
             </div>
 
             <div className="grid grid-cols-2 gap-3">

@@ -12,11 +12,12 @@ import {
 import toast from "react-hot-toast";
 import ReportCardModal from "@/components/parent/ReportCardModal";
 import { useParent } from "@/context/ParentContext";
+import { getCurrentAcademicYearFormatted, getAcademicYearDisplayOptions } from "@/lib/date";
 
 export default function AcademicProgressPage() {
   const { selectedChild } = useParent();
   const [selectedTerm, setSelectedTerm] = useState<"All Subjects" | "Term 1" | "Term 2" | "Term 3" | "Term 4">("All Subjects");
-  const [selectedAcademicYear, setSelectedAcademicYear] = useState<string>("2025 - 2026");
+  const [selectedAcademicYear, setSelectedAcademicYear] = useState<string>(() => getCurrentAcademicYearFormatted());
   const [isYearDropdownOpen, setIsYearDropdownOpen] = useState<boolean>(false);
   const [isReportCardModalOpen, setIsReportCardModalOpen] = useState<boolean>(false);
 
@@ -318,7 +319,7 @@ export default function AcademicProgressPage() {
                   onClick={() => setIsYearDropdownOpen(false)} 
                 />
                 <div className="absolute left-0 right-0 mt-2 w-full rounded-2xl bg-white dark:bg-[#07142F] border border-slate-200 dark:border-slate-800 shadow-xl py-1.5 z-40 animate-in fade-in zoom-in-95 duration-100">
-                  {["2025 - 2026", "2024 - 2025", "2023 - 2024"].map((yr) => (
+                  {getAcademicYearDisplayOptions().map((yr) => (
                     <button
                       key={yr}
                       type="button"

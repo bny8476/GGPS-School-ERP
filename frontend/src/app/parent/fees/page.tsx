@@ -14,6 +14,7 @@ import { useParent } from "@/context/ParentContext";
 import toast from "react-hot-toast";
 import { authFetch } from "@/lib/apiClient";
 import { downloadPdf } from "@/lib/fileDownload";
+import { getCurrentAcademicYearFormatted } from "@/lib/date";
 
 export default function ParentFeesPage() {
   const { selectedChild } = useParent();
@@ -208,7 +209,7 @@ export default function ParentFeesPage() {
 
           <div className="relative z-10 mt-3 pt-0.5 flex items-center justify-between">
             <span className="inline-flex items-center gap-1 text-[12px] sm:text-[12.5px] font-extrabold text-[#0050CB] dark:text-blue-300 whitespace-nowrap">
-              Academic Year 2025–26
+              Academic Year {getCurrentAcademicYearFormatted()}
             </span>
           </div>
         </motion.div>

@@ -44,6 +44,7 @@ import {
   ScheduleCard,
   ProgressRingCard
 } from '@/components/cards';
+import { useCurrentTime } from '@/lib/date';
 
 export interface StudentCardData {
   id: string;
@@ -94,52 +95,8 @@ export default function TeacherHomeWorkspace({
   onOpenTimetableModal,
   onSelectStudent
 }: TeacherHomeWorkspaceProps) {
-  // Realtime Live Date & Greeting
-  const [currentDateStr, setCurrentDateStr] = useState<string>(() => {
-    try {
-      return new Intl.DateTimeFormat('en-GB', {
-        weekday: 'long',
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-      }).format(new Date());
-    } catch {
-      return '';
-    }
-  });
-
-  const [greeting, setGreeting] = useState<string>(() => {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'Good Morning';
-    if (hour < 17) return 'Good Afternoon';
-    return 'Good Evening';
-  });
-
-  useEffect(() => {
-    const updateDateTime = () => {
-      const now = new Date();
-      const formatted = new Intl.DateTimeFormat('en-GB', {
-        weekday: 'long',
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-      }).format(now);
-      setCurrentDateStr(formatted);
-
-      const hour = now.getHours();
-      if (hour < 12) {
-        setGreeting('Good Morning');
-      } else if (hour < 17) {
-        setGreeting('Good Afternoon');
-      } else {
-        setGreeting('Good Evening');
-      }
-    };
-
-    updateDateTime();
-    const timer = setInterval(updateDateTime, 30000);
-    return () => clearInterval(timer);
-  }, []);
+  // Realtime Live Date, Time Clock, Greeting & Academic Year from centralized hook
+  const { dateLongStr: currentDateStr, greeting, timeStr, academicYearFormatted } = useCurrentTime();
 
   // Single-Source Real Metric Aggregations
   const totalEnrolled = students.length || 28;
@@ -222,6 +179,16 @@ export default function TeacherHomeWorkspace({
             >
               <CalendarIcon className="w-3.5 h-3.5 text-[#FF690C]" />
               {currentDateStr || 'Today'}
+            </span>
+            <span
+              suppressHydrationWarning
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white/10 text-xs font-mono font-bold text-[#38BDF8] border border-white/15 backdrop-blur-md"
+            >
+              <Clock className="w-3.5 h-3.5 text-[#38BDF8]" />
+              {timeStr}
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-purple-500/20 text-xs font-bold text-purple-200 border border-purple-400/30">
+              {academicYearFormatted}
             </span>
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-500/20 text-xs font-bold text-emerald-300 border border-emerald-400/30">
               LKG - Section A

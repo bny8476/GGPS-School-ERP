@@ -14,6 +14,7 @@ import toast from 'react-hot-toast';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import { getApiBaseUrl } from '@/lib/utils';
 import { authFetch } from '@/lib/apiClient';
+import { getCurrentAcademicYearFormatted } from '@/lib/date';
 
 // Terms Hero Illustration with Foliage, 3D Stacked Books, Graduation Cap, Calendar Sheet & Cursive Script
 function TermsHeroIllustration() {
@@ -1096,7 +1097,7 @@ function AcademicContent() {
                     Academic Year
                   </span>
                   <span className="font-bold text-xs text-[#000E28] dark:text-white block leading-tight">
-                    {activeYearObj?.name || '2025 - 2026'}
+                    {activeYearObj?.name || getCurrentAcademicYearFormatted()}
                   </span>
                 </div>
                 <ChevronDown className="w-3.5 h-3.5 text-slate-500 ml-0.5" />

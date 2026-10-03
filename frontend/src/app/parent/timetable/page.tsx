@@ -14,6 +14,7 @@ import toast from "react-hot-toast";
 import { useParent } from "@/context/ParentContext";
 import { downloadFile } from "@/lib/fileDownload";
 import { exportToCSV, printDocument } from "@/lib/exportUtils";
+import { getCurrentAcademicYearFormatted, getAcademicYearDisplayOptions } from "@/lib/date";
 
 interface TimetablePeriod {
   periodNum?: number;
@@ -33,10 +34,30 @@ interface TimetablePeriod {
   badgeColor: string;
 }
 
+// Dynamically generate date for the current week's Monday-Friday in Asia/Kolkata
+function getWeekDayDateStr(dayOffset: number): string {
+  const now = new Date();
+  const currentDayOfWeek = now.getDay(); // 0 is Sun, 1 is Mon...
+  const distanceToMonday = currentDayOfWeek === 0 ? -6 : 1 - currentDayOfWeek;
+  const monday = new Date(now);
+  monday.setDate(now.getDate() + distanceToMonday);
+  
+  const targetDate = new Date(monday);
+  targetDate.setDate(monday.getDate() + dayOffset);
+  
+  return targetDate.toLocaleDateString('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    weekday: 'long',
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric'
+  });
+}
+
 export default function TimetablePage() {
   const { selectedChild, selectChild, children = [] } = useParent();
   const [selectedDay, setSelectedDay] = useState<"Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday">("Monday");
-  const [selectedAcademicYear, setSelectedAcademicYear] = useState<string>("2025 - 2026");
+  const [selectedAcademicYear, setSelectedAcademicYear] = useState<string>(() => getCurrentAcademicYearFormatted());
   const [isYearDropdownOpen, setIsYearDropdownOpen] = useState<boolean>(false);
   const [isChildDropdownOpen, setIsChildDropdownOpen] = useState<boolean>(false);
 
@@ -55,7 +76,7 @@ export default function TimetablePage() {
   // Schedules by day with Break & Lunch hours
   const scheduleData: Record<typeof days[number], { dateStr: string; periods: TimetablePeriod[] }> = {
     Monday: {
-      dateStr: "Monday, 19 May 2025",
+      dateStr: getWeekDayDateStr(0),
       periods: [
         {
           periodNum: 1,
@@ -193,7 +214,7 @@ export default function TimetablePage() {
       ]
     },
     Tuesday: {
-      dateStr: "Tuesday, 20 May 2025",
+      dateStr: getWeekDayDateStr(1),
       periods: [
         {
           periodNum: 1,
@@ -331,7 +352,7 @@ export default function TimetablePage() {
       ]
     },
     Wednesday: {
-      dateStr: "Wednesday, 21 May 2025",
+      dateStr: getWeekDayDateStr(2),
       periods: [
         {
           periodNum: 1,
@@ -469,7 +490,7 @@ export default function TimetablePage() {
       ]
     },
     Thursday: {
-      dateStr: "Thursday, 22 May 2025",
+      dateStr: getWeekDayDateStr(3),
       periods: [
         {
           periodNum: 1,
@@ -607,7 +628,7 @@ export default function TimetablePage() {
       ]
     },
     Friday: {
-      dateStr: "Friday, 23 May 2025",
+      dateStr: getWeekDayDateStr(4),
       periods: [
         {
           periodNum: 1,
@@ -861,7 +882,7 @@ export default function TimetablePage() {
                   onClick={() => setIsYearDropdownOpen(false)} 
                 />
                 <div className="absolute left-0 right-0 mt-2 w-full rounded-2xl bg-white dark:bg-[#07142F] border border-slate-200 dark:border-slate-800 shadow-xl py-1.5 z-40 animate-in fade-in zoom-in-95 duration-100">
-                  {["2025 - 2026", "2024 - 2025", "2023 - 2024"].map((yr) => (
+                  {getAcademicYearDisplayOptions().map((yr) => (
                     <button
                       key={yr}
                       type="button"

@@ -33,6 +33,18 @@ import {
 import toast from 'react-hot-toast';
 import { exportToCSV, printDocument } from '@/lib/exportUtils';
 import { downloadPdf } from '@/lib/fileDownload';
+import { formatMediumDate, getCurrentAcademicYearFormatted } from '@/lib/date';
+
+const getAssessmentDate = (offsetDays: number) => {
+  const d = new Date();
+  d.setDate(d.getDate() + offsetDays);
+  return d.toLocaleDateString('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric'
+  });
+};
 
 export type AssessmentCycle = 'TERM_1_FORMATIVE' | 'BASELINE_DIAGNOSTIC' | 'TERM_1_SUMMATIVE';
 
@@ -285,7 +297,7 @@ export default function AssessmentWorkspace({ students = [], onNavigateTab }: As
       teacherRemarks: 'Aarav is an enthusiastic learner with stellar verbal communication and cooperative play skills. Shows great leadership in morning circle rhymes.',
       strengths: ['Verbal storytelling', 'Auditory rhyming', 'Outdoor balance & running'],
       growthGoals: ['Top-to-bottom pencil stroke consistency', 'Sustained focus during independent block building'],
-      lastUpdated: '18 Sep 2026'
+      lastUpdated: getAssessmentDate(-1)
     },
     {
       studentId: 's-02',
@@ -303,7 +315,7 @@ export default function AssessmentWorkspace({ students = [], onNavigateTab }: As
       teacherRemarks: 'Ananya demonstrates brilliant mathematical pattern logic. Practicing with soft playdough to strengthen her tripod pencil grip.',
       strengths: ['Number sorting 1-10', 'Geometric shape recognition', 'Gentle peer sharing'],
       growthGoals: ['Pincer grasp strength with safety scissors', 'Confidence answering in large groups'],
-      lastUpdated: '17 Sep 2026'
+      lastUpdated: getAssessmentDate(-2)
     },
     {
       studentId: 's-03',
@@ -321,7 +333,7 @@ export default function AssessmentWorkspace({ students = [], onNavigateTab }: As
       teacherRemarks: 'Diya creates intricate paper collages and demonstrates superb fine-motor control. Gaining confidence on outdoor gym obstacles.',
       strengths: ['Paper folding & scissor cutting', 'Tactile art collage', 'Classroom cubby care'],
       growthGoals: ['Two-footed hopping stamina', 'Drinking adequate water after outdoor games'],
-      lastUpdated: '18 Sep 2026'
+      lastUpdated: getAssessmentDate(-1)
     },
     {
       studentId: 's-04',
@@ -339,7 +351,7 @@ export default function AssessmentWorkspace({ students = [], onNavigateTab }: As
       teacherRemarks: 'Kabir is remarkably agile outdoors and loves building towers. Needs gentle guidance managing arrival transitions and sharing high-demand toys.',
       strengths: ['Athletic running & hopping', 'Building block structural balance', 'Musical rhythm'],
       growthGoals: ['Expressing frustration with words rather than tears', 'Turn-taking in sensory table games'],
-      lastUpdated: '16 Sep 2026'
+      lastUpdated: getAssessmentDate(-3)
     },
     {
       studentId: 's-05',
@@ -357,7 +369,7 @@ export default function AssessmentWorkspace({ students = [], onNavigateTab }: As
       teacherRemarks: 'Reyansh shows exemplary cognitive and early numeracy skills. Friendly, inclusive peer who always helps classmates pack away.',
       strengths: ['Rapid 1-to-1 counting', 'Phonics sound clarity', 'Peer empathy'],
       growthGoals: ['Exploring wet/squishy textures during sensory play'],
-      lastUpdated: '18 Sep 2026'
+      lastUpdated: getAssessmentDate(-1)
     },
     {
       studentId: 's-06',
@@ -375,7 +387,7 @@ export default function AssessmentWorkspace({ students = [], onNavigateTab }: As
       teacherRemarks: 'Myra is artistic, methodical, and attentive. Demonstrates lovely symmetrical color choices in mask crafting.',
       strengths: ['Color harmony & crayon grip', 'Story listening comprehension', 'Polite mannerisms'],
       growthGoals: ['Speed when transitioning between outdoor play and circle time'],
-      lastUpdated: '17 Sep 2026'
+      lastUpdated: getAssessmentDate(-2)
     },
     {
       studentId: 's-07',
@@ -393,7 +405,7 @@ export default function AssessmentWorkspace({ students = [], onNavigateTab }: As
       teacherRemarks: 'Zara is energetic and cheerful. Excellent rhythm in animal dance sessions. Strengthening number correspondence 1 to 5.',
       strengths: ['Dancing & physical coordination', 'Vocal rhyme chanting', 'Sharing crayons'],
       growthGoals: ['Associating numeral symbols with bead quantities 1-5'],
-      lastUpdated: '18 Sep 2026'
+      lastUpdated: getAssessmentDate(-1)
     },
     {
       studentId: 's-08',
@@ -411,7 +423,7 @@ export default function AssessmentWorkspace({ students = [], onNavigateTab }: As
       teacherRemarks: 'Advait shows great interest in wooden blocks. Working on verbal phoneme articulation and routine predictability.',
       strengths: ['Tower building', 'Observation of nature', 'Quiet listening'],
       growthGoals: ['Expressive speech in 4-word sentences', 'Separation comfort at morning drop-off'],
-      lastUpdated: '15 Sep 2026'
+      lastUpdated: getAssessmentDate(-4)
     }
   ]);
 
@@ -517,7 +529,7 @@ export default function AssessmentWorkspace({ students = [], onNavigateTab }: As
               ...rec,
               scores: { ...editScores },
               teacherRemarks: editRemarks,
-              lastUpdated: '18 Sep 2026'
+              lastUpdated: formatMediumDate()
             }
           : rec
       )

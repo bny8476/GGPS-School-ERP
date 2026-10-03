@@ -5,10 +5,11 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { 
-  Menu, Search, Bell, Mail, Sun, Moon, ChevronDown, Check, ChevronRight
+  Menu, Search, Bell, Mail, Sun, Moon, ChevronDown, Check, ChevronRight, Calendar, Clock
 } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
 import { useParent } from "@/context/ParentContext";
+import { useCurrentTime } from "@/lib/date";
 
 interface ParentHeaderProps {
   onOpenMobileMenu: () => void;
@@ -18,6 +19,7 @@ export default function ParentHeader({ onOpenMobileMenu }: ParentHeaderProps) {
   const pathname = usePathname();
   const { theme, toggleTheme } = useTheme();
   const { parentProfile, children, selectedChild, selectChild, setIsSearchOpen, unreadNotificationCount, unreadMessageCount } = useParent();
+  const { dateHeaderStr, timeStr } = useCurrentTime({ intervalMs: 15000 });
   const [isChildMenuOpen, setIsChildMenuOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -112,8 +114,19 @@ export default function ParentHeader({ onOpenMobileMenu }: ParentHeaderProps) {
         </button>
       </div>
 
-      {/* Right Controls */}
+      {/* Right Header Controls */}
       <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+        {/* Live Date & Real-time Clock */}
+        <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#F6F9FE] dark:bg-white/5 border border-blue-100/80 dark:border-white/10 text-xs font-semibold text-slate-700 dark:text-slate-200 shadow-2xs">
+          <Calendar className="w-3.5 h-3.5 text-[#0050CB] shrink-0" />
+          <span suppressHydrationWarning>{dateHeaderStr}</span>
+          <span className="text-slate-300 dark:text-slate-600">•</span>
+          <Clock className="w-3.5 h-3.5 text-[#FF690C] shrink-0" />
+          <span className="font-mono text-[11px] font-bold text-[#0050CB] dark:text-[#38BDF8]" suppressHydrationWarning>
+            {timeStr}
+          </span>
+        </div>
+
         {/* Notification Bell with Dynamic Badge */}
         <Link
           href="/parent/notifications"

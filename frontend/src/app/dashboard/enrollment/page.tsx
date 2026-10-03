@@ -25,6 +25,7 @@ import {
   Check
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { getCurrentAcademicYearFormatted } from '@/lib/date';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import AdminStatCard from '@/components/admin/AdminStatCard';
 import { getApiBaseUrl } from '@/lib/utils';
@@ -190,7 +191,7 @@ export default function EnrollmentPage() {
     const totalCapacity = capacities.reduce((acc, curr) => acc + (curr.capacity || 0), 0);
     const availableSeats = Math.max(0, totalCapacity - totalEnrolled);
     const sectionsFull = capacities.filter((c) => c.status === 'Full').length;
-    const currentYear = academicYears.find((y) => y.isCurrent)?.name || 'AY 2025-2026';
+    const currentYear = academicYears.find((y) => y.isCurrent)?.name || `AY ${getCurrentAcademicYearFormatted()}`;
 
     return { totalEnrolled, availableSeats, sectionsFull, currentYear };
   }, [enrollments, capacities, academicYears]);

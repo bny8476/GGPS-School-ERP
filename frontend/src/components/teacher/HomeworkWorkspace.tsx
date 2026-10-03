@@ -85,6 +85,17 @@ export interface HomeworkWorkspaceProps {
   onNavigateTab?: (tab: string) => void;
 }
 
+const getHomeworkDate = (offsetDays: number) => {
+  const d = new Date();
+  d.setDate(d.getDate() + offsetDays);
+  return d.toLocaleDateString('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric'
+  });
+};
+
 // Initial realistic assignments connected to Kindergarten curriculum & Parent Portal
 const initialAssignments: HomeworkAssignment[] = [
   {
@@ -92,8 +103,8 @@ const initialAssignments: HomeworkAssignment[] = [
     title: 'Tracing Letters A to E in Red Activity Workbook',
     subject: 'English & Phonics',
     instructions: 'Trace uppercase and lowercase letters on pages 14-16. Color the pictures starting with /æ/ (Apple) and /b/ (Ball). Guide child to hold crayon with three-finger pincer grip.',
-    assignedDate: '19 Sep 2026',
-    dueDate: '22 Sep 2026',
+    assignedDate: getHomeworkDate(-2),
+    dueDate: getHomeworkDate(2),
     status: 'ACTIVE',
     targetType: 'ALL',
     workbookRef: 'Little Learners Phonics Book Vol 1, Pages 14–16',
@@ -109,8 +120,8 @@ const initialAssignments: HomeworkAssignment[] = [
     title: 'Find & Count 5 Round Household Objects (Photo Quest)',
     subject: 'Early Mathematics',
     instructions: 'Explore living room or kitchen with parent. Locate 5 round/circular objects (e.g. clock, coaster, bowl). Take a cute picture or draw them in the math scrapbook.',
-    assignedDate: '18 Sep 2026',
-    dueDate: '21 Sep 2026',
+    assignedDate: getHomeworkDate(-3),
+    dueDate: getHomeworkDate(1),
     status: 'DUE_SOON',
     targetType: 'ALL',
     workbookRef: 'Kinder Math Discovery Book, Activity 5',
@@ -126,8 +137,8 @@ const initialAssignments: HomeworkAssignment[] = [
     title: 'Color the Butterfly Using Primary Colors Only',
     subject: 'Art & Creativity',
     instructions: 'Color symmetrically within the butterfly wings using only Red, Yellow, and Blue wax crayons. Practice color recognition and border control.',
-    assignedDate: '15 Sep 2026',
-    dueDate: '18 Sep 2026',
+    assignedDate: getHomeworkDate(-6),
+    dueDate: getHomeworkDate(-2),
     status: 'COMPLETED',
     targetType: 'ALL',
     workbookRef: 'Classroom Art Scrapbook, Sheet #4',
@@ -143,8 +154,8 @@ const initialAssignments: HomeworkAssignment[] = [
     title: 'Pencil Grip & Fine-Motor Line Tracing (Targeted Practice)',
     subject: 'Motor Skills & Writing',
     instructions: 'Special 10-minute diagonal and wavy stroke tracing for finger coordination. Please guide child without holding their wrist.',
-    assignedDate: '19 Sep 2026',
-    dueDate: '23 Sep 2026',
+    assignedDate: getHomeworkDate(-1),
+    dueDate: getHomeworkDate(3),
     status: 'ACTIVE',
     targetType: 'SELECTED',
     targetStudentIds: ['s-02', 's-04', 's-07', 's-11'],
@@ -203,7 +214,7 @@ const initialSubmissionsMap: Record<string, StudentSubmission[]> = {
       rollNo: '04',
       photoUrl: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=150&auto=format&fit=crop&q=80',
       status: 'REVISION_REQUESTED',
-      submittedAt: '20 Sep 2026',
+      submittedAt: getHomeworkDate(-1),
       submissionType: 'APP_PHOTO',
       photoAttachmentUrl: 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=700&auto=format&fit=crop&q=80',
       parentNote: 'Done hurriedly before bedtime.',
@@ -252,7 +263,7 @@ const initialClassWorkQueue = [
     id: 'cw-carry-1',
     subject: 'Early Mathematics',
     title: 'Incomplete Bead Threading & Number 5 Matching',
-    dateOrigin: '18 Sep 2026',
+    dateOrigin: getHomeworkDate(-2),
     studentsCount: 3,
     studentNames: ['Ananya Patel', 'Reyansh Reddy', 'Kabir Joshi'],
     reason: 'Ran out of time during Period 2 hands-on counting activity.'
@@ -261,7 +272,7 @@ const initialClassWorkQueue = [
     id: 'cw-carry-2',
     subject: 'English & Phonics',
     title: 'Letter C Worksheet Coloring & Tracing',
-    dateOrigin: '18 Sep 2026',
+    dateOrigin: getHomeworkDate(-2),
     studentsCount: 2,
     studentNames: ['Diya Verma', 'Myra Singh'],
     reason: 'Absent during morning session; needs home completion.'

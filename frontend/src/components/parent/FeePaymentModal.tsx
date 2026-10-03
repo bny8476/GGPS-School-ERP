@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { authFetch } from "@/lib/apiClient";
+import { formatDateTime, formatMediumDate } from "@/lib/date";
 
 interface InvoiceItem {
   id: string;
@@ -37,6 +38,12 @@ export default function FeePaymentModal({
   const [paymentMethod, setPaymentMethod] = useState<"upi" | "card" | "netbanking">("upi");
   const [receiptNumber, setReceiptNumber] = useState("");
 
+  const getDueDate = (daysAhead: number) => {
+    const d = new Date();
+    d.setDate(d.getDate() + daysAhead);
+    return formatMediumDate(d);
+  };
+
   const invoices: InvoiceItem[] = defaultInvoice
     ? [defaultInvoice]
     : [
@@ -44,21 +51,21 @@ export default function FeePaymentModal({
           id: "inv-1",
           title: "Term 2 Tuition & Smart Class Fee",
           category: "Tuition",
-          dueDate: "30 Sep 2026",
+          dueDate: getDueDate(12),
           amount: 4500,
         },
         {
           id: "inv-2",
           title: "Annual Activity & Learning Material Kit",
           category: "Activity",
-          dueDate: "15 Oct 2026",
+          dueDate: getDueDate(25),
           amount: 2500,
         },
         {
           id: "inv-3",
           title: "Sports & Physical Education Development Fee",
           category: "Sports",
-          dueDate: "10 Oct 2026",
+          dueDate: getDueDate(35),
           amount: 1500,
         },
       ];
@@ -405,7 +412,7 @@ Authorized By:  GGPS Finance Directorate
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-500">Date & Time</span>
-                  <span className="text-slate-600 dark:text-slate-300">{new Date().toLocaleDateString()}</span>
+                  <span className="text-slate-600 dark:text-slate-300" suppressHydrationWarning>{formatDateTime()}</span>
                 </div>
               </div>
 

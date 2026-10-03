@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { 
   Users, 
@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import AddStudentModal from '@/components/admin/AddStudentModal';
 import { useLanguage } from '@/context/LanguageContext';
+import { useCurrentTime, getCurrentMonthName, getCurrentYear } from '@/lib/date';
 
 interface AdminExecutiveDashboardProps {
   stats: any;
@@ -44,8 +45,34 @@ export default function AdminExecutiveDashboard({
 }: AdminExecutiveDashboardProps) {
   const { t } = useLanguage();
   const [isAddStudentOpen, setIsAddStudentOpen] = useState(false);
+  const { timeStr, dateLongStr, academicYearFormatted, termName, greeting } = useCurrentTime();
 
   const displayName = userName?.trim() || 'Admin';
+
+  // Dynamically compute the last 6 months for chart axis
+  const last6Months = useMemo(() => {
+    const months = [];
+    const now = new Date();
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      months.push(d.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', month: 'short' }));
+    }
+    return months;
+  }, []);
+
+  // Dynamically compute upcoming event dates relative to current school date
+  const upcomingEventDates = useMemo(() => {
+    const now = new Date();
+    return [2, 5, 8, 12, 18].map(daysAhead => {
+      const d = new Date(now.getTime() + daysAhead * 24 * 60 * 60 * 1000);
+      return {
+        day: d.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', day: '2-digit' }),
+        month: d.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', month: 'short' }),
+      };
+    });
+  }, []);
+
+  const currentMonthYearStr = `${getCurrentMonthName()} ${getCurrentYear()}`;
 
   return (
     <div className="space-y-4 animate-in fade-in duration-300 pb-10">
@@ -72,11 +99,21 @@ export default function AdminExecutiveDashboard({
         {/* Content on Left */}
         <div className="relative z-10 p-5 sm:p-6 lg:p-7 flex flex-col justify-between max-w-2xl w-full">
           <div>
-            <p className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">
-              Welcome back,
-            </p>
+            <div className="flex flex-wrap items-center gap-2 mb-2">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-100/80 dark:bg-blue-900/50 text-[#0050CB] dark:text-[#38BDF8] text-[11px] font-bold">
+                <Calendar className="w-3 h-3" />
+                <span suppressHydrationWarning>{dateLongStr}</span>
+              </span>
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-100/80 dark:bg-amber-900/40 text-[#FF690C] dark:text-amber-300 text-[11px] font-bold font-mono">
+                <Clock className="w-3 h-3" />
+                <span suppressHydrationWarning>{timeStr}</span>
+              </span>
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-indigo-100/80 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 text-[11px] font-semibold">
+                {academicYearFormatted} • {termName}
+              </span>
+            </div>
             <h1 className="text-2xl sm:text-3xl font-black text-[#000E28] dark:text-white tracking-tight flex items-center gap-2 mt-0.5">
-              {displayName} <span className="inline-block animate-wave text-2xl">👋</span>
+              {greeting}, {displayName} <span className="inline-block animate-wave text-2xl">👋</span>
             </h1>
             <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-1 font-normal">
               Here&apos;s what&apos;s happening at GGPS School today.
@@ -489,13 +526,13 @@ export default function AdminExecutiveDashboard({
               <text x="22" y="104" fill="#94A3B8" fontSize="10" textAnchor="end">500</text>
               <text x="22" y="144" fill="#94A3B8" fontSize="10" textAnchor="end">0</text>
 
-              {/* X-Axis Labels */}
-              <text x="45" y="160" fill="#94A3B8" fontSize="10" textAnchor="middle">Apr</text>
-              <text x="130" y="160" fill="#94A3B8" fontSize="10" textAnchor="middle">May</text>
-              <text x="215" y="160" fill="#94A3B8" fontSize="10" textAnchor="middle">Jun</text>
-              <text x="300" y="160" fill="#94A3B8" fontSize="10" textAnchor="middle">Jul</text>
-              <text x="385" y="160" fill="#94A3B8" fontSize="10" textAnchor="middle">Aug</text>
-              <text x="470" y="160" fill="#94A3B8" fontSize="10" textAnchor="middle">Sep</text>
+              {/* X-Axis Labels (Dynamic last 6 months) */}
+              <text x="45" y="160" fill="#94A3B8" fontSize="10" textAnchor="middle">{last6Months[0]}</text>
+              <text x="130" y="160" fill="#94A3B8" fontSize="10" textAnchor="middle">{last6Months[1]}</text>
+              <text x="215" y="160" fill="#94A3B8" fontSize="10" textAnchor="middle">{last6Months[2]}</text>
+              <text x="300" y="160" fill="#94A3B8" fontSize="10" textAnchor="middle">{last6Months[3]}</text>
+              <text x="385" y="160" fill="#94A3B8" fontSize="10" textAnchor="middle">{last6Months[4]}</text>
+              <text x="470" y="160" fill="#94A3B8" fontSize="10" textAnchor="middle">{last6Months[5]}</text>
 
               {/* Area Under Students Curve */}
               <path
@@ -534,10 +571,10 @@ export default function AdminExecutiveDashboard({
               <circle cx="470" cy="115" r="3.5" fill="#10B981" stroke="#FFFFFF" strokeWidth="1.5" />
             </svg>
 
-            {/* Hover Tooltip (Shown floating over the September point like the image) */}
+            {/* Hover Tooltip (Shown floating over the latest month point) */}
             <div className="absolute right-12 top-0 pointer-events-none bg-white/95 dark:bg-[#08152F]/95 backdrop-blur-md border border-slate-200/90 dark:border-slate-700 rounded-xl shadow-lg p-2.5 min-w-[130px] z-10 text-[11px] animate-in fade-in duration-200">
-              <p className="font-bold text-slate-800 dark:text-white border-b border-slate-100 dark:border-slate-800 pb-1 mb-1.5">
-                Sep 2026
+              <p className="font-bold text-slate-800 dark:text-white border-b border-slate-100 dark:border-slate-800 pb-1 mb-1.5" suppressHydrationWarning>
+                {currentMonthYearStr}
               </p>
               <div className="space-y-1">
                 <div className="flex items-center justify-between text-slate-600 dark:text-slate-300">
@@ -724,14 +761,14 @@ export default function AdminExecutiveDashboard({
               </Link>
             </div>
 
-            {/* List of 5 items with Date Box on left */}
+            {/* List of 5 items with Date Box on left (Dynamically calculated upcoming dates) */}
             <div className="space-y-3.5 mt-4">
               {/* Event 1 */}
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 flex flex-col items-center justify-center shrink-0 text-slate-800 dark:text-white leading-none">
-                    <span className="text-xs font-black">20</span>
-                    <span className="text-[9px] font-bold text-slate-400 uppercase mt-0.5">Sep</span>
+                    <span className="text-xs font-black" suppressHydrationWarning>{upcomingEventDates[0]?.day}</span>
+                    <span className="text-[9px] font-bold text-slate-400 uppercase mt-0.5" suppressHydrationWarning>{upcomingEventDates[0]?.month}</span>
                   </div>
                   <div className="min-w-0">
                     <p className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate">
@@ -751,8 +788,8 @@ export default function AdminExecutiveDashboard({
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 flex flex-col items-center justify-center shrink-0 text-slate-800 dark:text-white leading-none">
-                    <span className="text-xs font-black">22</span>
-                    <span className="text-[9px] font-bold text-slate-400 uppercase mt-0.5">Sep</span>
+                    <span className="text-xs font-black" suppressHydrationWarning>{upcomingEventDates[1]?.day}</span>
+                    <span className="text-[9px] font-bold text-slate-400 uppercase mt-0.5" suppressHydrationWarning>{upcomingEventDates[1]?.month}</span>
                   </div>
                   <div className="min-w-0">
                     <p className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate">
@@ -772,8 +809,8 @@ export default function AdminExecutiveDashboard({
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 flex flex-col items-center justify-center shrink-0 text-slate-800 dark:text-white leading-none">
-                    <span className="text-xs font-black">25</span>
-                    <span className="text-[9px] font-bold text-slate-400 uppercase mt-0.5">Sep</span>
+                    <span className="text-xs font-black" suppressHydrationWarning>{upcomingEventDates[2]?.day}</span>
+                    <span className="text-[9px] font-bold text-slate-400 uppercase mt-0.5" suppressHydrationWarning>{upcomingEventDates[2]?.month}</span>
                   </div>
                   <div className="min-w-0">
                     <p className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate">
@@ -793,15 +830,15 @@ export default function AdminExecutiveDashboard({
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 flex flex-col items-center justify-center shrink-0 text-slate-800 dark:text-white leading-none">
-                    <span className="text-xs font-black">28</span>
-                    <span className="text-[9px] font-bold text-slate-400 uppercase mt-0.5">Sep</span>
+                    <span className="text-xs font-black" suppressHydrationWarning>{upcomingEventDates[3]?.day}</span>
+                    <span className="text-[9px] font-bold text-slate-400 uppercase mt-0.5" suppressHydrationWarning>{upcomingEventDates[3]?.month}</span>
                   </div>
                   <div className="min-w-0">
                     <p className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate">
                       Fee Payment Due Date
                     </p>
                     <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
-                      Last date for Q3 fees
+                      Last date for term fees
                     </p>
                   </div>
                 </div>
@@ -814,8 +851,8 @@ export default function AdminExecutiveDashboard({
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 flex flex-col items-center justify-center shrink-0 text-slate-800 dark:text-white leading-none">
-                    <span className="text-xs font-black">05</span>
-                    <span className="text-[9px] font-bold text-slate-400 uppercase mt-0.5">Oct</span>
+                    <span className="text-xs font-black" suppressHydrationWarning>{upcomingEventDates[4]?.day}</span>
+                    <span className="text-[9px] font-bold text-slate-400 uppercase mt-0.5" suppressHydrationWarning>{upcomingEventDates[4]?.month}</span>
                   </div>
                   <div className="min-w-0">
                     <p className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate">

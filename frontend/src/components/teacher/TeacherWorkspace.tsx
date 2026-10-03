@@ -701,11 +701,26 @@ const initialInstitutionalTasks: InstitutionalTaskItem[] = [
   },
 ];
 
+const getUpcomingDateFormatted = (daysAhead: number) => {
+  const d = new Date();
+  d.setDate(d.getDate() + daysAhead);
+  return d.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', weekday: 'long', day: '2-digit', month: 'short', year: 'numeric' });
+};
+
+const getUpcomingISODate = (daysAhead: number) => {
+  const d = new Date();
+  d.setDate(d.getDate() + daysAhead);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 const initialFacultyMeetings: FacultyMeetingItem[] = [
   {
     id: 'meet-01',
     title: 'Early Years & Kindergarten Department Review',
-    date: 'Friday, 25 Sep 2026',
+    date: getUpcomingDateFormatted(3),
     time: '03:30 PM - 04:30 PM',
     venue: 'Primary Staff Conference Hall (Block B, 2nd Floor)',
     chairperson: 'Dr. Meenakshi Sunderam (Vice Principal Academics)',
@@ -716,7 +731,7 @@ const initialFacultyMeetings: FacultyMeetingItem[] = [
   {
     id: 'meet-02',
     title: 'CBSE Safety & Child Protection Committee Briefing',
-    date: 'Monday, 28 Sep 2026',
+    date: getUpcomingDateFormatted(6),
     time: '04:00 PM - 04:45 PM',
     venue: 'AV Seminar Room 1',
     chairperson: 'Principal & Child Welfare Officer',
@@ -729,22 +744,22 @@ const initialFacultyMeetings: FacultyMeetingItem[] = [
 const initialExamDuties: ExamInvigilationItem[] = [
   {
     id: 'invig-01',
-    examName: 'Term 1 Assessment 2026',
+    examName: `Assessment ${new Date().getFullYear()}`,
     subject: 'Pre-KG Phonics & Alphabet Recognition',
     classSection: 'Room 101 (Pre-KG A)',
     roomNo: 'Room 101',
-    date: '2026-10-08',
+    date: getUpcomingISODate(5),
     time: '09:00 AM - 10:30 AM',
     coInvigilator: 'Rajeshwari Menon (Early Years Co-teacher)',
     totalStudents: 24,
   },
   {
     id: 'invig-02',
-    examName: 'Term 1 Assessment 2026',
+    examName: `Assessment ${new Date().getFullYear()}`,
     subject: 'LKG Early Numeracy & Counting',
     classSection: 'Room 102 (LKG A)',
     roomNo: 'Room 102',
-    date: '2026-10-12',
+    date: getUpcomingISODate(9),
     time: '09:00 AM - 10:30 AM',
     coInvigilator: 'Sunita Rao (Kindergarten Lead)',
     totalStudents: 26,

@@ -7,6 +7,7 @@ import {
   Calendar, Bus, Paperclip, UserCheck, Star, Sparkles
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { formatHeaderDate } from "@/lib/date";
 
 interface NotificationItem {
   id: string;
@@ -404,8 +405,8 @@ export default function NotificationsPage() {
                 <h2 className="text-sm font-black text-[#000E28] dark:text-white">
                   Today at a Glance
                 </h2>
-                <p className="text-xs text-slate-400 font-medium">
-                  Wed, 24 Sep 2025
+                <p className="text-xs text-slate-400 font-medium" suppressHydrationWarning>
+                  {formatHeaderDate()}
                 </p>
               </div>
             </div>

@@ -197,11 +197,18 @@ export default function ClassWorkWorkspace({ students = [], onNavigateTab }: Cla
     }));
   }, [studentRoster]);
 
-  const datesList = [
-    { label: 'Wednesday', date: '16 Sep 2026' },
-    { label: 'Thursday', date: '17 Sep 2026' },
-    { label: 'Friday (Today)', date: '18 Sep 2026' }
-  ];
+  const datesList = useMemo(() => {
+    const now = new Date();
+    return [2, 1, 0].map(daysAgo => {
+      const d = new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000);
+      const weekday = d.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', weekday: 'long' });
+      const dateStr = d.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short', year: 'numeric' });
+      return {
+        label: daysAgo === 0 ? `${weekday} (Today)` : weekday,
+        date: dateStr,
+      };
+    });
+  }, []);
 
   // Filtered periods
   const filteredPeriods = useMemo(() => {

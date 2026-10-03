@@ -9,6 +9,7 @@ import {
   Heart, X, Check, Sparkles, Clock, Share2, Award
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { getCurrentMonthName, getCurrentYear } from "@/lib/date";
 
 interface ActivityItem {
   id: string;
@@ -28,6 +29,18 @@ interface ActivityItem {
   timing?: string;
 }
 
+// Generate real upcoming school dates relative to current date
+function getRelativeDateStr(daysAhead: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + daysAhead);
+  return d.toLocaleDateString('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric'
+  });
+}
+
 const ACTIVITIES_DATA: ActivityItem[] = [
   {
     id: "act-1",
@@ -36,7 +49,7 @@ const ACTIVITIES_DATA: ActivityItem[] = [
     categoryBg: "bg-[#E5EEFF] dark:bg-blue-950/60",
     categoryText: "text-[#0050CB] dark:text-blue-300",
     categoryIcon: BookOpen,
-    date: "18 Sep 2026",
+    date: getRelativeDateStr(2),
     description: "An interactive workshop to enhance creativity and writing skills among students.",
     fullDetails: "Students will explore vocabulary building, imaginative storytelling, narrative composition, and essay formulation guided by guest authors and senior language mentors.",
     targetClass: "LKG & UKG",
@@ -52,7 +65,7 @@ const ACTIVITIES_DATA: ActivityItem[] = [
     categoryBg: "bg-[#E8FAF0] dark:bg-emerald-950/60",
     categoryText: "text-[#10B981] dark:text-emerald-300",
     categoryIcon: Trophy,
-    date: "17 Sep 2026",
+    date: getRelativeDateStr(5),
     description: "Our school team is participating in the inter-school football tournament. Let's support them!",
     fullDetails: "A prestigious 3-day regional tournament hosting 16 top school teams. Parents are cordially invited to cheer our senior football squad during their opening league fixtures.",
     targetClass: "Pre-KG - UKG",
@@ -68,7 +81,7 @@ const ACTIVITIES_DATA: ActivityItem[] = [
     categoryBg: "bg-[#F3EBFD] dark:bg-purple-950/60",
     categoryText: "text-[#7C3AED] dark:text-purple-300",
     categoryIcon: Music,
-    date: "16 Sep 2026",
+    date: getRelativeDateStr(8),
     description: "A celebration of talent, rhythm and culture. Showcase your skills and be a part of the fest!",
     fullDetails: "An exhilarating showcase of Indian classical fusion, contemporary dance troupes, and choral ensemble singing. Over 200 student performers celebrating cultural arts.",
     targetClass: "Pre-KG - UKG",
@@ -85,7 +98,7 @@ const ACTIVITIES_DATA: ActivityItem[] = [
     categoryBg: "bg-[#FEEBF0] dark:bg-rose-950/60",
     categoryText: "text-[#E11D48] dark:text-rose-300",
     categoryIcon: Palette,
-    date: "15 Sep 2026",
+    date: getRelativeDateStr(11),
     description: "Students will display their creativity through various art and craft projects.",
     fullDetails: "Featuring student clay pottery, acrylic canvas paintings, recycled origami installations, and handmade greeting cards created during term studio sessions.",
     targetClass: "Pre-KG & LKG",
@@ -102,7 +115,7 @@ const ACTIVITIES_DATA: ActivityItem[] = [
     categoryBg: "bg-[#FFF3E8] dark:bg-amber-950/60",
     categoryText: "text-[#FF690C] dark:text-amber-300",
     categoryIcon: Wrench,
-    date: "12 Sep 2026",
+    date: getRelativeDateStr(14),
     description: "Hands-on activities to explore the wonders of science in a fun way.",
     fullDetails: "Interactive experiments including non-Newtonian fluids, lemon battery circuits, microscope slide preparation, and junior robotics kit demonstrations.",
     targetClass: "LKG & UKG",
@@ -119,7 +132,7 @@ const ACTIVITIES_DATA: ActivityItem[] = [
     categoryBg: "bg-[#EFF6FE] dark:bg-slate-800",
     categoryText: "text-[#0050CB] dark:text-blue-300",
     categoryIcon: MoreHorizontal,
-    date: "10 Sep 2026",
+    date: getRelativeDateStr(18),
     description: "Get insights into the school's academic approach, policies and student development.",
     fullDetails: "Comprehensive address by Principal and senior academic coordinators highlighting NEP curriculum guidelines, emotional wellbeing support, and bi-term progress milestones.",
     targetClass: "All Classes",
@@ -133,7 +146,7 @@ const ACTIVITIES_DATA: ActivityItem[] = [
 export default function ActivitiesPage() {
   const [activeCategory, setActiveCategory] = useState<string>("All Activities");
   const [selectedClass, setSelectedClass] = useState<string>("All Classes");
-  const [selectedMonth, setSelectedMonth] = useState<string>("May 2025");
+  const [selectedMonth, setSelectedMonth] = useState<string>("All Months");
   const [isClassDropdownOpen, setIsClassDropdownOpen] = useState(false);
   const [isMonthDropdownOpen, setIsMonthDropdownOpen] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState<ActivityItem | null>(null);
@@ -179,12 +192,15 @@ export default function ActivitiesPage() {
     "LKG & UKG",
   ];
 
-  const monthOptions = [
-    "May 2025",
-    "Sep 2026",
-    "Oct 2026",
-    "Nov 2026",
-  ];
+  const monthOptions = useMemo(() => {
+    const list = ["All Months"];
+    const now = new Date();
+    for (let i = -1; i <= 3; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+      list.push(d.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', month: 'short', year: 'numeric' }));
+    }
+    return list;
+  }, []);
 
   // Filtered activities
   const filteredActivities = useMemo(() => {

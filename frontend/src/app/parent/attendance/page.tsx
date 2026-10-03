@@ -26,7 +26,25 @@ export default function AttendancePage() {
   const [activeTimeframe, setActiveTimeframe] = useState<"Overview" | "Daily" | "Weekly" | "Monthly" | "Term">("Overview");
   const [selectedSubject, setSelectedSubject] = useState<string>("All Subjects");
   const [isSubjectDropdownOpen, setIsSubjectDropdownOpen] = useState(false);
-  const [selectedDateRange, setSelectedDateRange] = useState<string>("01 Sep 2026 - 30 Sep 2026");
+  const dateRanges = useMemo(() => {
+    const list: string[] = [];
+    const now = new Date();
+    for (let i = 0; i < 3; i++) {
+      const start = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const end = new Date(now.getFullYear(), now.getMonth() - i + 1, 0);
+      const startStr = start.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short', year: 'numeric' });
+      const endStr = end.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short', year: 'numeric' });
+      list.push(`${startStr} - ${endStr}`);
+    }
+    return list;
+  }, []);
+
+  const [selectedDateRange, setSelectedDateRange] = useState<string>(() => {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), 1);
+    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    return `${start.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short', year: 'numeric' })} - ${end.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short', year: 'numeric' })}`;
+  });
   const [isDateDropdownOpen, setIsDateDropdownOpen] = useState(false);
   const [isChildDropdownOpen, setIsChildDropdownOpen] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
@@ -213,12 +231,17 @@ export default function AttendancePage() {
         };
       });
     }
+    const now = new Date();
+    const fallbackDates = [1, 2, 3, 4, 5].map(daysAgo => {
+      const d = new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000);
+      return d.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short', year: 'numeric' });
+    });
     return [
-      { date: "18 Sep 2026", status: "Present", color: "text-emerald-500", dot: "bg-emerald-500", remarks: "-" },
-      { date: "17 Sep 2026", status: "Present", color: "text-emerald-500", dot: "bg-emerald-500", remarks: "-" },
-      { date: "16 Sep 2026", status: "Absent", color: "text-rose-500", dot: "bg-rose-500", remarks: "Fever" },
-      { date: "15 Sep 2026", status: "Present", color: "text-emerald-500", dot: "bg-emerald-500", remarks: "-" },
-      { date: "14 Sep 2026", status: "Late", color: "text-amber-500", dot: "bg-amber-400", remarks: "Traffic Delay" },
+      { date: fallbackDates[0], status: "Present", color: "text-emerald-500", dot: "bg-emerald-500", remarks: "-" },
+      { date: fallbackDates[1], status: "Present", color: "text-emerald-500", dot: "bg-emerald-500", remarks: "-" },
+      { date: fallbackDates[2], status: "Absent", color: "text-rose-500", dot: "bg-rose-500", remarks: "Fever" },
+      { date: fallbackDates[3], status: "Present", color: "text-emerald-500", dot: "bg-emerald-500", remarks: "-" },
+      { date: fallbackDates[4], status: "Late", color: "text-amber-500", dot: "bg-amber-400", remarks: "Traffic Delay" },
     ];
   }, [rawRecords]);
 
@@ -374,7 +397,7 @@ export default function AttendancePage() {
               <>
                 <div className="fixed inset-0 z-30" onClick={() => setIsDateDropdownOpen(false)} />
                 <div className="absolute right-0 mt-2 w-56 rounded-2xl bg-white dark:bg-[#07142F] border border-slate-200 dark:border-slate-800 shadow-xl py-1.5 z-40 animate-in fade-in zoom-in-95 duration-100">
-                  {["01 Sep 2026 - 30 Sep 2026", "01 Aug 2026 - 31 Aug 2026", "01 Jul 2026 - 31 Jul 2026"].map((range) => (
+                  {dateRanges.map((range) => (
                     <button
                       key={range}
                       type="button"
