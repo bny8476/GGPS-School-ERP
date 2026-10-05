@@ -34,6 +34,7 @@ import toast from 'react-hot-toast';
 import { exportToCSV, printDocument } from '@/lib/exportUtils';
 import { downloadPdf } from '@/lib/fileDownload';
 import { formatMediumDate, getCurrentAcademicYearFormatted } from '@/lib/date';
+import AppImage from '@/components/ui/AppImage';
 
 const getAssessmentDate = (offsetDays: number) => {
   const d = new Date();
@@ -850,9 +851,11 @@ export default function AssessmentWorkspace({ students = [], onNavigateTab }: As
                           }}
                           className="flex items-center gap-2.5 cursor-pointer group"
                         >
-                          <img
+                          <AppImage
                             src={rec.photo}
                             alt={rec.name}
+                            fallbackType="avatar"
+                            name={rec.name}
                             className="w-9 h-9 rounded-full object-cover border border-slate-200 dark:border-slate-700 group-hover:scale-105 transition-transform"
                           />
                           <div>
@@ -930,7 +933,13 @@ export default function AssessmentWorkspace({ students = [], onNavigateTab }: As
                     : 'bg-white dark:bg-[#000E28] text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800'
                 }`}
               >
-                <img src={r.photo} alt={r.name} className="w-5 h-5 rounded-full object-cover" />
+                <AppImage
+                  src={r.photo}
+                  alt={r.name}
+                  fallbackType="avatar"
+                  name={r.name}
+                  className="w-5 h-5 rounded-full object-cover"
+                />
                 <span>{r.name}</span>
               </button>
             ))}
@@ -940,9 +949,11 @@ export default function AssessmentWorkspace({ students = [], onNavigateTab }: As
             {/* Left: Child Profile & Strengths */}
             <div className="bg-white dark:bg-[#000E28] p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-5">
               <div className="flex items-center gap-3.5">
-                <img
+                <AppImage
                   src={activeChildRecord.photo}
                   alt={activeChildRecord.name}
+                  fallbackType="avatar"
+                  name={activeChildRecord.name}
                   className="w-16 h-16 rounded-2xl object-cover border-2 border-[#0050CB]"
                 />
                 <div>
@@ -1191,9 +1202,11 @@ export default function AssessmentWorkspace({ students = [], onNavigateTab }: As
                   Early Years Foundational Stage • Continuous Observational Evaluation
                 </p>
               </div>
-              <img
+              <AppImage
                 src={activeChildRecord.photo}
                 alt={activeChildRecord.name}
+                fallbackType="avatar"
+                name={activeChildRecord.name}
                 className="w-16 h-16 rounded-2xl object-cover border-2 border-slate-200"
               />
             </div>
@@ -1271,9 +1284,11 @@ export default function AssessmentWorkspace({ students = [], onNavigateTab }: As
           <div className="w-full max-w-xl bg-white dark:bg-[#000E28] rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <div className="flex items-center gap-3">
-                <img
+                <AppImage
                   src={evaluatingStudent.photo}
                   alt={evaluatingStudent.name}
+                  fallbackType="avatar"
+                  name={evaluatingStudent.name}
                   className="w-10 h-10 rounded-full object-cover border"
                 />
                 <div>

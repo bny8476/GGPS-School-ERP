@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
+import AppImage from "@/components/ui/AppImage";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -11,43 +12,14 @@ import {
   GraduationCap, Home, BarChart3, CheckCircle2
 } from "lucide-react";
 import { useParent } from "@/context/ParentContext";
+import ParentEmptyChildState from "@/components/parent/ParentEmptyChildState";
 
 export default function MyChildrenPage() {
-  const { children, selectChild, selectedChild } = useParent();
+  const { children, selectChild, selectedChild, isLoadingChildren } = useParent();
   const [isAddChildModalOpen, setIsAddChildModalOpen] = useState(false);
   const [newAdmissionNumber, setNewAdmissionNumber] = useState("");
   const [newStudentDob, setNewStudentDob] = useState("");
   const [addStatus, setAddStatus] = useState<"idle" | "success" | "error">("idle");
-
-  const aarav = children.find(c => c.firstName.toLowerCase().includes("aarav")) || children[0] || {
-    _id: "c10101010101010101010101",
-    firstName: "Aarav",
-    lastName: "Sharma",
-    grade: "LKG",
-    section: "Section A",
-    rollNumber: "01",
-    age: "5 Years",
-    classTeacher: "Ms. Anjali Singh",
-    classMentor: "Ms. Ritu Verma",
-    attendanceRate: 94,
-    pendingHomeworkCount: 3,
-    overallProgress: "Progressing",
-  };
-
-  const ananya = children.find(c => c.firstName.toLowerCase().includes("ananya")) || children[1] || {
-    _id: "c20202020202020202020202",
-    firstName: "Ananya",
-    lastName: "Sharma",
-    grade: "UKG",
-    section: "Section B",
-    rollNumber: "04",
-    age: "5 Years",
-    classTeacher: "Ms. Pooja Sharma",
-    classMentor: "Ms. Neha Gupta",
-    attendanceRate: 96,
-    pendingHomeworkCount: 1,
-    overallProgress: "Progressing",
-  };
 
   const handleLinkChild = (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,6 +33,21 @@ export default function MyChildrenPage() {
     }, 1500);
   };
 
+  if (isLoadingChildren) {
+    return (
+      <div className="w-full min-h-[400px] flex items-center justify-center p-8">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-3 border-[#0050CB] border-t-transparent rounded-full animate-spin" />
+          <p className="text-xs font-bold text-slate-500">Loading student directory...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (children.length === 0) {
+    return <ParentEmptyChildState />;
+  }
+
   return (
     <div className="space-y-6 pb-14 font-sans">
       {/* ========================================================
@@ -70,7 +57,7 @@ export default function MyChildrenPage() {
         
         {/* Left Hero Card (~70% width) — Plain full-width image banner */}
         <div className="lg:col-span-8 xl:col-span-8.5 rounded-[24px] overflow-hidden shadow-[0_4px_24px_rgba(0,80,203,0.06)] border border-blue-100/60 relative min-h-[160px] sm:min-h-[185px]">
-          <Image
+          <AppImage
             src="/my-children-exact-banner-hd.png"
             alt="Welcome Back, My Children"
             fill
@@ -92,7 +79,7 @@ export default function MyChildrenPage() {
             <div className="flex items-center gap-1.5">
               <span className="text-xs font-bold text-slate-600">+ Your Children</span>
               <span className="w-5 h-5 rounded-full bg-[#0050CB] text-white text-[11px] font-bold flex items-center justify-center">
-                2
+                {children.length}
               </span>
             </div>
             <Link
@@ -105,71 +92,47 @@ export default function MyChildrenPage() {
           </div>
 
           {/* Children List */}
-          <div className="space-y-1.5">
-            {/* Child 1: Aarav Sharma */}
-            <button
-              type="button"
-              onClick={() => selectChild(aarav._id)}
-              className={`w-full flex items-center justify-between p-2 rounded-xl transition-all text-left ${
-                selectedChild?._id === aarav._id
-                  ? "bg-blue-50/80 border border-blue-200/60"
-                  : "hover:bg-slate-50 border border-transparent"
-              }`}
-            >
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div className="relative w-9 h-9 rounded-full overflow-hidden shrink-0 ring-2 ring-blue-100">
-                  <Image
-                    src="/aarav-hero-student.jpg"
-                    alt="Aarav Sharma"
-                    fill
-                    sizes="36px"
-                    className="object-cover object-top"
-                  />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-xs font-bold text-[#000E28] flex items-center gap-1.5 truncate">
-                    <span>Aarav Sharma</span>
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#12B76A] shrink-0" />
-                  </p>
-                  <p className="text-[11px] text-slate-400 font-medium truncate">
-                    LKG - Section A
-                  </p>
-                </div>
-              </div>
-              <ChevronRight className="w-4 h-4 text-slate-300" />
-            </button>
-
-            {/* Child 2: Ananya Sharma */}
-            <button
-              type="button"
-              onClick={() => selectChild(ananya._id)}
-              className={`w-full flex items-center justify-between p-2 rounded-xl transition-all text-left ${
-                selectedChild?._id === ananya._id
-                  ? "bg-purple-50/80 border border-purple-200/60"
-                  : "hover:bg-slate-50 border border-transparent"
-              }`}
-            >
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div className="relative w-9 h-9 rounded-full overflow-hidden shrink-0 ring-2 ring-purple-100">
-                  <Image
-                    src="/ananya-student.jpg"
-                    alt="Ananya Sharma"
-                    fill
-                    sizes="36px"
-                    className="object-cover object-top"
-                  />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-xs font-bold text-[#000E28] truncate">
-                    Ananya Sharma
-                  </p>
-                  <p className="text-[11px] text-slate-400 font-medium truncate">
-                    UKG - Section B
-                  </p>
-                </div>
-              </div>
-              <ChevronRight className="w-4 h-4 text-slate-300" />
-            </button>
+          <div className="space-y-1.5 max-h-[180px] overflow-y-auto">
+            {children.map((c) => {
+              const isSelected = (selectedChild?._id || children[0]?._id) === c._id;
+              const photo = c.studentPhoto || (c.firstName === "Ananya" ? "/ananya-student.jpg" : "/aarav-hero-student.jpg");
+              return (
+                <button
+                  key={c._id}
+                  type="button"
+                  onClick={() => selectChild(c._id)}
+                  className={`w-full flex items-center justify-between p-2 rounded-xl transition-all text-left ${
+                    isSelected
+                      ? "bg-blue-50/80 border border-blue-200/60"
+                      : "hover:bg-slate-50 border border-transparent"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="relative w-9 h-9 rounded-full overflow-hidden shrink-0 ring-2 ring-blue-100 dark:ring-blue-900/50">
+                      <AppImage
+                        src={photo}
+                        alt={c.firstName}
+                        fill
+                        sizes="36px"
+                        fallbackType="avatar"
+                        name={`${c.firstName} ${c.lastName || ""}`}
+                        className="object-cover object-top"
+                      />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-[#000E28] flex items-center gap-1.5 truncate">
+                        <span>{c.firstName} {c.lastName}</span>
+                        {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-[#12B76A] shrink-0" />}
+                      </p>
+                      <p className="text-[11px] text-slate-400 font-medium truncate">
+                        {c.grade} - {c.section}
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-slate-300" />
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -205,11 +168,13 @@ export default function MyChildrenPage() {
               <div className="relative z-10 flex items-center gap-3 sm:gap-3.5 min-w-0">
                 {/* Circular Avatar */}
                 <div className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-full overflow-hidden shrink-0 border-2 sm:border-3 border-white dark:border-[#000E28] shadow-md ring-3 ring-blue-200/80 dark:ring-blue-500/30 bg-blue-100">
-                  <Image
-                    src="/aarav-hero-student.jpg"
-                    alt="Aarav Sharma"
+                  <AppImage
+                    src={children[0]?.studentPhoto || "/aarav-hero-student.jpg"}
+                    alt={children[0]?.firstName || "Student"}
                     fill
                     sizes="64px"
+                    fallbackType="avatar"
+                    name={`${children[0]?.firstName || ""} ${children[0]?.lastName || ""}`}
                     className="object-cover object-top"
                   />
                   {/* Floating mini star */}
@@ -228,12 +193,12 @@ export default function MyChildrenPage() {
                   </div>
                   <div className="flex items-center gap-1.5 mt-0.5">
                     <h3 className="text-base sm:text-[17px] font-black text-[#000E28] dark:text-white tracking-tight leading-snug">
-                      Aarav Sharma
+                      {children[0]?.firstName} {children[0]?.lastName}
                     </h3>
                     <CheckCircle2 className="w-4 h-4 text-[#0050CB] fill-[#0050CB] text-white shrink-0" />
                   </div>
                   <p className="text-[11.5px] sm:text-xs font-bold text-[#0050CB] dark:text-blue-300 leading-tight">
-                    LKG - Section A <span className="text-slate-300 dark:text-slate-600 mx-1 font-normal">|</span> <span className="text-slate-500 dark:text-slate-400 font-semibold">Roll No. 01</span>
+                    {children[0]?.grade} - {children[0]?.section} <span className="text-slate-300 dark:text-slate-600 mx-1 font-normal">|</span> <span className="text-slate-500 dark:text-slate-400 font-semibold">{children[0]?.admissionNumber ? `Adm: ${children[0]?.admissionNumber}` : `Roll No. ${children[0]?.rollNumber || "01"}`}</span>
                   </p>
                 </div>
               </div>
@@ -249,7 +214,7 @@ export default function MyChildrenPage() {
                   </p>
                 </div>
                 <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-xl overflow-hidden border border-blue-100/60 shadow-xs shrink-0 hidden sm:block">
-                  <Image
+                  <AppImage
                     src="/aarav-card-books.jpg"
                     alt="Study Books"
                     fill
@@ -377,8 +342,8 @@ export default function MyChildrenPage() {
 
           {/* Full-Width Gradient Button: Royal Blue to Electric Purple */}
           <Link
-            href={`/parent/children/${aarav._id}`}
-            onClick={() => selectChild(aarav._id)}
+            href={`/parent/children/${children[0]?._id}`}
+            onClick={() => children[0] && selectChild(children[0]._id)}
             className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-[#2072F5] via-[#6366F1] to-[#9D4DF6] hover:opacity-95 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-[0_4px_16px_rgba(99,102,241,0.35)] transition-all"
           >
             <span>View Full Profile</span>
@@ -386,7 +351,8 @@ export default function MyChildrenPage() {
           </Link>
         </div>
 
-        {/* ================= CARD 2: ANANYA SHARMA ================= */}
+        {/* ================= CARD 2: DYNAMIC SECOND CHILD ================= */}
+        {children[1] && (
         <div className="bg-white rounded-[28px] border border-[#DCE7F6] shadow-[0_4px_24px_rgba(0,80,203,0.06)] flex flex-col justify-between group hover:shadow-xl transition-all overflow-hidden p-5 sm:p-6">
           
           <div>
@@ -412,13 +378,13 @@ export default function MyChildrenPage() {
                     </span>
                   </div>
                   <div className="flex items-center gap-1.5 mt-0.5">
-                    <h3 className="text-base sm:text-[17px] font-black text-[#000E28] tracking-tight leading-snug">
-                      Ananya Sharma
+                    <h3 className="text-base sm:text-[17px] font-black text-[#000E28] dark:text-white tracking-tight leading-snug">
+                      {children[1]?.firstName || children[0]?.firstName} {children[1]?.lastName || children[0]?.lastName}
                     </h3>
                     <CheckCircle2 className="w-4 h-4 text-[#E11D48] fill-[#E11D48] text-white shrink-0" />
                   </div>
                   <p className="text-[11.5px] sm:text-xs font-bold text-[#E11D48] leading-tight">
-                    UKG - Section B <span className="text-slate-300 mx-1 font-normal">|</span> <span className="text-slate-500 font-semibold">Roll No. 04</span>
+                    {children[1]?.grade || children[0]?.grade} - {children[1]?.section || children[0]?.section} <span className="text-slate-300 mx-1 font-normal">|</span> <span className="text-slate-500 font-semibold">{(children[1] || children[0])?.admissionNumber ? `Adm: ${(children[1] || children[0])?.admissionNumber}` : `Roll No. ${(children[1] || children[0])?.rollNumber || "02"}`}</span>
                   </p>
                 </div>
               </div>
@@ -556,14 +522,15 @@ export default function MyChildrenPage() {
 
           {/* Full-Width Gradient Button: Royal Blue to Electric Purple */}
           <Link
-            href={`/parent/children/${ananya._id}`}
-            onClick={() => selectChild(ananya._id)}
+            href={`/parent/children/${children[1]?._id || children[0]?._id}`}
+            onClick={() => (children[1] || children[0]) && selectChild((children[1] || children[0])._id)}
             className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-[#2072F5] via-[#6366F1] to-[#9D4DF6] hover:opacity-95 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-[0_4px_16px_rgba(99,102,241,0.35)] transition-all"
           >
             <span>View Full Profile</span>
             <span className="text-base">→</span>
           </Link>
         </div>
+        )}
 
       </div>
 
@@ -599,8 +566,8 @@ export default function MyChildrenPage() {
           </div>
 
           {/* Corner 3D Illustration */}
-          <div className="absolute -bottom-2 -right-1 w-24 h-24 sm:w-28 sm:h-28 pointer-events-none select-none mix-blend-multiply opacity-95">
-            <Image
+          <div className="absolute -bottom-2 -right-1 w-24 h-24 sm:w-28 sm:h-28 pointer-events-none select-none mix-blend-multiply dark:mix-blend-normal opacity-95">
+            <AppImage
               src="/decor-quick-view.jpg"
               alt="Quick View Books"
               fill
@@ -637,8 +604,8 @@ export default function MyChildrenPage() {
           </div>
 
           {/* Corner 3D Illustration */}
-          <div className="absolute -bottom-2 -right-1 w-24 h-24 sm:w-28 sm:h-28 pointer-events-none select-none mix-blend-multiply opacity-95">
-            <Image
+          <div className="absolute -bottom-2 -right-1 w-24 h-24 sm:w-28 sm:h-28 pointer-events-none select-none mix-blend-multiply dark:mix-blend-normal opacity-95">
+            <AppImage
               src="/decor-family-calendar.jpg"
               alt="Family Calendar 3D"
               fill
@@ -678,8 +645,8 @@ export default function MyChildrenPage() {
           </div>
 
           {/* Corner 3D Illustration */}
-          <div className="absolute -bottom-2 -right-1 w-24 h-24 sm:w-28 sm:h-28 pointer-events-none select-none mix-blend-multiply opacity-95">
-            <Image
+          <div className="absolute -bottom-2 -right-1 w-24 h-24 sm:w-28 sm:h-28 pointer-events-none select-none mix-blend-multiply dark:mix-blend-normal opacity-95">
+            <AppImage
               src="/decor-chat-bubbles.jpg"
               alt="Messages Chat Bubbles"
               fill
@@ -716,8 +683,8 @@ export default function MyChildrenPage() {
           </div>
 
           {/* Corner 3D Illustration */}
-          <div className="absolute -bottom-2 -right-1 w-24 h-24 sm:w-28 sm:h-28 pointer-events-none select-none mix-blend-multiply opacity-95">
-            <Image
+          <div className="absolute -bottom-2 -right-1 w-24 h-24 sm:w-28 sm:h-28 pointer-events-none select-none mix-blend-multiply dark:mix-blend-normal opacity-95">
+            <AppImage
               src="/decor-school-bus-corner.jpg"
               alt="Need Help School Bus"
               fill

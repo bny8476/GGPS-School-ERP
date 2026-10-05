@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import AppImage from "@/components/ui/AppImage";
 import {
   X,
   User,
@@ -98,9 +99,11 @@ export default function ChildProfileDrawer({
             <div className="p-6 border-b border-slate-100 dark:border-slate-800 bg-gradient-to-r from-blue-50/50 via-indigo-50/30 to-purple-50/40 dark:from-slate-900 dark:to-slate-900/80">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-4">
-                  <img
+                  <AppImage
                     src={student.photo}
                     alt={student.name}
+                    fallbackType="avatar"
+                    name={student.name}
                     className="w-16 h-16 rounded-2xl object-cover ring-2 ring-blue-500/20 shadow-md"
                   />
                   <div>

@@ -9,6 +9,8 @@ import {
 import { motion } from "framer-motion";
 import SpotlightCard from "@/components/teacher/SpotlightCard";
 import { useParent } from "@/context/ParentContext";
+import ParentEmptyChildState from "@/components/parent/ParentEmptyChildState";
+import { authFetch } from "@/lib/apiClient";
 import toast from "react-hot-toast";
 
 interface HomeworkItem {
@@ -25,7 +27,7 @@ interface HomeworkItem {
 }
 
 export default function ParentHomeworkPage() {
-  const { selectedChild } = useParent();
+  const { selectedChild, children = [], isLoadingChildren } = useParent();
   const [filter, setFilter] = useState<"all" | "Pending" | "Completed" | "Overdue">("all");
   const [selectedHw, setSelectedHw] = useState<HomeworkItem | null>(null);
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
@@ -33,12 +35,22 @@ export default function ParentHomeworkPage() {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const child = selectedChild || {
-    firstName: "Aarav",
-    lastName: "Sharma",
-    grade: "LKG",
-    section: "Section A",
-  };
+  const child = selectedChild || children[0] || null;
+
+  if (isLoadingChildren) {
+    return (
+      <div className="w-full min-h-[400px] flex items-center justify-center p-8">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-3 border-[#0050CB] border-t-transparent rounded-full animate-spin" />
+          <p className="text-xs font-bold text-slate-500">Loading homework assignments...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!child) {
+    return <ParentEmptyChildState />;
+  }
 
   const [homeworkList, setHomeworkList] = useState<HomeworkItem[]>([
     {

@@ -169,7 +169,7 @@ export default function ModernAcademicExcellence() {
             {/* Bottom link: Explore More -> */}
             <div className="pt-2 relative z-10">
               <Link
-                href="/admissions"
+                href="/features/intelligent-operations"
                 className="inline-flex items-center gap-2 text-sm font-bold text-[#0050CB] dark:text-[#38BDF8] hover:text-[#003B99] dark:hover:text-blue-300 transition-colors group/link"
               >
                 <span>{t("features.c1_link", "Explore More")}</span>
@@ -182,114 +182,118 @@ export default function ModernAcademicExcellence() {
           <div className="lg:col-span-5 flex flex-col justify-between gap-6">
             
             {/* Feature 2: Performance & Rubrics */}
-            <motion.div
-              initial={{ opacity: 0, y: prefersReduced ? 0 : 30 }}
-              animate={isInView ? { opacity: 1, y: 0 } : {}}
-              transition={{
-                duration: prefersReduced ? 0.2 : 0.7,
-                delay: prefersReduced ? 0 : 0.25,
-                ease: [0.16, 1, 0.3, 1],
-              }}
-              whileHover={
-                prefersReduced
-                  ? {}
-                  : {
-                      y: -5,
-                      boxShadow: "0 22px 45px -10px rgba(0, 14, 40, 0.08)",
-                      transition: { duration: 0.25, ease: "easeOut" },
-                    }
-              }
-              className="group relative flex-1 flex flex-col justify-between bg-white/90 dark:bg-[#001233]/90 backdrop-blur-md rounded-[28px] p-6 sm:p-7 border border-slate-200/90 dark:border-slate-800 shadow-[0_8px_30px_rgba(0,14,40,0.04)] hover:border-blue-300 dark:hover:border-slate-700 transition-all duration-300 overflow-hidden"
-            >
-              {/* Subtle glass curved accent at bottom-right */}
-              <div className="absolute -bottom-14 -right-10 w-44 h-44 rounded-full border border-blue-100/60 dark:border-slate-800/60 bg-blue-50/20 dark:bg-blue-900/10 pointer-events-none" />
+            <Link href="/features/performance-rubrics" className="block flex-1 group/card">
+              <motion.div
+                initial={{ opacity: 0, y: prefersReduced ? 0 : 30 }}
+                animate={isInView ? { opacity: 1, y: 0 } : {}}
+                transition={{
+                  duration: prefersReduced ? 0.2 : 0.7,
+                  delay: prefersReduced ? 0 : 0.25,
+                  ease: [0.16, 1, 0.3, 1],
+                }}
+                whileHover={
+                  prefersReduced
+                    ? {}
+                    : {
+                        y: -5,
+                        boxShadow: "0 22px 45px -10px rgba(0, 14, 40, 0.08)",
+                        transition: { duration: 0.25, ease: "easeOut" },
+                      }
+                }
+                className="group relative h-full flex flex-col justify-between bg-white/90 dark:bg-[#001233]/90 backdrop-blur-md rounded-[28px] p-6 sm:p-7 border border-slate-200/90 dark:border-slate-800 shadow-[0_8px_30px_rgba(0,14,40,0.04)] hover:border-blue-300 dark:hover:border-slate-700 transition-all duration-300 overflow-hidden"
+              >
+                {/* Subtle glass curved accent at bottom-right */}
+                <div className="absolute -bottom-14 -right-10 w-44 h-44 rounded-full border border-blue-100/60 dark:border-slate-800/60 bg-blue-50/20 dark:bg-blue-900/10 pointer-events-none" />
 
-              <div>
-                <div className="flex items-center justify-between gap-4">
-                  {/* Left: Icon & Tag */}
-                  <div className="flex items-center gap-3.5">
-                    <div className="w-12 h-12 rounded-2xl bg-[#E5EEFF] dark:bg-[#0050CB]/25 text-[#0050CB] dark:text-[#38BDF8] flex items-center justify-center shadow-sm transition-transform duration-300 group-hover:scale-105">
-                      <TrendingUp className="w-6 h-6 stroke-[2.2]" />
+                <div>
+                  <div className="flex items-center justify-between gap-4">
+                    {/* Left: Icon & Tag */}
+                    <div className="flex items-center gap-3.5">
+                      <div className="w-12 h-12 rounded-2xl bg-[#E5EEFF] dark:bg-[#0050CB]/25 text-[#0050CB] dark:text-[#38BDF8] flex items-center justify-center shadow-sm transition-transform duration-300 group-hover:scale-105">
+                        <TrendingUp className="w-6 h-6 stroke-[2.2]" />
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#0050CB] dark:bg-[#38BDF8]" />
+                        <span className="text-[11px] font-bold tracking-wider text-[#0050CB] dark:text-[#38BDF8] uppercase">
+                          {t("features.c2_tag", "BETTER INSIGHTS")}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#0050CB] dark:bg-[#38BDF8]" />
-                      <span className="text-[11px] font-bold tracking-wider text-[#0050CB] dark:text-[#38BDF8] uppercase">
-                        {t("features.c2_tag", "BETTER INSIGHTS")}
-                      </span>
+
+                    {/* Right: Circular Action Arrow */}
+                    <div className="w-9 h-9 rounded-full border border-slate-200/90 dark:border-slate-700 flex items-center justify-center text-slate-400 dark:text-slate-500 group-hover:border-[#0050CB] group-hover:bg-[#E5EEFF] dark:group-hover:bg-[#0050CB]/25 group-hover:text-[#0050CB] dark:group-hover:text-[#38BDF8] transition-all duration-300">
+                      <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-0.5" />
                     </div>
                   </div>
 
-                  {/* Right: Circular Action Arrow */}
-                  <div className="w-9 h-9 rounded-full border border-slate-200/90 dark:border-slate-700 flex items-center justify-center text-slate-400 dark:text-slate-500 group-hover:border-[#0050CB] group-hover:bg-[#E5EEFF] dark:group-hover:bg-[#0050CB]/25 group-hover:text-[#0050CB] dark:group-hover:text-[#38BDF8] transition-all duration-300">
-                    <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-0.5" />
+                  <div className="mt-4">
+                    <h3 className="text-xl font-bold text-[#000E28] dark:text-white tracking-tight group-hover:text-[#0050CB] dark:group-hover:text-[#38BDF8] transition-colors">
+                      {t("features.c2_title", "Performance & Rubrics")}
+                    </h3>
+                    <p className="text-slate-600 dark:text-slate-400 text-xs sm:text-sm mt-1.5 leading-relaxed">
+                      {t("features.c2_desc", "Track cognitive, motor, and academic milestones with comprehensive teacher grading, rubrics, and automated report cards.")}
+                    </p>
                   </div>
                 </div>
-
-                <div className="mt-4">
-                  <h3 className="text-xl font-bold text-[#000E28] dark:text-white tracking-tight group-hover:text-[#0050CB] dark:group-hover:text-[#38BDF8] transition-colors">
-                    {t("features.c2_title", "Performance & Rubrics")}
-                  </h3>
-                  <p className="text-slate-600 dark:text-slate-400 text-xs sm:text-sm mt-1.5 leading-relaxed">
-                    {t("features.c2_desc", "Track cognitive, motor, and academic milestones with comprehensive teacher grading, rubrics, and automated report cards.")}
-                  </p>
-                </div>
-              </div>
-            </motion.div>
+              </motion.div>
+            </Link>
 
             {/* Feature 3: Secure & Connected */}
-            <motion.div
-              initial={{ opacity: 0, y: prefersReduced ? 0 : 30 }}
-              animate={isInView ? { opacity: 1, y: 0 } : {}}
-              transition={{
-                duration: prefersReduced ? 0.2 : 0.7,
-                delay: prefersReduced ? 0 : 0.35,
-                ease: [0.16, 1, 0.3, 1],
-              }}
-              whileHover={
-                prefersReduced
-                  ? {}
-                  : {
-                      y: -5,
-                      boxShadow: "0 22px 45px -10px rgba(0, 14, 40, 0.08)",
-                      transition: { duration: 0.25, ease: "easeOut" },
-                    }
-              }
-              className="group relative flex-1 flex flex-col justify-between bg-white/90 dark:bg-[#001233]/90 backdrop-blur-md rounded-[28px] p-6 sm:p-7 border border-slate-200/90 dark:border-slate-800 shadow-[0_8px_30px_rgba(0,14,40,0.04)] hover:border-blue-300 dark:hover:border-slate-700 transition-all duration-300 overflow-hidden"
-            >
-              {/* Subtle glass curved accent at bottom-right */}
-              <div className="absolute -bottom-14 -right-10 w-44 h-44 rounded-full border border-blue-100/60 dark:border-slate-800/60 bg-blue-50/20 dark:bg-blue-900/10 pointer-events-none" />
+            <Link href="/features/secure-connected" className="block flex-1 group/card">
+              <motion.div
+                initial={{ opacity: 0, y: prefersReduced ? 0 : 30 }}
+                animate={isInView ? { opacity: 1, y: 0 } : {}}
+                transition={{
+                  duration: prefersReduced ? 0.2 : 0.7,
+                  delay: prefersReduced ? 0 : 0.35,
+                  ease: [0.16, 1, 0.3, 1],
+                }}
+                whileHover={
+                  prefersReduced
+                    ? {}
+                    : {
+                        y: -5,
+                        boxShadow: "0 22px 45px -10px rgba(0, 14, 40, 0.08)",
+                        transition: { duration: 0.25, ease: "easeOut" },
+                      }
+                }
+                className="group relative h-full flex flex-col justify-between bg-white/90 dark:bg-[#001233]/90 backdrop-blur-md rounded-[28px] p-6 sm:p-7 border border-slate-200/90 dark:border-slate-800 shadow-[0_8px_30px_rgba(0,14,40,0.04)] hover:border-blue-300 dark:hover:border-slate-700 transition-all duration-300 overflow-hidden"
+              >
+                {/* Subtle glass curved accent at bottom-right */}
+                <div className="absolute -bottom-14 -right-10 w-44 h-44 rounded-full border border-blue-100/60 dark:border-slate-800/60 bg-blue-50/20 dark:bg-blue-900/10 pointer-events-none" />
 
-              <div>
-                <div className="flex items-center justify-between gap-4">
-                  {/* Left: Icon & Tag */}
-                  <div className="flex items-center gap-3.5">
-                    <div className="w-12 h-12 rounded-2xl bg-[#E5EEFF] dark:bg-[#0050CB]/25 text-[#0050CB] dark:text-[#38BDF8] flex items-center justify-center shadow-sm transition-transform duration-300 group-hover:scale-105">
-                      <Shield className="w-6 h-6 stroke-[2.2]" />
+                <div>
+                  <div className="flex items-center justify-between gap-4">
+                    {/* Left: Icon & Tag */}
+                    <div className="flex items-center gap-3.5">
+                      <div className="w-12 h-12 rounded-2xl bg-[#E5EEFF] dark:bg-[#0050CB]/25 text-[#0050CB] dark:text-[#38BDF8] flex items-center justify-center shadow-sm transition-transform duration-300 group-hover:scale-105">
+                        <Shield className="w-6 h-6 stroke-[2.2]" />
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#0050CB] dark:bg-[#38BDF8]" />
+                        <span className="text-[11px] font-bold tracking-wider text-[#0050CB] dark:text-[#38BDF8] uppercase">
+                          {t("features.c3_tag", "SAFE & CONNECTED")}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#0050CB] dark:bg-[#38BDF8]" />
-                      <span className="text-[11px] font-bold tracking-wider text-[#0050CB] dark:text-[#38BDF8] uppercase">
-                        {t("features.c3_tag", "SAFE & CONNECTED")}
-                      </span>
+
+                    {/* Right: Circular Action Arrow */}
+                    <div className="w-9 h-9 rounded-full border border-slate-200/90 dark:border-slate-700 flex items-center justify-center text-slate-400 dark:text-slate-500 group-hover:border-[#0050CB] group-hover:bg-[#E5EEFF] dark:group-hover:bg-[#0050CB]/25 group-hover:text-[#0050CB] dark:group-hover:text-[#38BDF8] transition-all duration-300">
+                      <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-0.5" />
                     </div>
                   </div>
 
-                  {/* Right: Circular Action Arrow */}
-                  <div className="w-9 h-9 rounded-full border border-slate-200/90 dark:border-slate-700 flex items-center justify-center text-slate-400 dark:text-slate-500 group-hover:border-[#0050CB] group-hover:bg-[#E5EEFF] dark:group-hover:bg-[#0050CB]/25 group-hover:text-[#0050CB] dark:group-hover:text-[#38BDF8] transition-all duration-300">
-                    <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-0.5" />
+                  <div className="mt-4">
+                    <h3 className="text-xl font-bold text-[#000E28] dark:text-white tracking-tight group-hover:text-[#0050CB] dark:group-hover:text-[#38BDF8] transition-colors">
+                      {t("features.c3_title", "Secure & Connected")}
+                    </h3>
+                    <p className="text-slate-600 dark:text-slate-400 text-xs sm:text-sm mt-1.5 leading-relaxed">
+                      {t("features.c3_desc", "Role-based access control for Admins, Teachers, and Parents with instant announcements, WhatsApp updates, and real-time alerts.")}
+                    </p>
                   </div>
                 </div>
-
-                <div className="mt-4">
-                  <h3 className="text-xl font-bold text-[#000E28] dark:text-white tracking-tight group-hover:text-[#0050CB] dark:group-hover:text-[#38BDF8] transition-colors">
-                    {t("features.c3_title", "Secure & Connected")}
-                  </h3>
-                  <p className="text-slate-600 dark:text-slate-400 text-xs sm:text-sm mt-1.5 leading-relaxed">
-                    {t("features.c3_desc", "Role-based access control for Admins, Teachers, and Parents with instant announcements, WhatsApp updates, and real-time alerts.")}
-                  </p>
-                </div>
-              </div>
-            </motion.div>
+              </motion.div>
+            </Link>
 
           </div>
 

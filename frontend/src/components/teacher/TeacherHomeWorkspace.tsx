@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import AppImage from '@/components/ui/AppImage';
 import {
   Calendar as CalendarIcon,
   Users,
@@ -454,9 +455,11 @@ export default function TeacherHomeWorkspace({
                     className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 hover:border-[#0050CB]/40 flex items-center justify-between gap-2 cursor-pointer transition-colors"
                   >
                     <div className="flex items-center gap-2">
-                      <img
+                      <AppImage
                         src={child.photo}
                         alt={child.name}
+                        fallbackType="avatar"
+                        name={child.name}
                         className="w-7 h-7 rounded-full object-cover border"
                       />
                       <div>
@@ -633,7 +636,7 @@ export default function TeacherHomeWorkspace({
           </PremiumCard>
 
           <div className="rounded-[20px] overflow-hidden border border-purple-100 dark:border-slate-800 shadow-xs relative h-28">
-            <img src="/inspire-grow-art.jpg" alt="Inspire Encourage Grow" className="w-full h-full object-cover" />
+            <AppImage src="/inspire-grow-art.jpg" alt="Inspire Encourage Grow" className="w-full h-full object-cover" />
             <div className="absolute inset-0 bg-gradient-to-t from-purple-900/50 via-transparent to-transparent flex items-end p-3 pointer-events-none">
               <p className="font-serif italic text-white text-xs font-bold drop-shadow">
                 Inspire • Encourage • Grow

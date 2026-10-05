@@ -40,6 +40,7 @@ import toast from 'react-hot-toast';
 import { printDocument } from '@/lib/exportUtils';
 import { downloadPdf } from '@/lib/fileDownload';
 import { getCurrentAcademicYearFormatted, formatMediumDate, toSchoolISODate } from '@/lib/date';
+import AppImage from '@/components/ui/AppImage';
 
 export interface ExamPaper {
   id: string;
@@ -780,9 +781,11 @@ export default function ExamsMarksWorkspace({ students = [], onNavigateTab }: Ex
                         {/* Student Name & Avatar */}
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-2.5">
-                            <img
+                            <AppImage
                               src={row.photoUrl}
                               alt={row.studentName}
+                              fallbackType="avatar"
+                              name={row.studentName}
                               className="w-8 h-8 rounded-full object-cover border border-slate-200"
                             />
                             <div>
@@ -1072,9 +1075,11 @@ export default function ExamsMarksWorkspace({ students = [], onNavigateTab }: Ex
                         <div className="w-7 h-7 rounded-full bg-amber-500 text-white font-black text-xs flex items-center justify-center shadow-xs">
                           #{idx + 1}
                         </div>
-                        <img
+                        <AppImage
                           src={top.photoUrl}
                           alt={top.studentName}
+                          fallbackType="avatar"
+                          name={top.studentName}
                           className="w-9 h-9 rounded-full object-cover border"
                         />
                         <div>
@@ -1119,9 +1124,11 @@ export default function ExamsMarksWorkspace({ students = [], onNavigateTab }: Ex
                       className="p-3 bg-orange-50/40 dark:bg-orange-950/20 rounded-xl border border-orange-200 dark:border-orange-900 flex items-center justify-between"
                     >
                       <div className="flex items-center gap-2.5">
-                        <img
+                        <AppImage
                           src={rem.photoUrl}
                           alt={rem.studentName}
+                          fallbackType="avatar"
+                          name={rem.studentName}
                           className="w-8 h-8 rounded-full object-cover"
                         />
                         <div>
@@ -1180,7 +1187,13 @@ export default function ExamsMarksWorkspace({ students = [], onNavigateTab }: Ex
                     : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
                 }`}
               >
-                <img src={m.photoUrl} alt={m.studentName} className="w-5 h-5 rounded-full object-cover" />
+                <AppImage
+                  src={m.photoUrl}
+                  alt={m.studentName}
+                  fallbackType="avatar"
+                  name={m.studentName}
+                  className="w-5 h-5 rounded-full object-cover"
+                />
                 <span>{m.studentName}</span>
               </button>
             ))}
@@ -1210,9 +1223,11 @@ export default function ExamsMarksWorkspace({ students = [], onNavigateTab }: Ex
 
               {/* Student Bio Strip */}
               <div className="flex items-center gap-4 p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-800">
-                <img
+                <AppImage
                   src={selectedReportCardEntry.photoUrl}
                   alt={selectedReportCardEntry.studentName}
+                  fallbackType="avatar"
+                  name={selectedReportCardEntry.studentName}
                   className="w-14 h-14 rounded-2xl object-cover border-2 border-[#0050CB]"
                 />
                 <div className="grid grid-cols-3 gap-6 flex-1 text-xs">

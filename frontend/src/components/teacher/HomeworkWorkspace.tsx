@@ -37,6 +37,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { printDocument } from '@/lib/exportUtils';
+import AppImage from '@/components/ui/AppImage';
 
 export type HomeworkStatus = 'ACTIVE' | 'DUE_SOON' | 'COMPLETED' | 'OVERDUE';
 export type SubmissionStatus = 'PENDING' | 'SUBMITTED' | 'REVIEWED' | 'REVISION_REQUESTED';
@@ -966,9 +967,11 @@ export default function HomeworkWorkspace({ students = [], onNavigateTab }: Home
                     >
                       <div className="flex items-center gap-3">
                         <div className="relative">
-                          <img
+                          <AppImage
                             src={sub.photoUrl}
                             alt={sub.studentName}
+                            fallbackType="avatar"
+                            name={sub.studentName}
                             className="w-10 h-10 rounded-full object-cover border border-slate-200"
                           />
                           <span className="absolute -bottom-1 -right-1 text-[9px] font-black bg-slate-800 text-white w-4 h-4 rounded-full flex items-center justify-center">
@@ -1022,9 +1025,11 @@ export default function HomeworkWorkspace({ students = [], onNavigateTab }: Home
                   {/* Student Header */}
                   <div className="flex items-start justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-4">
                     <div className="flex items-center gap-3">
-                      <img
+                      <AppImage
                         src={selectedStudentForGrading.photoUrl}
                         alt={selectedStudentForGrading.studentName}
+                        fallbackType="avatar"
+                        name={selectedStudentForGrading.studentName}
                         className="w-12 h-12 rounded-full object-cover border-2 border-[#0050CB]"
                       />
                       <div>
@@ -1073,7 +1078,7 @@ export default function HomeworkWorkspace({ students = [], onNavigateTab }: Home
                         }}
                         className="relative rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 group cursor-pointer aspect-video bg-slate-900"
                       >
-                        <img
+                        <AppImage
                           src={selectedStudentForGrading.photoAttachmentUrl}
                           alt="Student Workbook Submission"
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
@@ -1534,7 +1539,7 @@ export default function HomeworkWorkspace({ students = [], onNavigateTab }: Home
               >
                 <X className="w-5 h-5" />
               </button>
-              <img
+              <AppImage
                 src={lightboxImageUrl}
                 alt="Enlarged Submission Preview"
                 className="w-full h-auto max-h-[80vh] object-contain"

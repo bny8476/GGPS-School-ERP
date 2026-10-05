@@ -3,6 +3,7 @@
 import React from 'react';
 import { ArrowUpRight, ArrowDownRight, ArrowRight, AlertTriangle, RefreshCw } from 'lucide-react';
 import AnimatedNumber from './AnimatedNumber';
+import AppImage from './AppImage';
 
 /* ==========================================================================
    1. BASE CARD PRIMITIVES
@@ -228,17 +229,14 @@ export function ProfileCard({
       <div>
         <div className="flex items-start justify-between gap-3 mb-4">
           <div className="flex items-center gap-3">
-            {avatarUrl ? (
-              <img
-                src={avatarUrl}
-                alt={name}
-                className="w-12 h-12 rounded-2xl object-cover ring-2 ring-[#0757D5]/20 shrink-0"
-              />
-            ) : (
-              <div className="w-12 h-12 rounded-2xl bg-[#0757D5] text-white font-black flex items-center justify-center text-lg shrink-0 shadow-md">
-                {initials || name[0]}
-              </div>
-            )}
+            <AppImage
+              src={avatarUrl}
+              alt={name}
+              fallbackType="avatar"
+              name={name}
+              initials={initials}
+              className="w-12 h-12 rounded-2xl object-cover ring-2 ring-[#0757D5]/20 shrink-0"
+            />
             <div>
               <h3 className="font-black text-sm sm:text-base text-[#07152F] dark:text-white leading-tight">
                 {name}

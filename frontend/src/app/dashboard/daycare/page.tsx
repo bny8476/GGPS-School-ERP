@@ -9,6 +9,7 @@ import {
 import Link from "next/link";
 import toast from "react-hot-toast";
 import { formatMediumDate, formatShortDate } from "@/lib/date";
+import AppImage from "@/components/ui/AppImage";
 
 export default function DaycarePage() {
   const [logs, setLogs] = useState<any[]>([]);
@@ -367,9 +368,11 @@ export default function DaycarePage() {
                     </td>
                     <td className="p-4">
                       <div className="flex items-center gap-3">
-                        <img
+                        <AppImage
                           src={log.avatar}
                           alt={log.name}
+                          fallbackType="avatar"
+                          name={log.name}
                           className="w-8 h-8 rounded-full object-cover ring-2 ring-blue-100"
                         />
                         <div>
@@ -774,9 +777,11 @@ export default function DaycarePage() {
           <div className="bg-white dark:bg-[#000E28] w-full max-w-md p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl space-y-4">
             <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-3">
               <div className="flex items-center gap-3">
-                <img
+                <AppImage
                   src={selectedLogDetails.avatar}
                   alt={selectedLogDetails.name}
+                  fallbackType="avatar"
+                  name={selectedLogDetails.name}
                   className="w-10 h-10 rounded-full object-cover ring-2 ring-blue-100"
                 />
                 <div>

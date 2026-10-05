@@ -92,6 +92,7 @@ import toast, { Toaster } from 'react-hot-toast';
 import { useTheme } from '@/context/ThemeContext';
 import NotificationDrawer from '@/components/ui/NotificationDrawer';
 import AnimatedNumber from '@/components/ui/AnimatedNumber';
+import AppImage from '@/components/ui/AppImage';
 import SpotlightCard from './SpotlightCard';
 import TeacherCommandPalette from './TeacherCommandPalette';
 import ChildProfileDrawer from './ChildProfileDrawer';
@@ -3326,9 +3327,11 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
               {/* Teacher Mini Profile */}
               <div className="p-2 rounded-2xl bg-white/5 flex items-center justify-between gap-2 border border-white/5">
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <img
+                  <AppImage
                     src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80"
                     alt="Teacher"
+                    fallbackType="avatar"
+                    name="Priya Sharma"
                     className="w-8 h-8 rounded-full object-cover ring-1 ring-blue-400/40 shrink-0"
                   />
                   <div className="truncate leading-tight">
@@ -3347,9 +3350,11 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
             </div>
           ) : (
             <div className="flex flex-col items-center gap-3">
-              <img
+              <AppImage
                 src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80"
                 alt="Teacher"
+                fallbackType="avatar"
+                name="Priya Sharma"
                 className="w-9 h-9 rounded-full object-cover ring-2 ring-blue-500/30"
                 title="Priya Sharma (LKG - Section A)"
               />
@@ -3444,9 +3449,11 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
                 onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
                 className="flex items-center gap-2.5 pl-1 pr-2 py-1 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               >
-                <img
+                <AppImage
                   src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80"
                   alt="Teacher"
+                  fallbackType="avatar"
+                  name="Priya Sharma"
                   className="w-8 h-8 rounded-full object-cover ring-2 ring-blue-500/20"
                 />
                 <div className="text-left leading-tight hidden sm:block">
@@ -3939,9 +3946,11 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
                                   <span className="font-mono font-bold text-[#0050CB] bg-[#E5EEFF] dark:bg-blue-950/60 px-2 py-0.5 rounded-lg text-xs">
                                     #{student.rollNo}
                                   </span>
-                                  <img
+                                  <AppImage
                                     src={student.photo}
                                     alt={student.name}
+                                    fallbackType="avatar"
+                                    name={student.name}
                                     className="w-9 h-9 rounded-xl object-cover ring-1 ring-slate-200 dark:ring-slate-700"
                                   />
                                   <div>
@@ -4107,9 +4116,11 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
                         {/* Child Header */}
                         <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
                           <div className="flex items-center gap-3">
-                            <img
+                            <AppImage
                               src={learner.photo}
                               alt={learner.name}
+                              fallbackType="avatar"
+                              name={learner.name}
                               className="w-10 h-10 rounded-2xl object-cover ring-1 ring-slate-200 dark:ring-slate-700"
                             />
                             <div>
@@ -4913,9 +4924,11 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
                                     <span className="px-1.5 py-0.5 rounded bg-[#E5EEFF] dark:bg-blue-950/60 text-[#0050CB] dark:text-blue-300 font-black text-[10px] shrink-0 border border-[#0050CB]/20">
                                       #{student.rollNo}
                                     </span>
-                                    <img
+                                    <AppImage
                                       src={student.photo}
                                       alt={student.name}
+                                      fallbackType="avatar"
+                                      name={student.name}
                                       className="w-6.5 h-6.5 rounded-full object-cover shrink-0 ring-1 ring-slate-200"
                                     />
                                     <span
@@ -5046,9 +5059,11 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
                                 {/* Child Details */}
                                 <td className="px-4 py-3">
                                   <div className="flex items-center gap-3">
-                                    <img
+                                    <AppImage
                                       src={c.photo}
                                       alt={c.name}
+                                      fallbackType="avatar"
+                                      name={c.name}
                                       className="w-9 h-9 rounded-full object-cover ring-2 ring-[#0050CB]/15 shrink-0"
                                     />
                                     <div className="min-w-0">
@@ -5233,9 +5248,11 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
 
                           {/* Child Identity */}
                           <div className="flex items-center gap-3">
-                            <img
+                            <AppImage
                               src={c.photo}
                               alt={c.name}
+                              fallbackType="avatar"
+                              name={c.name}
                               className="w-12 h-12 rounded-xl object-cover ring-2 ring-[#0050CB]/15 shrink-0"
                             />
                             <div className="min-w-0 flex-1">
@@ -5582,13 +5599,13 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
                           {/* Parent & Child Profile Header */}
                           <div className="flex items-start justify-between gap-3">
                             <div className="flex items-center gap-3 min-w-0">
-                              <div className="w-12 h-12 rounded-xl bg-[#E5EEFF] dark:bg-blue-950 text-[#0050CB] dark:text-blue-400 flex items-center justify-center font-bold text-base shrink-0 overflow-hidden ring-1 ring-blue-200 dark:ring-blue-800">
-                                {thread.avatar ? (
-                                  <img src={thread.avatar} alt={thread.parentName} className="w-full h-full object-cover" />
-                                ) : (
-                                  <span>{thread.parentName.slice(0, 2).toUpperCase()}</span>
-                                )}
-                              </div>
+                              <AppImage
+                                src={thread.avatar}
+                                alt={thread.parentName}
+                                fallbackType="avatar"
+                                name={thread.parentName}
+                                className="w-12 h-12 rounded-xl object-cover ring-1 ring-blue-200 dark:ring-blue-800 shrink-0"
+                              />
 
                               <div className="min-w-0">
                                 <div className="flex items-center gap-1.5 flex-wrap">
@@ -5749,13 +5766,13 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
                       {/* Chat Header */}
                       <div className="flex items-start justify-between border-b border-slate-100 dark:border-slate-800 pb-3 shrink-0">
                         <div className="flex items-center gap-3">
-                          <div className="w-11 h-11 rounded-xl bg-[#E5EEFF] dark:bg-blue-950 text-[#0050CB] dark:text-blue-400 flex items-center justify-center font-bold text-base shrink-0 overflow-hidden ring-1 ring-blue-200">
-                            {selectedParentForChat.avatar ? (
-                              <img src={selectedParentForChat.avatar} alt={selectedParentForChat.parentName} className="w-full h-full object-cover" />
-                            ) : (
-                              <span>{selectedParentForChat.parentName.slice(0, 2).toUpperCase()}</span>
-                            )}
-                          </div>
+                          <AppImage
+                            src={selectedParentForChat.avatar}
+                            alt={selectedParentForChat.parentName}
+                            fallbackType="avatar"
+                            name={selectedParentForChat.parentName}
+                            className="w-11 h-11 rounded-xl object-cover ring-1 ring-blue-200 shrink-0"
+                          />
                           <div>
                             <div className="flex items-center gap-2">
                               <h3 className="text-base font-black text-[#000E28] dark:text-white">
@@ -8082,9 +8099,11 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <div className="flex items-center gap-4">
                     <div className="relative">
-                      <img
+                      <AppImage
                         src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80"
                         alt="Teacher"
+                        fallbackType="avatar"
+                        name={`${teacherProfile.firstName} ${teacherProfile.lastName}`}
                         className="w-16 h-16 rounded-2xl object-cover ring-4 ring-[#0050CB]/20 shadow-md"
                       />
                       <span className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-900 flex items-center justify-center text-white text-[10px]" title="Online">
@@ -8992,7 +9011,13 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
                 {students.map((child) => (
                   <div key={child.id} className="flex items-center justify-between p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
                     <div className="flex items-center gap-2.5">
-                      <img src={child.photo} alt={child.name} className="w-8 h-8 rounded-full object-cover" />
+                      <AppImage
+                        src={child.photo}
+                        alt={child.name}
+                        fallbackType="avatar"
+                        name={child.name}
+                        className="w-8 h-8 rounded-full object-cover"
+                      />
                       <div>
                         <span className="font-bold text-xs text-slate-800 dark:text-white block">{child.name}</span>
                         <span className="text-[10px] text-slate-400">Roll: {child.rollNo}</span>

@@ -3,9 +3,10 @@
 import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import AppImage from "@/components/ui/AppImage";
 import { usePathname } from "next/navigation";
 import { 
-  Menu, Search, Bell, Mail, Sun, Moon, ChevronDown, Check, ChevronRight, Calendar, Clock
+  Menu, Search, Bell, Mail, Sun, Moon, ChevronDown, Check, ChevronRight, Calendar, Clock, User
 } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
 import { useParent } from "@/context/ParentContext";
@@ -49,14 +50,7 @@ export default function ParentHeader({ onOpenMobileMenu }: ParentHeaderProps) {
   };
 
   const breadcrumbs = getBreadcrumbs();
-  const currentChild = selectedChild || children[0] || {
-    _id: "c10101010101010101010101",
-    firstName: "Aarav",
-    lastName: "Sharma",
-    grade: "LKG",
-    section: "Section A",
-    studentPhoto: "/aarav-hero-student.jpg",
-  };
+  const currentChild = selectedChild || children[0] || null;
 
   return (
     <header className="sticky top-0 z-20 w-full h-16 bg-white/95 dark:bg-[#081329]/95 backdrop-blur-md border-b border-blue-100/70 dark:border-white/10 px-4 sm:px-6 flex items-center justify-between transition-colors shadow-2xs">
@@ -167,82 +161,93 @@ export default function ParentHeader({ onOpenMobileMenu }: ParentHeaderProps) {
         </button>
 
         {/* Active Child Selector Dropdown */}
-        <div className="relative" ref={dropdownRef}>
-          <button
-            type="button"
-            onClick={() => setIsChildMenuOpen(!isChildMenuOpen)}
-            className="flex items-center gap-2 px-2.5 py-1.5 rounded-full bg-[#F6F9FE] hover:bg-[#EAF4FF] dark:bg-white/5 border border-blue-100 dark:border-white/10 transition-all cursor-pointer shadow-2xs"
-          >
-            <div className="relative w-7 h-7 rounded-full overflow-hidden shrink-0 ring-2 ring-[#1769E8]/30">
-              <Image
-                src={currentChild.studentPhoto || "/aarav-hero-student.jpg"}
-                alt={currentChild.firstName}
-                fill
-                sizes="28px"
-                className="object-cover object-top"
-              />
-            </div>
-            <div className="hidden lg:flex flex-col text-left pr-0.5">
-              <span className="text-xs font-bold text-[#102A5C] dark:text-white leading-tight truncate">
-                {currentChild.firstName} {currentChild.lastName}
-              </span>
-              <span className="text-[9.5px] text-[#1769E8] dark:text-blue-300 leading-tight font-semibold truncate">
-                {currentChild.grade} - {currentChild.section}
-              </span>
-            </div>
-            <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-          </button>
-
-          {/* Child Dropdown Menu */}
-          {isChildMenuOpen && (
-            <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-[#081329] rounded-2xl shadow-xl border border-blue-100 dark:border-white/10 p-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
-              <p className="px-3 py-1.5 text-[10px] font-black uppercase text-slate-400 tracking-wider">
-                Select Child
-              </p>
-              <div className="space-y-1">
-                {children.map((c) => {
-                  const isSelected = c._id === currentChild._id;
-                  return (
-                    <button
-                      key={c._id}
-                      type="button"
-                      onClick={() => {
-                        selectChild(c._id);
-                        setIsChildMenuOpen(false);
-                      }}
-                      className={`w-full flex items-center justify-between p-2 rounded-xl text-left transition-all ${
-                        isSelected
-                          ? "bg-[#EAF4FF] dark:bg-white/10 text-[#1769E8] font-bold"
-                          : "hover:bg-slate-50 dark:hover:bg-white/5 text-slate-700 dark:text-slate-200"
-                      }`}
-                    >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="relative w-8 h-8 rounded-full overflow-hidden shrink-0 ring-1 ring-slate-200">
-                          <Image
-                            src={c.studentPhoto || "/aarav-hero-student.jpg"}
-                            alt={c.firstName}
-                            fill
-                            sizes="32px"
-                            className="object-cover object-top"
-                          />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-xs font-bold truncate">
-                            {c.firstName} {c.lastName}
-                          </p>
-                          <p className="text-[10px] text-slate-400 truncate">
-                            {c.grade} - {c.section}
-                          </p>
-                        </div>
-                      </div>
-                      {isSelected && <Check className="w-4 h-4 text-[#1769E8]" />}
-                    </button>
-                  );
-                })}
+        {currentChild ? (
+          <div className="relative" ref={dropdownRef}>
+            <button
+              type="button"
+              onClick={() => setIsChildMenuOpen(!isChildMenuOpen)}
+              className="flex items-center gap-2 px-2.5 py-1.5 rounded-full bg-[#F6F9FE] hover:bg-[#EAF4FF] dark:bg-white/5 border border-blue-100 dark:border-white/10 transition-all cursor-pointer shadow-2xs"
+            >
+              <div className="relative w-7 h-7 rounded-full overflow-hidden shrink-0 ring-2 ring-[#1769E8]/30">
+                <AppImage
+                  src={currentChild.studentPhoto || "/aarav-hero-student.jpg"}
+                  alt={currentChild.firstName}
+                  fill
+                  sizes="28px"
+                  fallbackType="avatar"
+                  name={`${currentChild.firstName} ${currentChild.lastName}`}
+                  className="object-cover object-top"
+                />
               </div>
-            </div>
-          )}
-        </div>
+              <div className="hidden lg:flex flex-col text-left pr-0.5">
+                <span className="text-xs font-bold text-[#102A5C] dark:text-white leading-tight truncate">
+                  {currentChild.firstName} {currentChild.lastName}
+                </span>
+                <span className="text-[9.5px] text-[#1769E8] dark:text-blue-300 leading-tight font-semibold truncate">
+                  {currentChild.grade} - {currentChild.section}
+                </span>
+              </div>
+              <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+            </button>
+
+            {/* Child Dropdown Menu */}
+            {isChildMenuOpen && (
+              <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-[#081329] rounded-2xl shadow-xl border border-blue-100 dark:border-white/10 p-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                <p className="px-3 py-1.5 text-[10px] font-black uppercase text-slate-400 tracking-wider">
+                  Select Child
+                </p>
+                <div className="space-y-1">
+                  {children.map((c) => {
+                    const isSelected = c._id === currentChild._id;
+                    return (
+                      <button
+                        key={c._id}
+                        type="button"
+                        onClick={() => {
+                          selectChild(c._id);
+                          setIsChildMenuOpen(false);
+                        }}
+                        className={`w-full flex items-center justify-between p-2 rounded-xl text-left transition-all ${
+                          isSelected
+                            ? "bg-[#EAF4FF] dark:bg-white/10 text-[#1769E8] font-bold"
+                            : "hover:bg-slate-50 dark:hover:bg-white/5 text-slate-700 dark:text-slate-200"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="relative w-8 h-8 rounded-full overflow-hidden shrink-0 ring-1 ring-slate-200">
+                            <AppImage
+                              src={c.studentPhoto || "/aarav-hero-student.jpg"}
+                              alt={c.firstName}
+                              fill
+                              sizes="32px"
+                              fallbackType="avatar"
+                              name={`${c.firstName} ${c.lastName}`}
+                              className="object-cover object-top"
+                            />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-xs font-bold truncate">
+                              {c.firstName} {c.lastName}
+                            </p>
+                            <p className="text-[10px] text-slate-400 truncate">
+                              {c.grade} - {c.section}
+                            </p>
+                          </div>
+                        </div>
+                        {isSelected && <Check className="w-4 h-4 text-[#1769E8]" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#E5EEFF] dark:bg-white/5 border border-blue-200 dark:border-white/10 text-xs font-bold text-[#0050CB] dark:text-[#38BDF8]">
+            <User className="w-3.5 h-3.5" />
+            <span>Family Portal</span>
+          </div>
+        )}
 
         {/* Parent Profile Pill */}
         <Link
@@ -250,11 +255,13 @@ export default function ParentHeader({ onOpenMobileMenu }: ParentHeaderProps) {
           className="hidden sm:flex items-center gap-2 pl-1 pr-2 py-1 rounded-full hover:bg-[#EAF4FF] dark:hover:bg-white/5 transition-colors group cursor-pointer text-left"
         >
           <div className="relative w-8 h-8 rounded-full overflow-hidden shrink-0 ring-2 ring-[#1769E8]/20">
-            <Image
+            <AppImage
               src="/priya-exact-avatar.png"
               alt="Priya Sharma"
               fill
               sizes="32px"
+              fallbackType="avatar"
+              name={parentProfile?.motherName || "Priya Sharma"}
               className="object-cover"
             />
           </div>

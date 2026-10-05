@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import AppImage from "@/components/ui/AppImage";
 import { 
   User, 
   Mail, 
@@ -197,13 +198,12 @@ export default function ParentAccountPage() {
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="w-10 h-10 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 shrink-0">
-                        <img
+                        <AppImage
                           src={childPhoto}
                           alt={child.firstName}
+                          fallbackType="avatar"
+                          name={`${child.firstName} ${child.lastName || ""}`}
                           className="w-full h-full object-cover"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = "/aarav-profile-avatar.png";
-                          }}
                         />
                       </div>
                       <div className="min-w-0">
@@ -406,7 +406,7 @@ export default function ParentAccountPage() {
 
           {/* 3D Glossy Blue Lock Graphic */}
           <div className="w-12 h-12 sm:w-14 sm:h-14 shrink-0 overflow-hidden">
-            <img
+            <AppImage
               src="/security-lock-3d.jpg"
               alt="Security Lock"
               className="w-full h-full object-contain drop-shadow-sm"

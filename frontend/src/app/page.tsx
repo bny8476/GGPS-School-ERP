@@ -3,11 +3,11 @@
 import React, { useRef, useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import AppImage from '@/components/ui/AppImage';
 import { motion, useScroll, useTransform, useInView, useReducedMotion, AnimatePresence, type Variants } from 'framer-motion';
 import ModernAcademicExcellence from '@/components/ModernAcademicExcellence';
 import CtaBanner from '@/components/CtaBanner';
 import { useLanguage } from '@/context/LanguageContext';
-import { ScrollProgress } from "@/registry/magicui/scroll-progress";
 import {
   ArrowRight,
   Play,
@@ -197,7 +197,7 @@ export default function Home() {
     <div
       ref={heroRef}
       onMouseMove={handleMouseMove}
-      className="relative min-h-screen bg-gradient-to-b from-[#F2F7FE] via-white to-[#F6F9FE] dark:from-[#000a1f] dark:via-[#000E28] dark:to-[#000a1f] overflow-hidden transition-colors duration-200"
+      className="relative min-h-screen hero-continuous-bg overflow-hidden transition-colors duration-200"
     >
 
       {/* Interactive Cursor Spotlight Glow */}
@@ -207,9 +207,6 @@ export default function Home() {
           background: `radial-gradient(550px circle at ${mousePos.x}px ${mousePos.y}px, rgba(0, 80, 203, 0.07), transparent 70%)`
         }}
       />
-
-      {/* Magic UI Animated Scroll Progress Bar below fixed navbar */}
-      <ScrollProgress className="top-20 z-40" />
 
       {/* Dynamic Animated Ambient Background Glow Orbs */}
       <motion.div
@@ -359,38 +356,63 @@ export default function Home() {
 
           </div>
 
-          {/* RIGHT COLUMN: Seamless Hero Visual Artwork (Branded GGPS School Composition) */}
+          {/* RIGHT COLUMN: Seamless Hero Visual Artwork (Branded GGPS School Composition - Large & Prominent) */}
           <motion.div
             style={{ y: yHeroImage }}
-            initial={{ opacity: 0, scale: 0.96, y: 16 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            transition={{ duration: 0.85, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
-            className="lg:col-span-7 relative flex items-center justify-center mt-6 lg:mt-0 select-none z-10"
+            initial={{ opacity: 0, scale: 0.97, y: 16 }}
+            animate={
+              prefersReduced
+                ? { opacity: 1, scale: 1, y: 0 }
+                : { opacity: 1, scale: [1, 1.015, 1], y: 0 }
+            }
+            transition={
+              prefersReduced
+                ? { duration: 0.85, delay: 0.15, ease: [0.16, 1, 0.3, 1] }
+                : {
+                    scale: { duration: 12, repeat: Infinity, ease: "easeInOut" },
+                    opacity: { duration: 0.85, delay: 0.15, ease: [0.16, 1, 0.3, 1] },
+                    y: { duration: 0.85, delay: 0.15, ease: [0.16, 1, 0.3, 1] },
+                  }
+            }
+            className="lg:col-span-7 xl:col-span-7 relative flex items-center justify-center lg:justify-end mt-6 lg:mt-0 select-none z-10"
           >
-            <div className="relative w-full max-w-[880px] lg:max-w-none lg:w-[138%] xl:w-[148%] 2xl:w-[156%] lg:-translate-x-[40px] xl:-translate-x-[65px] 2xl:-translate-x-[85px] flex items-center justify-center">
+            <div className="relative w-full lg:w-[112%] xl:w-[118%] 2xl:w-[124%] lg:-translate-x-1 xl:-translate-x-3 flex items-center justify-center">
 
-              {/* Soft Atmospheric Ambient Backing Glow */}
-              <div className="absolute -inset-8 sm:-inset-14 bg-gradient-to-tr from-[#0050CB]/20 via-sky-300/25 to-indigo-200/20 dark:from-blue-600/25 dark:via-sky-400/20 dark:to-indigo-500/20 rounded-full blur-3xl pointer-events-none -z-10" />
+              {/* Soft Atmospheric Ambient Backing Glow (Enlarged) */}
+              <motion.div
+                animate={
+                  prefersReduced
+                    ? undefined
+                    : {
+                        scale: [1, 1.08, 0.95, 1],
+                        opacity: [0.75, 0.95, 0.75],
+                      }
+                }
+                transition={{ duration: 14, repeat: Infinity, ease: "easeInOut" }}
+                className="absolute -inset-10 sm:-inset-16 lg:-inset-24 bg-gradient-to-tr from-[#0050CB]/20 via-sky-300/25 to-indigo-200/20 dark:from-blue-600/25 dark:via-sky-400/20 dark:to-indigo-500/20 rounded-full blur-3xl pointer-events-none -z-10"
+              />
 
-              {/* Main Transparent Hero Artwork - Theme-Adaptive (Light & Dark) */}
-              <div className="relative w-full flex items-center justify-center [mask-image:radial-gradient(ellipse_70%_70%_at_center,black_60%,transparent_100%)] [-webkit-mask-image:radial-gradient(ellipse_70%_70%_at_center,black_60%,transparent_100%)]">
+              {/* Main Hero Artwork — scaled up, large, prominent & seamlessly integrated */}
+              <div className="relative w-full hero-seamless-mask scale-100 sm:scale-[1.03] lg:scale-[1.10] xl:scale-[1.16] 2xl:scale-[1.20] origin-center lg:origin-right transition-transform duration-300">
                 {/* Light Theme Hero Banner */}
-                <Image
-                  src="/hero-banner-light.jpg"
+                <AppImage
+                  src="/hero-banner-seamless.png"
                   alt="GGPS School Modern Management Platform"
-                  width={1600}
-                  height={800}
+                  width={1376}
+                  height={768}
                   priority
-                  className="w-full h-auto object-contain select-none pointer-events-none mix-blend-multiply block dark:hidden"
+                  sizes="(max-width: 768px) 100vw, (max-width: 1280px) 65vw, 60vw"
+                  className="w-full h-auto object-contain select-none pointer-events-none block dark:hidden"
                 />
 
                 {/* Dark Theme Hero Banner */}
-                <Image
-                  src="/hero-banner-dark.jpg"
+                <AppImage
+                  src="/hero-banner-dark-seamless.png"
                   alt="GGPS School Modern Management Platform"
-                  width={1600}
-                  height={800}
+                  width={1376}
+                  height={768}
                   priority
+                  sizes="(max-width: 768px) 100vw, (max-width: 1280px) 65vw, 60vw"
                   className="w-full h-auto object-contain select-none pointer-events-none hidden dark:block"
                 />
               </div>
@@ -772,14 +794,14 @@ export default function Home() {
               whileHover={{ scale: 1.02 }}
               className="sm:col-span-2 relative h-56 rounded-3xl overflow-hidden shadow-lg border border-slate-100 dark:border-slate-800 cursor-pointer transition-transform"
             >
-              <Image
+              <AppImage
                 src="/hero-kids-banner.png"
                 alt="Happy Students"
                 fill
                 sizes="(max-width: 640px) 100vw, 66vw"
                 className="object-cover"
               />
-              <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-black/20" />
+              <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-black/20 pointer-events-none" />
 
               {/* Happy Students Floating Overlay */}
               <motion.div
@@ -823,14 +845,14 @@ export default function Home() {
               whileHover={{ scale: 1.04, y: -4 }}
               className="relative h-44 rounded-3xl overflow-hidden shadow-md border border-slate-100 dark:border-slate-800 cursor-pointer transition-transform"
             >
-              <Image
+              <AppImage
                 src="/mother-daughter-study.png"
                 alt="Mother Daughter Study"
                 fill
                 sizes="(max-width: 640px) 100vw, 33vw"
                 className="object-cover"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#0050CB]/80 via-transparent to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#0050CB]/80 via-transparent to-transparent pointer-events-none" />
               <div className="absolute bottom-4 left-4 right-4 text-white">
                 <h4 className="font-extrabold text-base">Dedicated Teachers</h4>
                 <p className="text-[11px] text-blue-100">Better tools, greater impact.</p>
@@ -925,13 +947,13 @@ export default function Home() {
               initial="hidden"
               whileInView="visible"
               viewport={{ once: true }}
-              whileHover={{ y: -6, rotate: 0, scale: 1.02 }}
+              whileHover={prefersReduced ? {} : { y: -6, rotate: 0, scale: 1.02 }}
               transition={{ duration: 0.3 }}
-              className="relative bg-white dark:bg-[#00102E] rounded-[32px] sm:rounded-[36px] p-6 sm:p-7 border border-emerald-100 dark:border-emerald-900/30 shadow-[0_12px_35px_rgba(16,185,129,0.08)] dark:shadow-[0_12px_35px_rgba(0,0,0,0.5)] flex flex-col justify-between overflow-hidden cursor-default group lg:rotate-[-2deg] transition-all"
+              className="relative bg-white dark:bg-[#00102E] rounded-[32px] sm:rounded-[36px] p-6 sm:p-7 border border-emerald-100 dark:border-emerald-900/30 hover:border-emerald-300 dark:hover:border-emerald-700/60 shadow-[0_12px_35px_rgba(16,185,129,0.08)] hover:shadow-[0_20px_45px_rgba(16,185,129,0.16)] dark:shadow-[0_12px_35px_rgba(0,0,0,0.5)] dark:hover:shadow-[0_20px_45px_rgba(0,0,0,0.7)] flex flex-col justify-between overflow-hidden cursor-default group lg:rotate-[-2deg] transition-all"
             >
               {/* Bottom-right diagonal corner wedge (Emerald) */}
               <div
-                className="absolute bottom-0 right-0 w-14 h-14 pointer-events-none rounded-tl-[32px] bg-[#10B981]"
+                className="absolute bottom-0 right-0 w-14 h-14 pointer-events-none rounded-tl-[32px] bg-[#10B981] group-hover:scale-110 transition-transform duration-300"
               />
 
               <div className="grid grid-cols-12 gap-3.5 items-center h-full">
@@ -951,11 +973,12 @@ export default function Home() {
                   </div>
 
                   <Link
-                    href="/admissions"
+                    href="/features/intelligent-operations"
                     className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-emerald-600 dark:text-emerald-400 hover:gap-2.5 transition-all group-hover:underline"
+                    aria-label="Learn more about Intelligent Operations"
                   >
                     <span>Learn More</span>
-                    <ArrowRight className="w-3.5 h-3.5 transition-transform" />
+                    <ArrowRight className="w-3.5 h-3.5 transition-transform duration-300 group-hover:translate-x-1" />
                   </Link>
                 </div>
 
@@ -965,7 +988,7 @@ export default function Home() {
                   <div className="absolute inset-0 bg-gradient-to-tr from-emerald-100/80 via-emerald-50/60 to-teal-100/50 dark:from-emerald-950/40 dark:to-teal-950/30 rounded-2xl sm:rounded-3xl -z-10" />
 
                   <div className="relative w-full h-[180px] sm:h-[195px] rounded-2xl overflow-hidden">
-                    <Image
+                    <AppImage
                       src="/hero-girl-student.png"
                       alt="Intelligent Operations Student"
                       fill
@@ -984,13 +1007,13 @@ export default function Home() {
               initial="hidden"
               whileInView="visible"
               viewport={{ once: true }}
-              whileHover={{ y: -6, scale: 1.02 }}
+              whileHover={prefersReduced ? {} : { y: -6, scale: 1.02 }}
               transition={{ duration: 0.3 }}
-              className="relative bg-white dark:bg-[#00102E] rounded-[32px] sm:rounded-[36px] p-6 sm:p-7 border border-purple-100 dark:border-purple-900/30 shadow-[0_12px_35px_rgba(168,85,247,0.08)] dark:shadow-[0_12px_35px_rgba(0,0,0,0.5)] flex flex-col justify-between overflow-hidden cursor-default group lg:rotate-0 transition-all"
+              className="relative bg-white dark:bg-[#00102E] rounded-[32px] sm:rounded-[36px] p-6 sm:p-7 border border-purple-100 dark:border-purple-900/30 hover:border-purple-300 dark:hover:border-purple-700/60 shadow-[0_12px_35px_rgba(168,85,247,0.08)] hover:shadow-[0_20px_45px_rgba(168,85,247,0.16)] dark:shadow-[0_12px_35px_rgba(0,0,0,0.5)] dark:hover:shadow-[0_20px_45px_rgba(0,0,0,0.7)] flex flex-col justify-between overflow-hidden cursor-default group lg:rotate-0 transition-all"
             >
               {/* Bottom-right diagonal corner wedge (Purple) */}
               <div
-                className="absolute bottom-0 right-0 w-14 h-14 pointer-events-none rounded-tl-[32px] bg-[#A855F7]"
+                className="absolute bottom-0 right-0 w-14 h-14 pointer-events-none rounded-tl-[32px] bg-[#A855F7] group-hover:scale-110 transition-transform duration-300"
               />
 
               <div className="grid grid-cols-12 gap-3.5 items-center h-full">
@@ -1010,11 +1033,12 @@ export default function Home() {
                   </div>
 
                   <Link
-                    href="/admissions"
+                    href="/features/performance-rubrics"
                     className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-purple-600 dark:text-purple-400 hover:gap-2.5 transition-all group-hover:underline"
+                    aria-label="Learn more about Performance & Rubrics"
                   >
                     <span>Learn More</span>
-                    <ArrowRight className="w-3.5 h-3.5 transition-transform" />
+                    <ArrowRight className="w-3.5 h-3.5 transition-transform duration-300 group-hover:translate-x-1" />
                   </Link>
                 </div>
 
@@ -1025,7 +1049,7 @@ export default function Home() {
 
                   {/* Floating A+ Badge */}
                   <motion.div
-                    animate={{ y: [0, -4, 0] }}
+                    animate={prefersReduced ? {} : { y: [0, -4, 0] }}
                     transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
                     className="absolute top-2 left-1 z-20 w-8 h-8 rounded-full bg-white dark:bg-slate-900 border-2 border-purple-400 text-purple-600 dark:text-purple-300 font-extrabold text-xs flex items-center justify-center shadow-md select-none"
                   >
@@ -1033,7 +1057,7 @@ export default function Home() {
                   </motion.div>
 
                   <div className="relative w-full h-[180px] sm:h-[195px] rounded-2xl overflow-hidden">
-                    <Image
+                    <AppImage
                       src="/student-raising-hand.png"
                       alt="Performance & Rubrics Student"
                       fill
@@ -1052,13 +1076,13 @@ export default function Home() {
               initial="hidden"
               whileInView="visible"
               viewport={{ once: true }}
-              whileHover={{ y: -6, rotate: 0, scale: 1.02 }}
+              whileHover={prefersReduced ? {} : { y: -6, rotate: 0, scale: 1.02 }}
               transition={{ duration: 0.3 }}
-              className="relative bg-white dark:bg-[#00102E] rounded-[32px] sm:rounded-[36px] p-6 sm:p-7 border border-amber-100 dark:border-amber-900/30 shadow-[0_12px_35px_rgba(255,105,12,0.08)] dark:shadow-[0_12px_35px_rgba(0,0,0,0.5)] flex flex-col justify-between overflow-hidden cursor-default group lg:rotate-[2deg] transition-all"
+              className="relative bg-white dark:bg-[#00102E] rounded-[32px] sm:rounded-[36px] p-6 sm:p-7 border border-amber-100 dark:border-amber-900/30 hover:border-amber-300 dark:hover:border-amber-700/60 shadow-[0_12px_35px_rgba(255,105,12,0.08)] hover:shadow-[0_20px_45px_rgba(255,105,12,0.16)] dark:shadow-[0_12px_35px_rgba(0,0,0,0.5)] dark:hover:shadow-[0_20px_45px_rgba(0,0,0,0.7)] flex flex-col justify-between overflow-hidden cursor-default group lg:rotate-[2deg] transition-all"
             >
               {/* Bottom-right diagonal corner wedge (Amber) */}
               <div
-                className="absolute bottom-0 right-0 w-14 h-14 pointer-events-none rounded-tl-[32px] bg-[#FF690C]"
+                className="absolute bottom-0 right-0 w-14 h-14 pointer-events-none rounded-tl-[32px] bg-[#FF690C] group-hover:scale-110 transition-transform duration-300"
               />
 
               <div className="grid grid-cols-12 gap-3.5 items-center h-full">
@@ -1078,11 +1102,12 @@ export default function Home() {
                   </div>
 
                   <Link
-                    href="/admissions"
+                    href="/features/secure-connected"
                     className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-[#FF690C] hover:gap-2.5 transition-all group-hover:underline"
+                    aria-label="Learn more about Secure & Connected"
                   >
                     <span>Learn More</span>
-                    <ArrowRight className="w-3.5 h-3.5 transition-transform" />
+                    <ArrowRight className="w-3.5 h-3.5 transition-transform duration-300 group-hover:translate-x-1" />
                   </Link>
                 </div>
 
@@ -1093,7 +1118,7 @@ export default function Home() {
 
                   {/* Floating Shield Badge */}
                   <motion.div
-                    animate={{ y: [0, -4, 0] }}
+                    animate={prefersReduced ? {} : { y: [0, -4, 0] }}
                     transition={{ duration: 2.5, delay: 0.3, repeat: Infinity, ease: "easeInOut" }}
                     className="absolute top-2 left-1 z-20 w-8 h-8 rounded-full bg-white dark:bg-slate-900 border-2 border-amber-400 text-amber-500 flex items-center justify-center shadow-md select-none"
                   >
@@ -1101,12 +1126,12 @@ export default function Home() {
                   </motion.div>
 
                   <div className="relative w-full h-[180px] sm:h-[195px] rounded-2xl overflow-hidden">
-                    <Image
+                    <AppImage
                       src="/mother-daughter-study.png"
-                      alt="Secure & Connected"
+                      alt="Secure & Connected Parent and Student"
                       fill
                       sizes="(max-width: 768px) 40vw, 15vw"
-                      className="object-cover object-center group-hover:scale-105 transition-transform duration-500"
+                      className="object-cover object-top group-hover:scale-105 transition-transform duration-500"
                     />
                   </div>
                 </div>
@@ -1134,7 +1159,7 @@ export default function Home() {
             whileHover={{ scale: 1.02 }}
             className="lg:col-span-5 relative h-[360px] rounded-3xl overflow-hidden shadow-xl border-4 border-white dark:border-[#001438] cursor-pointer transition-transform"
           >
-            <Image
+            <AppImage
               src="/student-raising-hand.png"
               alt="Student raising hand"
               fill
@@ -1299,11 +1324,13 @@ export default function Home() {
                 {/* Top Header: Avatar + Info + Stars */}
                 <div className="flex items-center gap-3.5 mb-4 pt-1">
                   <div className="relative w-13 h-13 sm:w-14 sm:h-14 rounded-full overflow-hidden ring-2 ring-blue-100 dark:ring-blue-900/60 shrink-0 shadow-xs">
-                    <Image
+                    <AppImage
                       src="/avatar-priya.png"
                       alt="Priya Sharma"
                       fill
                       sizes="56px"
+                      fallbackType="avatar"
+                      name="Priya Sharma"
                       className="object-cover"
                     />
                   </div>
@@ -1387,11 +1414,13 @@ export default function Home() {
                 {/* Top Header: Avatar + Info + Stars */}
                 <div className="flex items-center gap-3.5 mb-4 pt-1">
                   <div className="relative w-13 h-13 sm:w-14 sm:h-14 rounded-full overflow-hidden ring-2 ring-sky-100 dark:ring-blue-900/60 shrink-0 shadow-xs">
-                    <Image
+                    <AppImage
                       src="/avatar-rajesh.png"
                       alt="Rajesh Kumar"
                       fill
                       sizes="56px"
+                      fallbackType="avatar"
+                      name="Rajesh Kumar"
                       className="object-cover"
                     />
                   </div>
@@ -1471,11 +1500,13 @@ export default function Home() {
                 {/* Top Header: Avatar + Info + Stars */}
                 <div className="flex items-center gap-3.5 mb-4 pt-1">
                   <div className="relative w-13 h-13 sm:w-14 sm:h-14 rounded-full overflow-hidden ring-2 ring-emerald-100 dark:ring-emerald-900/60 shrink-0 shadow-xs">
-                    <Image
+                    <AppImage
                       src="/avatar-anjali.png"
                       alt="Anjali Verma"
                       fill
                       sizes="56px"
+                      fallbackType="avatar"
+                      name="Anjali Verma"
                       className="object-cover"
                     />
                   </div>
@@ -1646,7 +1677,7 @@ export default function Home() {
               WebkitMaskImage: "linear-gradient(to right, rgba(0,0,0,1) 62%, rgba(0,0,0,0) 100%)"
             }}
           >
-            <Image
+            <AppImage
               src="/cta-students-school.jpg"
               alt="GGPS School Students"
               fill
@@ -1655,8 +1686,8 @@ export default function Home() {
               className="object-cover object-bottom"
             />
             {/* Soft blue gradient blend overlay */}
-            <div className="absolute inset-y-0 right-0 w-24 bg-gradient-to-r from-transparent to-[#0047B6]/80" />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#0047B6]/25 via-transparent to-transparent" />
+            <div className="absolute inset-y-0 right-0 w-24 bg-gradient-to-r from-transparent to-[#0047B6]/80 pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#0047B6]/25 via-transparent to-transparent pointer-events-none" />
           </div>
 
           {/* Doodled Flying Airplane + "A Brighter Future Awaits" */}

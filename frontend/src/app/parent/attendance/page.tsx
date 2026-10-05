@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import AppImage from "@/components/ui/AppImage";
 import { 
   Home, ChevronRight, Calendar, ChevronDown, Check, X, Clock, 
   Hourglass, BarChart3, AlertTriangle, ArrowUpRight, CheckCircle2,
@@ -12,6 +13,7 @@ import {
 import toast from "react-hot-toast";
 import { useParent } from "@/context/ParentContext";
 import ReportCardModal from "@/components/parent/ReportCardModal";
+import ParentEmptyChildState from "@/components/parent/ParentEmptyChildState";
 import { authFetch } from "@/lib/apiClient";
 
 interface DayAttendance {
@@ -51,22 +53,15 @@ export default function AttendancePage() {
   const [selectedDayHover, setSelectedDayHover] = useState<DayAttendance | null>(null);
   const [rawRecords, setRawRecords] = useState<any[]>([]);
 
-  const child = selectedChild || {
-    _id: "c10101010101010101010101",
-    firstName: "Aarav",
-    lastName: "Sharma",
-    grade: "LKG",
-    section: "Section A",
-    rollNumber: "01",
-    studentPhoto: "/aarav-profile-avatar.png",
-  };
+  const child = selectedChild || children[0] || null;
 
   const fetchAttendance = React.useCallback(async () => {
+    if (!child?._id) return;
     try {
       const token = localStorage.getItem("token");
       const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
       const childId = child._id;
-      const res = await authFetch(`${apiBase}/api/v1/attendance?childId=${childId}`, {
+      const res = await authFetch(`${apiBase}/api/v1/parents/me/children/${childId}/attendance`, {
         headers: {
           "Content-Type": "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -77,16 +72,22 @@ export default function AttendancePage() {
         const data = await res.json();
         if (Array.isArray(data)) {
           setRawRecords(data);
+        } else if (data.data && Array.isArray(data.data)) {
+          setRawRecords(data.data);
         }
       }
     } catch (e) {
       console.warn("Attendance fetch notice:", e);
     }
-  }, [child._id]);
+  }, [child?._id]);
 
   useEffect(() => {
     fetchAttendance();
   }, [fetchAttendance]);
+
+  if (!child) {
+    return <ParentEmptyChildState />;
+  }
 
   // Real-time socket sync
   useEffect(() => {
@@ -296,11 +297,13 @@ export default function AttendancePage() {
               className="bg-white dark:bg-[#07142F] border border-slate-200/90 dark:border-white/10 rounded-2xl p-2 px-3 flex items-center gap-3 shadow-2xs hover:border-[#0050CB]/40 transition-all cursor-pointer"
             >
               <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 border border-slate-200 dark:border-slate-700 relative">
-                <Image
+                <AppImage
                   src={child.studentPhoto || "/aarav-profile-avatar.png"}
                   alt={child.firstName}
                   fill
                   sizes="32px"
+                  fallbackType="avatar"
+                  name={`${child.firstName} ${child.lastName}`}
                   className="object-cover"
                 />
               </div>
@@ -332,7 +335,15 @@ export default function AttendancePage() {
                     >
                       <div className="flex items-center gap-2">
                         <div className="w-6 h-6 rounded-full overflow-hidden relative">
-                          <Image src={c.studentPhoto || "/aarav-profile-avatar.png"} alt={c.firstName} fill sizes="24px" className="object-cover" />
+                          <AppImage
+                            src={c.studentPhoto || "/aarav-profile-avatar.png"}
+                            alt={c.firstName}
+                            fill
+                            sizes="24px"
+                            fallbackType="avatar"
+                            name={`${c.firstName} ${c.lastName}`}
+                            className="object-cover"
+                          />
                         </div>
                         <div>
                           <p className="font-bold text-slate-800 dark:text-white">{c.firstName} {c.lastName}</p>

@@ -7,6 +7,8 @@ import {
 } from 'lucide-react';
 import { downloadFile } from '@/lib/fileDownload';
 import { printDocument } from '@/lib/exportUtils';
+import { getApiBaseUrl } from '@/lib/utils';
+import AppImage from '@/components/ui/AppImage';
 import toast from 'react-hot-toast';
 
 export interface PreviewableFile {
@@ -41,7 +43,7 @@ export default function FilePreviewModal({
 
   const fileName = file.originalName || file.name || file.title || 'GGPS-Document.pdf';
   const fileId = file._id || file.id || '';
-  const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
+  const apiBase = getApiBaseUrl();
 
   let previewUrl = file.url || '';
   if (fileId && (!previewUrl || previewUrl.includes('download'))) {
@@ -139,8 +141,7 @@ export default function FilePreviewModal({
             />
           ) : isImage ? (
             <div id="preview-image-container" className="flex items-center justify-center max-h-full max-w-full">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <AppImage
                 src={previewUrl}
                 alt={fileName}
                 className="max-h-[72vh] max-w-full object-contain rounded-2xl shadow-lg border border-slate-200 dark:border-slate-800"

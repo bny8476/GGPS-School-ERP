@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import AppImage from "@/components/ui/AppImage";
 import {
   Calendar,
   CalendarDays,
@@ -636,7 +637,7 @@ export default function EventsManagementPage() {
               >
                 {/* Image Banner with Floating Badges */}
                 <div className="relative h-40 w-full overflow-hidden bg-slate-100">
-                  <Image
+                  <AppImage
                     src={event.image || "/sports-day-track.jpg"}
                     alt={event.title}
                     fill
@@ -1145,14 +1146,14 @@ export default function EventsManagementPage() {
           <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl border border-slate-100 dark:border-slate-800 animate-in fade-in zoom-in-95 duration-200">
             {/* Header image banner */}
             <div className="relative h-44 w-full bg-slate-100">
-              <Image
+              <AppImage
                 src={viewingEvent.image || "/sports-day-track.jpg"}
                 alt={viewingEvent.title}
                 fill
                 sizes="(max-width: 768px) 100vw, 500px"
                 className="object-cover"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30 pointer-events-none" />
               <button
                 onClick={() => setViewingEvent(null)}
                 className="absolute top-3 right-3 p-1.5 rounded-full bg-black/40 text-white hover:bg-black/60 transition-colors"

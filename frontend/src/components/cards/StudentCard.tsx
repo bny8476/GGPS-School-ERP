@@ -11,6 +11,7 @@ import {
   Check,
   Eye
 } from "lucide-react";
+import AppImage from "@/components/ui/AppImage";
 
 export interface StudentCardProps {
   id?: string | number;
@@ -146,9 +147,11 @@ export default function StudentCard({
                 : "bg-gradient-to-tr from-[#BFDBFE] to-[#93C5FD]"
             } shadow-xs`}
           >
-            <img
+            <AppImage
               src={photo}
               alt={name}
+              fallbackType="avatar"
+              name={name}
               className="w-full h-full object-cover rounded-[14px]"
             />
           </div>

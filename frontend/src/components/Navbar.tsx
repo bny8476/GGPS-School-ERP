@@ -46,10 +46,10 @@ export default function Navbar() {
     <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 dark:bg-[#000E28]/95 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
         
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-2.5 group">
-          <AcademyLogo size="md" />
-          <span className="font-saas text-2xl font-black tracking-tight text-[#000E28] dark:text-white transition-colors">
+        {/* Logo — Enlarged & Distinct */}
+        <Link href="/" className="flex items-center gap-3 group">
+          <AcademyLogo size="large" className="shrink-0 group-hover:scale-105 transition-transform duration-200" />
+          <span className="font-saas text-2xl sm:text-[27px] font-black tracking-tight text-[#000E28] dark:text-white transition-colors">
             GGPS <span className="text-[#0050CB]">School</span>
           </span>
         </Link>
@@ -66,24 +66,6 @@ export default function Navbar() {
           >
             <span>{t('nav.home', 'Home')}</span>
             {pathname === '/' ? (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#0050CB] dark:bg-[#38BDF8] rounded-full" />
-            ) : (
-              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#0050CB] dark:bg-[#38BDF8] rounded-full transition-all duration-200 hover:w-full" />
-            )}
-          </Link>
-
-          <span className="text-slate-300 dark:text-slate-700 font-light text-sm select-none">|</span>
-
-          <Link
-            href="/admissions"
-            className={`font-saas relative text-sm tracking-wide transition-all duration-200 py-1 hover-expand-spacing ${
-              pathname === '/admissions'
-                ? 'text-[#0050CB] dark:text-[#38BDF8] font-bold'
-                : 'text-slate-700 dark:text-slate-200 hover:text-[#0050CB] dark:hover:text-[#38BDF8] font-semibold'
-            }`}
-          >
-            <span>{t('nav.admissions', 'Admissions')}</span>
-            {pathname === '/admissions' ? (
               <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#0050CB] dark:bg-[#38BDF8] rounded-full" />
             ) : (
               <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#0050CB] dark:bg-[#38BDF8] rounded-full transition-all duration-200 hover:w-full" />
@@ -188,13 +170,6 @@ export default function Navbar() {
             onClick={() => setIsOpen(false)}
           >
             {t('nav.home', 'Home')}
-          </Link>
-          <Link
-            href="/admissions"
-            className="text-[#0050CB] font-bold py-2"
-            onClick={() => setIsOpen(false)}
-          >
-            {t('nav.admissions', 'Admissions')}
           </Link>
           <Link
             href="/contact"

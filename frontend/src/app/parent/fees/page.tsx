@@ -16,23 +16,22 @@ import { authFetch } from "@/lib/apiClient";
 import { downloadPdf } from "@/lib/fileDownload";
 import { getCurrentAcademicYearFormatted } from "@/lib/date";
 
+import ParentEmptyChildState from "@/components/parent/ParentEmptyChildState";
+
 export default function ParentFeesPage() {
-  const { selectedChild } = useParent();
+  const { selectedChild, children } = useParent();
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
   const [feesData, setFeesData] = useState<any[]>([]);
 
-  const child = selectedChild || {
-    firstName: "Aarav",
-    lastName: "Sharma",
-    grade: "LKG",
-  };
+  const child = selectedChild || children[0] || null;
 
   const fetchFees = React.useCallback(async () => {
+    if (!child?._id) return;
     try {
       const token = localStorage.getItem("token");
       const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
-      const res = await authFetch(`${apiBase}/api/v1/finance/fees`, {
+      const res = await authFetch(`${apiBase}/api/v1/parents/me/children/${child._id}/fees`, {
         headers: {
           "Content-Type": "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -43,14 +42,20 @@ export default function ParentFeesPage() {
         const data = await res.json();
         if (Array.isArray(data)) {
           setFeesData(data);
+        } else if (data.data && Array.isArray(data.data)) {
+          setFeesData(data.data);
         }
       }
     } catch (_) {}
-  }, []);
+  }, [child?._id]);
 
   useEffect(() => {
     fetchFees();
-  }, [fetchFees, child]);
+  }, [fetchFees]);
+
+  if (!child) {
+    return <ParentEmptyChildState />;
+  }
 
   const defaultInvoices = [
     {

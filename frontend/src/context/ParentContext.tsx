@@ -142,44 +142,7 @@ interface ParentContextType {
   updateHomeworkStatus: (homeworkId: string, status: 'Pending' | 'Submitted' | 'Completed') => Promise<boolean>;
 }
 
-const DEFAULT_CHILDREN: Child[] = [
-  {
-    _id: "c10101010101010101010101",
-    firstName: "Aarav",
-    lastName: "Sharma",
-    admissionNumber: "GGPS-2024-089",
-    grade: "LKG",
-    section: "Section A",
-    rollNumber: "14",
-    studentPhoto: "/aarav-hero-student.jpg",
-    bloodGroup: "B+",
-    emergencyContact: "+91 98765 43210",
-    medicalNotes: "Mild seasonal peanut allergy; inhaler not required.",
-    teacherName: "Ms. Ananya Roy",
-    attendanceRate: 94,
-    pendingHomework: 2,
-    feesDue: 8500,
-    recentActivity: "Numbers & Counting tactile play",
-  },
-  {
-    _id: "c20202020202020202020202",
-    firstName: "Diya",
-    lastName: "Sharma",
-    admissionNumber: "GGPS-2025-014",
-    grade: "LKG",
-    section: "Section A",
-    rollNumber: "08",
-    studentPhoto: "/ananya-student.jpg",
-    bloodGroup: "O+",
-    emergencyContact: "+91 98765 43210",
-    medicalNotes: "No known allergies or chronic conditions.",
-    teacherName: "Ms. Ananya Roy",
-    attendanceRate: 96,
-    pendingHomework: 1,
-    feesDue: 4000,
-    recentActivity: "Rhymes & Vocal Singing",
-  },
-];
+const DEFAULT_CHILDREN: Child[] = [];
 
 const DEFAULT_PARENT_PROFILE: ParentProfile = {
   fatherName: "Vikram Sharma",
@@ -325,9 +288,9 @@ export function ParentProvider({ children: reactChildren }: { children: React.Re
       }
     } catch {}
   }, []);
-  const [childrenList, setChildrenList] = useState<Child[]>(DEFAULT_CHILDREN);
-  const [selectedChildId, setSelectedChildId] = useState<string>(DEFAULT_CHILDREN[0]._id);
-  const [isLoadingChildren, setIsLoadingChildren] = useState<boolean>(false);
+  const [childrenList, setChildrenList] = useState<Child[]>([]);
+  const [selectedChildId, setSelectedChildId] = useState<string>('');
+  const [isLoadingChildren, setIsLoadingChildren] = useState<boolean>(true);
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
 
   // Real-Time Classroom States
@@ -340,7 +303,9 @@ export function ParentProvider({ children: reactChildren }: { children: React.Re
   const [unreadNotificationCount, setUnreadNotificationCount] = useState<number>(0);
   const [unreadMessageCount, setUnreadMessageCount] = useState<number>(0);
 
-  const selectedChild = childrenList.find(c => c._id === selectedChildId) || childrenList[0] || null;
+  const selectedChild =
+    childrenList.find((c) => c._id === selectedChildId) ||
+    (childrenList.length > 0 ? childrenList[0] : null);
 
   // Real-Time Unread Counts Fetcher
   const refreshUnreadCounts = useCallback(async () => {
@@ -378,154 +343,192 @@ export function ParentProvider({ children: reactChildren }: { children: React.Re
 
   // Load child-specific classroom data from API
   const refreshChildData = useCallback(async (childId: string) => {
+    if (!childId) {
+      setTodayAttendance(DEFAULT_ATTENDANCE);
+      setTodayClassWork([]);
+      setTodayActivities([]);
+      setTodayDiary(null);
+      setTeacherRemarks([]);
+      setHomeworkList([]);
+      return;
+    }
+
     try {
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
       const apiBase = getApiBaseUrl();
-      const headers = {
+      const headers: Record<string, string> = {
         'Content-Type': 'application/json',
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
       };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
 
-      // 1. Today's Attendance
-      authFetch(`${apiBase}/api/v1/attendance/today?childId=${childId}`, { headers, credentials: 'include' })
-        .then(r => r.ok ? r.json() : null)
-        .then(data => {
-          if (data && data.status) {
-            setTodayAttendance(data);
+      // 1. Today's Attendance (Child-specific API)
+      authFetch(`${apiBase}/api/v1/parents/me/children/${childId}/attendance`, { headers, credentials: 'include' })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => {
+          if (data?.records && Array.isArray(data.records)) {
+            const todayStr = new Date().toISOString().slice(0, 10);
+            const todayRecord = data.records.find(
+              (r: any) => new Date(r.date).toISOString().slice(0, 10) === todayStr
+            );
+            if (todayRecord) {
+              setTodayAttendance({
+                recorded: true,
+                status: todayRecord.status || 'Present',
+                date: todayRecord.date,
+                checkInTime: todayRecord.checkInTime || '8:30 AM',
+                absenceReason: todayRecord.absenceReason,
+                teacherRemark: todayRecord.teacherRemark,
+                teacherName: todayRecord.teacherName,
+                className: todayRecord.className,
+                sectionName: todayRecord.sectionName,
+              });
+            } else {
+              setTodayAttendance({
+                recorded: false,
+                status: 'Not Marked',
+                date: new Date(),
+              });
+            }
           }
         })
         .catch(() => {});
 
-      // 2. Today's Class Work
-      authFetch(`${apiBase}/api/v1/classwork/today?childId=${childId}`, { headers, credentials: 'include' })
-        .then(r => r.ok ? r.json() : null)
-        .then(data => {
-          if (Array.isArray(data) && data.length > 0) {
-            setTodayClassWork(data);
+      // 2. Class Work & Diary (Child-specific API)
+      authFetch(`${apiBase}/api/v1/parents/me/children/${childId}/diary`, { headers, credentials: 'include' })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => {
+          if (data?.diary && Array.isArray(data.diary) && data.diary.length > 0) {
+            setTodayDiary(data.diary[0]);
+          } else {
+            setTodayDiary(null);
           }
         })
         .catch(() => {});
 
-      // 3. Today's Activities
-      authFetch(`${apiBase}/api/v1/activities/today?childId=${childId}`, { headers, credentials: 'include' })
-        .then(r => r.ok ? r.json() : null)
-        .then(data => {
-          if (Array.isArray(data) && data.length > 0) {
-            setTodayActivities(data);
+      // 3. Activities (Child-specific API)
+      authFetch(`${apiBase}/api/v1/parents/me/children/${childId}/activities`, { headers, credentials: 'include' })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => {
+          if (data?.activities && Array.isArray(data.activities)) {
+            setTodayActivities(data.activities);
+          } else {
+            setTodayActivities([]);
           }
         })
         .catch(() => {});
 
-      // 4. Today's Daily Diary
-      authFetch(`${apiBase}/api/v1/daily-diary/today?childId=${childId}`, { headers, credentials: 'include' })
-        .then(r => r.ok ? r.json() : null)
-        .then(data => {
-          if (data && (data.todayLearning || data.todayActivity)) {
-            setTodayDiary(data);
+      // 4. Homework (Child-specific API)
+      authFetch(`${apiBase}/api/v1/parents/me/children/${childId}/homework`, { headers, credentials: 'include' })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => {
+          if (data?.homework && Array.isArray(data.homework)) {
+            setHomeworkList(data.homework);
+          } else {
+            setHomeworkList([]);
           }
         })
         .catch(() => {});
 
-      // 5. Child-specific Teacher Remarks
+      // 5. Remarks
       authFetch(`${apiBase}/api/v1/teacher-remarks/child/${childId}`, { headers, credentials: 'include' })
-        .then(r => r.ok ? r.json() : null)
-        .then(data => {
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => {
           if (Array.isArray(data) && data.length > 0) {
             setTeacherRemarks(data);
+          } else {
+            setTeacherRemarks([]);
           }
         })
         .catch(() => {});
-
-      // 6. Child Homework
-      authFetch(`${apiBase}/api/v1/homework/child/${childId}`, { headers, credentials: 'include' })
-        .then(r => r.ok ? r.json() : null)
-        .then(data => {
-          if (Array.isArray(data) && data.length > 0) {
-            setHomeworkList(data);
-          }
-        })
-        .catch(() => {});
-
     } catch (err) {
       console.warn('Notice loading child portal data:', err);
     }
   }, []);
 
-  // Fetch Parent profile & linked children from real backend API
+  // Fetch Parent profile & strictly verified linked children from real backend API
   const refreshPortalData = useCallback(async () => {
     setIsLoadingChildren(true);
     try {
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
       if (!token) {
         setIsLoadingChildren(false);
+        setChildrenList([]);
+        setSelectedChildId('');
         return;
       }
       const apiBase = getApiBaseUrl();
       const headers = {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
+        Authorization: `Bearer ${token}`,
       };
 
-      const profilePromise = authFetch(`${apiBase}/api/v1/parents/me`, {
+      const res = await authFetch(`${apiBase}/api/v1/parents/me`, {
         headers,
         credentials: 'include',
-      }).then(r => r.ok ? r.json() : null).catch(() => null);
+      });
 
-      const studentsPromise = authFetch(`${apiBase}/api/v1/students`, {
-        headers,
-        credentials: 'include',
-      }).then(r => r.ok ? r.json() : null).catch(() => null);
+      if (!res.ok) {
+        setChildrenList([]);
+        setSelectedChildId('');
+        return;
+      }
 
-      const [profileData, studentsData] = await Promise.all([profilePromise, studentsPromise]);
-
+      const profileData = await res.json();
       if (profileData?.parent) {
         setParentProfile(profileData.parent);
       }
 
-      const fetchedStudents = (profileData?.children && profileData.children.length > 0)
-        ? profileData.children
-        : (Array.isArray(studentsData) && studentsData.length > 0)
-        ? studentsData
-        : null;
+      const fetchedStudents = profileData?.children || [];
 
-      if (fetchedStudents && fetchedStudents.length > 0) {
-        const normalized: Child[] = fetchedStudents.map((s: any, idx: number) => {
-          const className = typeof s.classId === 'object' && s.classId ? s.classId.name : (s.grade || `LKG`);
-          const sectionName = typeof s.sectionId === 'object' && s.sectionId ? s.sectionId.name : (s.section || 'Section A');
+      if (Array.isArray(fetchedStudents) && fetchedStudents.length > 0) {
+        const normalized: Child[] = fetchedStudents.map((s: any) => {
+          const className =
+            typeof s.classId === 'object' && s.classId ? s.classId.name : s.grade || 'Class';
+          const sectionName =
+            typeof s.sectionId === 'object' && s.sectionId ? s.sectionId.name : s.section || 'A';
           return {
             _id: s._id,
             firstName: s.firstName || 'Student',
             lastName: s.lastName || '',
-            admissionNumber: s.admissionNumber || `GGPS-${2026 - idx}-00${idx + 1}`,
+            admissionNumber: s.admissionNumber || s.studentId || '',
             grade: className,
             section: sectionName.startsWith('Section') ? sectionName : `Section ${sectionName}`,
             classId: s.classId,
             sectionId: s.sectionId,
-            rollNumber: s.rollNumber || String(idx + 1).padStart(2, '0'),
-            studentPhoto: s.studentPhoto || (idx === 0 ? DEFAULT_CHILDREN[0].studentPhoto : DEFAULT_CHILDREN[1].studentPhoto),
+            rollNumber: s.rollNumber || '',
+            studentPhoto: s.studentPhoto || '/class-hero-girl.jpg',
             bloodGroup: s.bloodGroup || 'O+',
             emergencyContact: s.emergencyContact || DEFAULT_PARENT_PROFILE.motherContact,
             medicalNotes: s.medicalNotes || 'No specific medical allergies recorded.',
-            teacherName: idx === 0 ? 'Ms. Ananya Roy' : 'Mr. Rajesh Kumar',
-            attendanceRate: idx === 0 ? 94 : 96,
-            pendingHomework: idx === 0 ? 2 : 1,
-            feesDue: idx === 0 ? 4500 : 4000,
-            recentActivity: idx === 0 ? 'Numbers & Counting tactile play' : 'Art & Craft Rainbow drawing',
+            teacherName: s.teacherName || 'Assigned Educator',
+            attendanceRate: s.attendanceRate ?? 95,
+            pendingHomework: s.pendingHomework ?? 0,
+            feesDue: s.feesDue ?? 0,
+            recentActivity: s.recentActivity || '',
           };
         });
 
         setChildrenList(normalized);
-        const activeId = normalized.some(c => c._id === selectedChildId) ? selectedChildId : normalized[0]._id;
+        const activeId = normalized.some((c) => c._id === selectedChildId)
+          ? selectedChildId
+          : normalized[0]._id;
         setSelectedChildId(activeId);
         refreshChildData(activeId);
       } else {
-        setChildrenList(DEFAULT_CHILDREN);
-        refreshChildData(DEFAULT_CHILDREN[0]._id);
+        // Strict Empty State: NEVER fall back to all students or mock children
+        setChildrenList([]);
+        setSelectedChildId('');
+        setTodayAttendance(DEFAULT_ATTENDANCE);
+        setTodayClassWork([]);
+        setTodayActivities([]);
+        setTodayDiary(null);
+        setTeacherRemarks([]);
+        setHomeworkList([]);
       }
     } catch (e) {
-      console.warn("Parent data sync notice:", e);
-      setChildrenList(DEFAULT_CHILDREN);
-      refreshChildData(DEFAULT_CHILDREN[0]._id);
+      console.warn('Parent data sync notice:', e);
+      setChildrenList([]);
+      setSelectedChildId('');
     } finally {
       setIsLoadingChildren(false);
     }

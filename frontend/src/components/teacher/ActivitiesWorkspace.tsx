@@ -38,6 +38,7 @@ import {
   MessageSquare
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import AppImage from '@/components/ui/AppImage';
 
 export type ActivityDomain =
   | 'ALL'
@@ -1067,12 +1068,12 @@ export default function ActivitiesWorkspace({ students = [], onNavigateTab }: Ac
                   {/* Card Hero Image */}
                   {act.heroImage && (
                     <div className="h-36 w-full overflow-hidden relative bg-slate-100 dark:bg-slate-800">
-                      <img
+                      <AppImage
                         src={act.heroImage}
                         alt={act.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
                       <div className="absolute top-3 left-3 flex items-center gap-1.5">
                         <span className="px-2.5 py-1 rounded-full bg-white/90 dark:bg-slate-900/90 text-[#0050CB] dark:text-blue-400 font-bold text-[10px] backdrop-blur-xs">
                           {act.domainLabel}
@@ -1172,7 +1173,7 @@ export default function ActivitiesWorkspace({ students = [], onNavigateTab }: Ac
               >
                 <div>
                   <div className="h-48 w-full relative overflow-hidden bg-slate-100 dark:bg-slate-800">
-                    <img
+                    <AppImage
                       src={mom.photoUrl}
                       alt={mom.caption}
                       className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
@@ -1532,9 +1533,11 @@ export default function ActivitiesWorkspace({ students = [], onNavigateTab }: Ac
                     className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between gap-3 text-xs"
                   >
                     <div className="flex items-center gap-2.5">
-                      <img
+                      <AppImage
                         src={st.photo}
                         alt={st.name}
+                        fallbackType="avatar"
+                        name={st.name}
                         className="w-8 h-8 rounded-full object-cover border border-slate-200 dark:border-slate-700"
                       />
                       <div>
@@ -1788,7 +1791,7 @@ export default function ActivitiesWorkspace({ students = [], onNavigateTab }: Ac
 
             {selectedActivityDetail.heroImage && (
               <div className="h-44 rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800">
-                <img
+                <AppImage
                   src={selectedActivityDetail.heroImage}
                   alt={selectedActivityDetail.title}
                   className="w-full h-full object-cover"

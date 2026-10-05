@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from "react";
 import Image from "next/image";
+import AppImage from "@/components/ui/AppImage";
 import Link from "next/link";
 import { 
   Home, ChevronRight, Calendar, ChevronDown, Check, Download, Printer,
@@ -15,6 +16,7 @@ import { useParent } from "@/context/ParentContext";
 import { downloadFile } from "@/lib/fileDownload";
 import { exportToCSV, printDocument } from "@/lib/exportUtils";
 import { getCurrentAcademicYearFormatted, getAcademicYearDisplayOptions } from "@/lib/date";
+import ParentEmptyChildState from "@/components/parent/ParentEmptyChildState";
 
 interface TimetablePeriod {
   periodNum?: number;
@@ -55,21 +57,28 @@ function getWeekDayDateStr(dayOffset: number): string {
 }
 
 export default function TimetablePage() {
-  const { selectedChild, selectChild, children = [] } = useParent();
+  const { selectedChild, selectChild, children = [], isLoadingChildren } = useParent();
   const [selectedDay, setSelectedDay] = useState<"Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday">("Monday");
   const [selectedAcademicYear, setSelectedAcademicYear] = useState<string>(() => getCurrentAcademicYearFormatted());
   const [isYearDropdownOpen, setIsYearDropdownOpen] = useState<boolean>(false);
   const [isChildDropdownOpen, setIsChildDropdownOpen] = useState<boolean>(false);
 
-  const child = selectedChild || {
-    _id: "child-1",
-    firstName: "Aarav",
-    lastName: "Sharma",
-    grade: "LKG",
-    section: "Section A",
-    rollNumber: "LKG-014",
-    studentPhoto: "/aarav-profile-avatar.png",
-  };
+  const child = selectedChild || children[0] || null;
+
+  if (isLoadingChildren) {
+    return (
+      <div className="w-full min-h-[400px] flex items-center justify-center p-8">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-3 border-[#0050CB] border-t-transparent rounded-full animate-spin" />
+          <p className="text-xs font-bold text-slate-500">Loading timetable...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!child) {
+    return <ParentEmptyChildState />;
+  }
 
   const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"] as const;
 
@@ -919,11 +928,13 @@ export default function TimetablePage() {
             className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl hover:bg-slate-50 dark:hover:bg-white/5 border border-transparent hover:border-slate-200/60 transition-all cursor-pointer"
           >
             <div className="w-8 h-8 rounded-full overflow-hidden border border-slate-200 bg-slate-100 dark:bg-slate-800 relative shrink-0">
-              <Image
+              <AppImage
                 src={child.studentPhoto || "/aarav-profile-avatar.png"}
                 alt={child.firstName}
                 fill
                 sizes="32px"
+                fallbackType="avatar"
+                name={`${child.firstName} ${child.lastName || ""}`}
                 className="object-cover"
               />
             </div>
@@ -960,11 +971,13 @@ export default function TimetablePage() {
                       }`}
                     >
                       <div className="w-6 h-6 rounded-full overflow-hidden border border-slate-200 relative shrink-0">
-                        <Image
+                        <AppImage
                           src={c.studentPhoto || "/aarav-profile-avatar.png"}
                           alt={c.firstName}
                           fill
                           sizes="24px"
+                          fallbackType="avatar"
+                          name={`${c.firstName} ${c.lastName || ""}`}
                           className="object-cover"
                         />
                       </div>
@@ -1445,7 +1458,7 @@ export default function TimetablePage() {
 
             {/* Plant on Books Illustration */}
             <div className="relative w-28 h-20 shrink-0 pointer-events-none select-none">
-              <Image
+              <AppImage
                 src="/timetable-plant-books.png"
                 alt="Plant on books"
                 fill

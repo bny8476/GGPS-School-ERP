@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import AppImage from "@/components/ui/AppImage";
 import { useParams } from "next/navigation";
 import {
   UserCheck, CalendarHeart, BookOpen, Sparkles, Award, 
@@ -50,11 +51,13 @@ export default function ChildProfilePage() {
       <div className="p-6 sm:p-8 rounded-[24px] bg-white dark:bg-[#07142F] border border-[#E7EAF0] dark:border-white/10 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
         <div className="flex items-center gap-5">
           <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden shrink-0 border-2 border-white dark:border-slate-700 shadow-md">
-            <Image
+            <AppImage
               src={child.studentPhoto || "/aarav-hero-student.jpg"}
               alt={child.firstName}
               fill
               sizes="96px"
+              fallbackType="avatar"
+              name={`${child.firstName} ${child.lastName}`}
               className="object-cover"
             />
           </div>

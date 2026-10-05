@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import AppImage from "@/components/ui/AppImage";
 import { 
   MessageSquare, Bell, Sparkles, FolderDown, HelpCircle, 
   Search, SlidersHorizontal, Phone, Video, MoreHorizontal, 
@@ -16,6 +17,7 @@ import { getSocket, joinRoom, leaveRoom } from "@/lib/socket";
 import { getApiBaseUrl } from "@/lib/utils";
 import { authFetch } from "@/lib/apiClient";
 import { useParent } from "@/context/ParentContext";
+import ParentEmptyChildState from "@/components/parent/ParentEmptyChildState";
 import { useAuthStore } from "@/stores/authStore";
 
 interface MessageAttachment {
@@ -120,7 +122,7 @@ function formatServerMessage(m: any, currentUserId: string): Message {
 
 export default function ParentMessagesPage() {
   const { user } = useAuthStore();
-  const { children, selectedChild, selectChild, refreshUnreadCounts } = useParent();
+  const { children, selectedChild, selectChild, refreshUnreadCounts, isLoadingChildren } = useParent();
 
   const [activeTab, setActiveTab] = useState<"Messages" | "Announcements" | "Updates" | "Documents" | "FAQs">("Messages");
   const [activeSubFilter, setActiveSubFilter] = useState<"All" | "Teachers" | "Parents">("All");
@@ -571,6 +573,21 @@ export default function ParentMessagesPage() {
     return true;
   });
 
+  if (isLoadingChildren) {
+    return (
+      <div className="w-full min-h-[400px] flex items-center justify-center p-8">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-3 border-[#0050CB] border-t-transparent rounded-full animate-spin" />
+          <p className="text-xs font-bold text-slate-500">Loading communications...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (children.length === 0) {
+    return <ParentEmptyChildState />;
+  }
+
   return (
     <div className="space-y-4 pb-12 max-w-[1440px] mx-auto font-sans text-slate-800 dark:text-slate-100">
 
@@ -601,11 +618,13 @@ export default function ParentMessagesPage() {
           {selectedChild && (
             <div className="bg-white/80 dark:bg-[#07142F]/80 backdrop-blur-md border border-slate-200/90 dark:border-white/10 rounded-2xl p-2 px-3 flex items-center gap-2.5 shadow-2xs">
               <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 relative border border-slate-200">
-                <Image
+                <AppImage
                   src={selectedChild.studentPhoto || "/aarav-profile-avatar.png"}
                   alt={selectedChild.firstName}
                   fill
                   sizes="32px"
+                  fallbackType="avatar"
+                  name={`${selectedChild.firstName} ${selectedChild.lastName}`}
                   className="object-cover"
                 />
               </div>
@@ -792,11 +811,13 @@ export default function ParentMessagesPage() {
                     {/* Avatar */}
                     <div className="relative shrink-0">
                       <div className="relative w-10 h-10 rounded-full overflow-hidden border border-blue-100 shadow-xs">
-                        <Image
+                        <AppImage
                           src={conv.avatar}
                           alt={conv.name}
                           fill
                           sizes="40px"
+                          fallbackType="avatar"
+                          name={conv.name}
                           className="object-cover"
                         />
                       </div>
@@ -853,11 +874,13 @@ export default function ParentMessagesPage() {
             {/* Left: Active Contact Profile */}
             <div className="flex items-center gap-3 min-w-0">
               <div className="relative w-10 h-10 rounded-full overflow-hidden border border-blue-100 shadow-xs shrink-0">
-                <Image
+                <AppImage
                   src={currentConversation?.avatar || "/teacher-ananya-roy.jpg"}
                   alt={currentConversation?.name || "Faculty Staff"}
                   fill
                   sizes="40px"
+                  fallbackType="avatar"
+                  name={currentConversation?.name || "Teacher Contact"}
                   className="object-cover"
                 />
               </div>
@@ -933,11 +956,13 @@ export default function ParentMessagesPage() {
                     {/* Teacher Avatar */}
                     {isTeacher && (
                       <div className="relative w-8 h-8 rounded-full overflow-hidden border border-blue-100 shrink-0 mt-1">
-                        <Image
+                        <AppImage
                           src={currentConversation?.avatar || "/teacher-ananya-roy.jpg"}
                           alt="Teacher"
                           fill
                           sizes="32px"
+                          fallbackType="avatar"
+                          name={currentConversation?.name || "Teacher"}
                           className="object-cover"
                         />
                       </div>
@@ -1025,11 +1050,13 @@ export default function ParentMessagesPage() {
                     {/* Parent Avatar */}
                     {!isTeacher && (
                       <div className="relative w-8 h-8 rounded-full overflow-hidden border border-blue-200 shrink-0 mt-1">
-                        <Image
+                        <AppImage
                           src={selectedChild?.studentPhoto || "/aarav-profile-avatar.png"}
                           alt="Parent"
                           fill
                           sizes="32px"
+                          fallbackType="avatar"
+                          name={selectedChild ? `${selectedChild.firstName} ${selectedChild.lastName}` : "Parent"}
                           className="object-cover"
                         />
                       </div>
@@ -1043,11 +1070,13 @@ export default function ParentMessagesPage() {
             {isTeacherTyping && (
               <div className="flex items-center gap-2 pt-1 text-xs text-slate-400 animate-in fade-in duration-200">
                 <div className="relative w-6 h-6 rounded-full overflow-hidden border border-blue-100 shrink-0">
-                  <Image
+                  <AppImage
                     src={currentConversation?.avatar || "/teacher-ananya-roy.jpg"}
                     alt="Teacher"
                     fill
                     sizes="24px"
+                    fallbackType="avatar"
+                    name={currentConversation?.name || "Teacher"}
                     className="object-cover"
                   />
                 </div>
@@ -1268,11 +1297,13 @@ export default function ParentMessagesPage() {
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-9 h-9 rounded-full overflow-hidden border border-blue-100 relative shrink-0">
-                        <Image
+                        <AppImage
                           src={contact.avatar || "/teacher-ananya-roy.jpg"}
                           alt={contact.name}
                           fill
                           sizes="36px"
+                          fallbackType="avatar"
+                          name={contact.name}
                           className="object-cover"
                         />
                       </div>

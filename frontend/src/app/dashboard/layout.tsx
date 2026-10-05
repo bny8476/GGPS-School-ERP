@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
+import AppImage from '@/components/ui/AppImage';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuthStore } from "@/stores/authStore";
 import { 
@@ -649,8 +650,8 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             <p className="text-xs font-bold text-white">Better Education</p>
             <p className="text-xs font-black text-[#38BDF8]">Brighter Future</p>
             <div className="mt-2.5 rounded-xl overflow-hidden h-20 w-full relative">
-              <img src="/admin-hero-campus.jpg" alt="GGPS Campus" className="w-full h-full object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#040D1E]/70 via-transparent to-transparent" />
+              <AppImage src="/admin-hero-campus.jpg" alt="GGPS Campus" className="w-full h-full object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#040D1E]/70 via-transparent to-transparent pointer-events-none" />
             </div>
           </div>
         )}
@@ -776,9 +777,11 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                 className="flex items-center gap-2 pl-2 sm:pl-2.5 hover:bg-slate-50 dark:hover:bg-slate-800/50 py-1 pr-1.5 rounded-full transition-colors cursor-pointer"
               >
                 <div className="relative h-9 w-9 rounded-full overflow-hidden bg-slate-200 ring-1 ring-slate-200 shrink-0">
-                  <img
+                  <AppImage
                     src="/aarav-profile-avatar.png"
                     alt="Admin"
+                    fallbackType="avatar"
+                    name="Admin"
                     className="object-cover w-full h-full"
                   />
                 </div>

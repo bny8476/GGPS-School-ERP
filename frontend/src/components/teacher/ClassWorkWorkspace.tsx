@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { printDocument } from '@/lib/exportUtils';
+import AppImage from '@/components/ui/AppImage';
 
 export type ClassWorkStatus = 'COMPLETED' | 'IN_PROGRESS' | 'UPCOMING';
 
@@ -644,7 +645,7 @@ export default function ClassWorkWorkspace({ students = [], onNavigateTab }: Cla
                     {item.boardPhotoUrl && (
                       <div className="flex items-center gap-3 pt-1">
                         <div className="w-16 h-12 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 shrink-0 border border-slate-200 dark:border-slate-700">
-                          <img
+                          <AppImage
                             src={item.boardPhotoUrl}
                             alt="Board snapshot"
                             className="w-full h-full object-cover"
@@ -753,9 +754,11 @@ export default function ClassWorkWorkspace({ students = [], onNavigateTab }: Cla
                     <tr key={st.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/40 transition-colors">
                       <td className="p-4">
                         <div className="flex items-center gap-2.5">
-                          <img
+                          <AppImage
                             src={st.photo}
                             alt={st.name}
+                            fallbackType="avatar"
+                            name={st.name}
                             className="w-8 h-8 rounded-full object-cover border border-slate-200 dark:border-slate-700"
                           />
                           <div>
@@ -840,7 +843,7 @@ export default function ClassWorkWorkspace({ students = [], onNavigateTab }: Cla
                 >
                   <div>
                     <div className="h-52 w-full relative overflow-hidden bg-slate-100 dark:bg-slate-800">
-                      <img
+                      <AppImage
                         src={p.boardPhotoUrl}
                         alt={p.topic}
                         className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
@@ -1132,9 +1135,11 @@ export default function ClassWorkWorkspace({ students = [], onNavigateTab }: Cla
                     className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between text-xs"
                   >
                     <div className="flex items-center gap-2.5">
-                      <img
+                      <AppImage
                         src={st.photo}
                         alt={st.name}
+                        fallbackType="avatar"
+                        name={st.name}
                         className="w-7 h-7 rounded-full object-cover border border-slate-200"
                       />
                       <span className="font-bold text-slate-800 dark:text-white">

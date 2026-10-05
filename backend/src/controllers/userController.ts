@@ -1,9 +1,12 @@
 import { Request, Response } from 'express';
+import mongoose from 'mongoose';
 import User from '../models/User';
 import Role from '../models/Role';
 import Employee from '../models/Employee';
 import TeacherProfile from '../models/TeacherProfile';
 import Parent from '../models/Parent';
+import Student from '../models/Student';
+import StudentParent from '../models/StudentParent';
 import {
   normalizeEmail,
   hashPassword,
@@ -176,6 +179,68 @@ export const createUser = async (req: Request, res: Response) => {
     const resolvedSchoolId = schoolId || req.user?.schoolId;
     const resolvedCampusId = campusId || req.user?.campusId;
 
+    // Pre-validate linked children if role is Parent
+    const linkedChildrenInput = Array.isArray(req.body.linkedChildren)
+      ? req.body.linkedChildren
+      : Array.isArray(req.body.children)
+      ? req.body.children
+      : [];
+
+    const validatedChildren: any[] = [];
+    if (canonicalRoleName === 'Parent' && linkedChildrenInput.length > 0) {
+      const seenStudentIds = new Set<string>();
+      for (const item of linkedChildrenInput) {
+        const studentId =
+          typeof item === 'object' && item !== null
+            ? item.studentId || item._id || item.id
+            : String(item);
+
+        if (!studentId || !mongoose.Types.ObjectId.isValid(studentId)) {
+          return res.status(400).json({
+            success: false,
+            message: `Invalid student ID for linking: ${studentId}`,
+          });
+        }
+
+        if (seenStudentIds.has(String(studentId))) {
+          return res.status(400).json({
+            success: false,
+            message: 'Duplicate child specified in link list. Each child can only be linked once.',
+          });
+        }
+        seenStudentIds.add(String(studentId));
+
+        const student = await Student.findById(studentId);
+        if (!student) {
+          return res.status(400).json({
+            success: false,
+            message: `Student with ID ${studentId} does not exist in the database.`,
+          });
+        }
+
+        if (resolvedSchoolId && student.schoolId && String(student.schoolId) !== String(resolvedSchoolId)) {
+          return res.status(400).json({
+            success: false,
+            message: `Student ${student.firstName} ${student.lastName} belongs to a different school and cannot be linked.`,
+          });
+        }
+
+        const canonicalRel =
+          ['Father', 'Mother', 'Guardian', 'Other'].find(
+            (r) => r.toLowerCase() === String(item.relationship || item.relationshipType || 'Guardian').toLowerCase()
+          ) || 'Guardian';
+
+        validatedChildren.push({
+          student,
+          relationship: canonicalRel,
+          isPrimary: Boolean(item.isPrimary),
+          emergencyContact: Boolean(item.emergencyContact ?? item.isEmergencyContact ?? true),
+          canPickup: Boolean(item.canPickup ?? true),
+          receivesNotifications: Boolean(item.receivesNotifications ?? true),
+        });
+      }
+    }
+
     const user = await User.create({
       firstName: trimmedFirst,
       lastName: trimmedLast,
@@ -201,6 +266,61 @@ export const createUser = async (req: Request, res: Response) => {
     // Relational Sync: Employee & TeacherProfile or Parent
     await syncEmployeeAndTeacher(user, { ...req.body, roleName: canonicalRoleName });
 
+    // Link validated children to Parent record
+    const linkedChildrenResults: any[] = [];
+    if (canonicalRoleName === 'Parent' && validatedChildren.length > 0) {
+      try {
+        const parentDoc = await Parent.findOne({
+          $or: [{ userId: user._id }, { primaryEmail: user.email }],
+        });
+
+        if (parentDoc && validatedChildren.length > 0) {
+          for (let i = 0; i < validatedChildren.length; i++) {
+            const vc = validatedChildren[i];
+            const isPrimary = vc.isPrimary || i === 0;
+
+            const link = await StudentParent.findOneAndUpdate(
+              { parentId: parentDoc._id, studentId: vc.student._id },
+              {
+                parentId: parentDoc._id,
+                studentId: vc.student._id,
+                relationship: vc.relationship,
+                relationshipType: vc.relationship,
+                isPrimary,
+                emergencyContact: vc.emergencyContact,
+                isEmergencyContact: vc.emergencyContact,
+                canPickup: vc.canPickup,
+                receivesNotifications: vc.receivesNotifications,
+                status: 'active',
+                schoolId: resolvedSchoolId || vc.student.schoolId,
+                campusId: resolvedCampusId || vc.student.campusId,
+              },
+              { upsert: true, new: true, setDefaultsOnInsert: true }
+            );
+
+            if (isPrimary || !vc.student.parentId) {
+              await Student.findByIdAndUpdate(vc.student._id, { parentId: parentDoc._id });
+            }
+
+            linkedChildrenResults.push({
+              _id: link._id,
+              studentId: vc.student._id,
+              studentName: `${vc.student.firstName} ${vc.student.lastName}`,
+              admissionNumber: vc.student.admissionNumber,
+              grade: vc.student.grade,
+              relationship: link.relationship,
+              isPrimary: link.isPrimary,
+            });
+          }
+        }
+      } catch (linkError) {
+        // Rollback created user & parent on partial linking failure
+        await User.findByIdAndDelete(user._id);
+        await Parent.findOneAndDelete({ userId: user._id });
+        throw linkError;
+      }
+    }
+
     res.status(201).json({
       success: true,
       message: `${canonicalRoleName} account created successfully.`,
@@ -216,6 +336,7 @@ export const createUser = async (req: Request, res: Response) => {
         status: user.status,
         createdAt: user.createdAt,
       },
+      linkedChildren: linkedChildrenResults,
       _id: user._id,
       firstName: user.firstName,
       lastName: user.lastName,

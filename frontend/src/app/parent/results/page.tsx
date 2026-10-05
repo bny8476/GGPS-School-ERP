@@ -10,21 +10,30 @@ import {
 import toast from "react-hot-toast";
 import { useParent } from "@/context/ParentContext";
 import ReportCardModal from "@/components/parent/ReportCardModal";
+import ParentEmptyChildState from "@/components/parent/ParentEmptyChildState";
 import { printDocument } from "@/lib/exportUtils";
 
 export default function ParentResultsPage() {
-  const { selectedChild } = useParent();
+  const { selectedChild, children = [], isLoadingChildren } = useParent();
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [selectedTerm, setSelectedTerm] = useState("Term 1 (Mid-Year 2026)");
 
-  const child = selectedChild || {
-    firstName: "Aarav",
-    lastName: "Sharma",
-    grade: "LKG",
-    section: "Section A",
-    studentId: "GGPS2026LKG001",
-    admissionNumber: "GGPS2026Admin001",
-  };
+  const child = selectedChild || children[0] || null;
+
+  if (isLoadingChildren) {
+    return (
+      <div className="w-full min-h-[400px] flex items-center justify-center p-8">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-3 border-[#0050CB] border-t-transparent rounded-full animate-spin" />
+          <p className="text-xs font-bold text-slate-500">Loading student report cards...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!child) {
+    return <ParentEmptyChildState />;
+  }
 
   const results = [
     { subject: "Early Numeracy", marks: "96 / 100", grade: "A+", status: "Distinction", teacher: "Ms. Ananya Roy", remarks: "Outstanding counting, patterns, and shape identification skills." },

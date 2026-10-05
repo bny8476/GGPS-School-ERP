@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import AppImage from "@/components/ui/AppImage";
 import { 
   Star, Trophy, BookOpen, Music, Palette, Wrench, MoreHorizontal, 
   Calendar, Users, MapPin, ArrowRight, ChevronDown, LayoutGrid, 
@@ -412,7 +413,7 @@ export default function ActivitiesPage() {
               >
                 {/* Card Thumbnail Image + Star Bookmark Button */}
                 <div className="relative h-48 w-full overflow-hidden bg-slate-100 dark:bg-slate-800">
-                  <Image
+                  <AppImage
                     src={act.image}
                     alt={act.title}
                     fill
@@ -525,14 +526,14 @@ export default function ActivitiesPage() {
           >
             {/* Modal Header Thumbnail */}
             <div className="relative h-52 w-full">
-              <Image
+              <AppImage
                 src={selectedActivity.image}
                 alt={selectedActivity.title}
                 fill
                 sizes="(max-width: 640px) 90vw, 512px"
                 className="object-cover"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
               
               <button
                 type="button"

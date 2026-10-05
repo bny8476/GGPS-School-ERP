@@ -55,6 +55,42 @@
   }
 }
 
+/* Seamless Hero Continuous Background & Image Masking */
+.hero-continuous-bg {
+  background:
+    radial-gradient(
+      circle at 70% 45%,
+      rgba(207, 232, 255, 0.8),
+      transparent 42%
+    ),
+    linear-gradient(
+      135deg,
+      #ffffff 0%,
+      #f4f8ff 45%,
+      #eaf4ff 100%
+    );
+}
+
+:where(.dark, .dark *, [data-theme="dark"], [data-theme="dark"] *) .hero-continuous-bg {
+  background:
+    radial-gradient(
+      circle at 70% 45%,
+      rgba(0, 80, 203, 0.28),
+      transparent 42%
+    ),
+    linear-gradient(
+      135deg,
+      #000a1f 0%,
+      #000E28 45%,
+      #000a1f 100%
+    );
+}
+
+.hero-seamless-mask {
+  -webkit-mask-image: radial-gradient(ellipse 92% 88% at 55% 50%, black 72%, transparent 100%);
+  mask-image: radial-gradient(ellipse 92% 88% at 55% 50%, black 72%, transparent 100%);
+}
+
 @layer base {
   :root {
     --background: 210 40% 98%;
@@ -449,25 +485,58 @@ html.dark {
   color: #f1f5f9 !important;
 }
 
-/* Page Backgrounds & Gradients */
-.dark section[class*="bg-gradient-"],
-.dark div[class*="bg-gradient-"],
-.dark main[class*="bg-gradient-"],
-.dark div[class*="from-[#F7FAFE]"],
-.dark div[class*="from-[#FAFBFD]"],
-.dark div[class*="from-[#FFFFFF]"],
-.dark div[class*="from-[#EBF2FE]"],
-.dark div[class*="from-blue-50"],
-.dark div[class*="from-slate-50"],
-.dark div[class*="bg-slate-50"],
-.dark div[class*="bg-[#F8FAFC]"],
-.dark div[class*="bg-[#FAFBFD]"],
-.dark div[class*="bg-[#F4F7FC]"],
-.dark div[class*="bg-[#F4F8FD]"],
-.dark div[class*="bg-[#F6F9FE]"] {
-  background: #000a1f !important;
-  background-image: none !important;
+/* Page Backgrounds & Gradients (Scoped to base containers; protects overlays and background images) */
+.dark main:not([style*="background"]),
+.dark section[class*="bg-gradient-"]:not([style*="background"]):not([class*="pointer-events-none"]):not([class*="absolute"]),
+.dark div[class*="from-[#F7FAFE]"]:not([style*="background"]):not([class*="pointer-events-none"]):not([class*="absolute"]),
+.dark div[class*="from-[#FAFBFD]"]:not([style*="background"]):not([class*="pointer-events-none"]):not([class*="absolute"]),
+.dark div[class*="from-[#EBF2FE]"]:not([style*="background"]):not([class*="pointer-events-none"]):not([class*="absolute"]),
+.dark div[class*="from-blue-50"]:not([style*="background"]):not([class*="pointer-events-none"]):not([class*="absolute"]),
+.dark div[class*="from-slate-50"]:not([style*="background"]):not([class*="pointer-events-none"]):not([class*="absolute"]) {
+  background-color: #000a1f !important;
 }
+
+/* Base Light Neutral Backgrounds -> Dark Navy */
+.dark div[class*="bg-slate-50"]:not([class*="absolute"]):not([style*="background"]):not([class*="pointer-events-none"]),
+.dark div[class*="bg-[#F8FAFC]"]:not([class*="absolute"]):not([style*="background"]):not([class*="pointer-events-none"]),
+.dark div[class*="bg-[#FAFBFD]"]:not([class*="absolute"]):not([style*="background"]):not([class*="pointer-events-none"]),
+.dark div[class*="bg-[#F4F7FC]"]:not([class*="absolute"]):not([style*="background"]):not([class*="pointer-events-none"]),
+.dark div[class*="bg-[#F4F8FD]"]:not([class*="absolute"]):not([style*="background"]):not([class*="pointer-events-none"]),
+.dark div[class*="bg-[#F6F9FE]"]:not([class*="absolute"]):not([style*="background"]):not([class*="pointer-events-none"]) {
+  background-color: #000a1f !important;
+}
+
+/* ==========================================================================
+   Image System Dark Theme Protections
+   ========================================================================== */
+img,
+image,
+picture,
+video,
+canvas {
+  color-scheme: light;
+}
+
+/* Never invert photographs or apply global opacity dimming in dark mode */
+.dark img,
+.dark picture,
+.dark [role="img"] {
+  filter: none;
+}
+
+/* Ensure mix-blend-multiply on transparent illustrations does not black out on dark backgrounds */
+.dark .mix-blend-multiply,
+.dark [class*="mix-blend-multiply"] {
+  mix-blend-mode: normal !important;
+}
+
+/* Preserve inline and CSS background images in dark mode */
+.dark [style*="background-image"],
+.dark [style*="background:url"],
+.dark [style*="background: url"] {
+  background-repeat: no-repeat;
+}
+
 
 /* Surface and Cards (including opacity variations like bg-white/95, bg-white/90) */
 .dark .bg-white,
@@ -723,5 +792,56 @@ aside .custom-scrollbar::-webkit-scrollbar-thumb:hover,
   -ms-overflow-style: none !important;
   scrollbar-width: none !important;
 }
+
+/* ==========================================================================
+   Universal Print & PDF Professional Document System
+   Guarantees all exported/printed pages remain pristine white-background
+   documents regardless of whether the UI is currently in Dark Mode.
+   ========================================================================== */
+@media print {
+  html,
+  html.dark,
+  body,
+  .dark body {
+    background-color: #ffffff !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .dark .bg-white,
+  .dark [class*="bg-white/"],
+  .dark [class*="bg-white\\/"] {
+    background-color: #ffffff !important;
+  }
+
+  .dark .text-slate-900,
+  .dark .text-slate-800,
+  .dark .text-slate-700,
+  .dark .text-\[\#000E28\],
+  .dark [class*="text-[#000E28]"] {
+    color: #000000 !important;
+  }
+
+  .dark .border-slate-100,
+  .dark .border-slate-200,
+  .dark .border-slate-300,
+  .dark [class*="border-slate-"] {
+    border-color: #e2e8f0 !important;
+  }
+
+  /* Ensure printed images preserve natural lighting without invert or filters */
+  img,
+  image,
+  picture,
+  svg,
+  canvas {
+    color-scheme: light !important;
+    filter: none !important;
+    opacity: 1 !important;
+  }
+}
+
 
 

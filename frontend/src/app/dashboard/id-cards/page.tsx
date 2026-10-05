@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
+import AppImage from "@/components/ui/AppImage";
 import {
   Printer,
   Download,
@@ -1091,9 +1092,11 @@ export default function IdCardGeneratorPage() {
                 <div className="p-2.5 px-3 rounded-2xl bg-[#EBF3FF] dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-900/50 flex items-center justify-between shadow-2xs">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-full overflow-hidden border border-white shadow-2xs shrink-0 bg-white">
-                      <img
+                      <AppImage
                         src={customPhoto || "/aarav-hero-student.jpg"}
                         alt={studentName}
+                        fallbackType="avatar"
+                        name={studentName}
                         className="w-full h-full object-cover"
                       />
                     </div>
@@ -1198,9 +1201,11 @@ export default function IdCardGeneratorPage() {
                 <div className="flex items-center gap-3">
                   <div className="w-11 h-11 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-50 shrink-0 shadow-2xs flex items-center justify-center">
                     {customPhoto ? (
-                      <img
+                      <AppImage
                         src={customPhoto}
                         alt="Student Preview"
+                        fallbackType="avatar"
+                        name={studentName}
                         className="w-full h-full object-cover"
                       />
                     ) : (
@@ -1400,9 +1405,11 @@ export default function IdCardGeneratorPage() {
                   {/* Centered Student Photo */}
                   <div className="w-24 h-24 rounded-2xl overflow-hidden border-2 border-white shadow-md bg-slate-100 flex items-center justify-center shrink-0">
                     {customPhoto ? (
-                      <img
+                      <AppImage
                         src={customPhoto}
                         alt={studentName}
+                        fallbackType="avatar"
+                        name={studentName}
                         className="w-full h-full object-cover"
                       />
                     ) : (

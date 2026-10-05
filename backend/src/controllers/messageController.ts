@@ -1178,23 +1178,87 @@ export const getContacts = async (req: Request, res: Response) => {
 
       return res.json({ success: true, contacts });
     } else {
-      // Parent: Find assigned teachers
-      const teachers = await User.find({ isActive: true })
+      // Parent: Find assigned teachers associated with the child's class/section
+      const { childId } = req.query;
+      const parent = await Parent.findOne({
+        $or: [{ userId: currentUserId }, { primaryEmail: (req.user as any)?.email }],
+      });
+
+      if (!parent) {
+        return res.json({ success: true, contacts: [] });
+      }
+
+      // Find parent's verified linked children
+      const links = await StudentParent.find({
+        parentId: parent._id,
+        status: { $ne: 'inactive' },
+      }).select('studentId');
+      const direct = await Student.find({
+        parentId: parent._id,
+        status: { $ne: 'Inactive' },
+      }).select('_id');
+      const allowedStudentIds = [
+        ...new Set([
+          ...links.map((l) => String(l.studentId)),
+          ...direct.map((d) => String(d._id)),
+        ]),
+      ];
+
+      if (allowedStudentIds.length === 0) {
+        return res.json({ success: true, contacts: [] });
+      }
+
+      let targetClassIds: any[] = [];
+      if (childId && typeof childId === 'string') {
+        if (!allowedStudentIds.includes(childId)) {
+          return res.status(403).json({
+            success: false,
+            message: "Access denied: You don't have permission to contact teachers for this child.",
+          });
+        }
+        const student = await Student.findById(childId);
+        if (student?.classId) targetClassIds.push(student.classId);
+      } else {
+        const students = await Student.find({ _id: { $in: allowedStudentIds } }).select('classId');
+        targetClassIds = students.map((s) => s.classId).filter(Boolean);
+      }
+
+      const teacherQuery: Record<string, any> = { isActive: true };
+      if (targetClassIds.length > 0) {
+        teacherQuery.$or = [
+          { 'teachingAssignments.classId': { $in: targetClassIds } },
+          { assignedClass: { $in: targetClassIds.map(String) } },
+        ];
+      }
+
+      let teachers = await User.find(teacherQuery)
         .populate({
           path: 'role',
           match: { name: 'Teacher' },
         })
         .limit(25);
 
-      const contacts = teachers
-        .filter((t) => t.role)
-        .map((t: any) => ({
-          _id: t._id,
-          name: `${t.firstName} ${t.lastName}`,
-          role: 'Teacher',
-          email: t.email,
-          avatar: t.avatar || '/teacher-ananya-roy.jpg',
-        }));
+      teachers = teachers.filter((t) => t.role);
+
+      // Fallback: If no class-specific teacher was configured, return school teachers
+      if (teachers.length === 0) {
+        const allTeachers = await User.find({ isActive: true })
+          .populate({
+            path: 'role',
+            match: { name: 'Teacher' },
+          })
+          .limit(10);
+        teachers = allTeachers.filter((t) => t.role);
+      }
+
+      const contacts = teachers.map((t: any) => ({
+        _id: t._id,
+        name: `${t.firstName} ${t.lastName}`,
+        role: 'Teacher',
+        email: t.email,
+        designation: t.designation || 'Class Educator',
+        avatar: t.avatar || '/teacher-ananya-roy.jpg',
+      }));
 
       return res.json({ success: true, contacts });
     }

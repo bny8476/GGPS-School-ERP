@@ -16,6 +16,8 @@ import {
   Clock,
   UserCheck
 } from "lucide-react";
+import { getApiBaseUrl } from "@/lib/utils";
+import AppImage from "@/components/ui/AppImage";
 
 interface VerificationData {
   studentName: string;
@@ -49,7 +51,7 @@ export default function StudentIdVerificationPage() {
     const verifyCard = async () => {
       try {
         setLoading(true);
-        const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+        const apiBase = getApiBaseUrl();
         const res = await fetch(`${apiBase}/api/v1/id-cards/verify/${token}`);
         const json = await res.json();
 
@@ -162,15 +164,13 @@ export default function StudentIdVerificationPage() {
               <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 pb-6 border-b border-slate-100 dark:border-slate-800 text-center sm:text-left">
                 {/* Photo */}
                 <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl bg-blue-50 dark:bg-blue-950/40 border-2 border-[#0050CB]/30 overflow-hidden flex items-center justify-center shrink-0 shadow-md">
-                  {data.photoUrl ? (
-                    <img
-                      src={data.photoUrl}
-                      alt={data.studentName}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <GraduationCap className="w-12 h-12 text-[#0050CB]" />
-                  )}
+                  <AppImage
+                    src={data.photoUrl}
+                    alt={data.studentName}
+                    fallbackType="avatar"
+                    name={data.studentName}
+                    className="w-full h-full object-cover"
+                  />
                 </div>
 
                 <div className="space-y-1.5 flex-1 min-w-0">

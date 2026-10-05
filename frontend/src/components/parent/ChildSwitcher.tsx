@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import Image from "next/image";
+import AppImage from "@/components/ui/AppImage";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, Check, ShieldCheck, GraduationCap } from "lucide-react";
 import { useParent } from "@/context/ParentContext";
@@ -52,11 +53,13 @@ export default function ChildSwitcher({ variant = "header", className = "" }: Ch
               }`}
             >
               <div className="relative w-6 h-6 rounded-full overflow-hidden shrink-0 border border-white/40">
-                <Image
+                <AppImage
                   src={child.studentPhoto || "/aarav-hero-student.jpg"}
                   alt={child.firstName}
                   fill
                   sizes="24px"
+                  fallbackType="avatar"
+                  name={`${child.firstName} ${child.lastName}`}
                   className="object-cover"
                 />
               </div>
@@ -83,11 +86,13 @@ export default function ChildSwitcher({ variant = "header", className = "" }: Ch
         aria-expanded={isOpen}
       >
         <div className="relative w-7 h-7 rounded-full overflow-hidden shrink-0 ring-2 ring-[#3157D5]/40 group-hover:ring-[#3157D5] transition-all">
-          <Image
+          <AppImage
             src={selectedChild.studentPhoto || "/aarav-hero-student.jpg"}
             alt={selectedChild.firstName}
             fill
             sizes="28px"
+            fallbackType="avatar"
+            name={`${selectedChild.firstName} ${selectedChild.lastName}`}
             className="object-cover"
           />
         </div>
@@ -143,11 +148,13 @@ export default function ChildSwitcher({ variant = "header", className = "" }: Ch
                     }`}
                   >
                     <div className="relative w-10 h-10 rounded-full overflow-hidden shrink-0 border-2 border-white dark:border-slate-800 shadow-sm">
-                      <Image
+                      <AppImage
                         src={child.studentPhoto || "/aarav-hero-student.jpg"}
                         alt={child.firstName}
                         fill
                         sizes="40px"
+                        fallbackType="avatar"
+                        name={`${child.firstName} ${child.lastName}`}
                         className="object-cover"
                       />
                     </div>

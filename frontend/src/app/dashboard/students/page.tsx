@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import Link from 'next/link';
+import AppImage from '@/components/ui/AppImage';
 import { useSearchParams } from 'next/navigation';
 import { 
   Users, Plus, Search, Filter, Download, MoreVertical, 
@@ -162,8 +163,14 @@ function StudentsDirectoryContent() {
       sortable: true,
       cell: (row: StudentRecord) => (
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-linear-to-br from-[#0050CB] to-[#00388F] text-white flex items-center justify-center font-black text-sm shadow-xs shrink-0">
-            {row.firstName?.[0] || 'S'}
+          <div className="w-10 h-10 rounded-2xl overflow-hidden shadow-xs shrink-0 bg-slate-100 dark:bg-slate-800">
+            <AppImage
+              src={(row as any).studentPhoto}
+              alt={row.firstName}
+              fallbackType="avatar"
+              name={`${row.firstName} ${row.lastName}`}
+              className="w-full h-full object-cover"
+            />
           </div>
           <div className="min-w-0">
             <Link 
@@ -479,8 +486,14 @@ function StudentsDirectoryContent() {
               <div>
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-2xl bg-linear-to-br from-[#0050CB] to-[#002772] text-white flex items-center justify-center font-black text-lg shadow-sm">
-                      {student.firstName?.[0] || 'S'}
+                    <div className="w-12 h-12 rounded-2xl overflow-hidden shadow-sm shrink-0 bg-slate-100 dark:bg-slate-800">
+                      <AppImage
+                        src={(student as any).studentPhoto}
+                        alt={student.firstName}
+                        fallbackType="avatar"
+                        name={`${student.firstName} ${student.lastName}`}
+                        className="w-full h-full object-cover"
+                      />
                     </div>
                     <div>
                       <h4 className="font-black text-sm text-[#000E28] dark:text-white">

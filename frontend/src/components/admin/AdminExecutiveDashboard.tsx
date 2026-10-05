@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
+import AppImage from '@/components/ui/AppImage';
 import { 
   Users, 
   GraduationCap, 
@@ -88,11 +89,11 @@ export default function AdminExecutiveDashboard({
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#EEF4FF] via-[#F2F6FE] to-[#E9F1FE] dark:from-[#0B1735] dark:via-[#09152F] dark:to-[#0A1B3F] border border-blue-100/80 dark:border-slate-800 shadow-[0_2px_14px_rgba(0,80,203,0.04)] min-h-[160px] flex items-stretch">
         {/* School Campus Photo on Right with seamless gradient blend */}
         <div className="absolute right-0 top-0 bottom-0 w-full sm:w-[55%] lg:w-[48%] pointer-events-none overflow-hidden select-none">
-          <div className="absolute inset-0 bg-gradient-to-r from-[#EEF4FF] via-[#EEF4FF]/75 to-transparent dark:from-[#0B1735] dark:via-[#0B1735]/80 z-10 w-44" />
-          <img
+          <div className="absolute inset-0 bg-gradient-to-r from-[#EEF4FF] via-[#EEF4FF]/75 to-transparent dark:from-[#0B1735] dark:via-[#0B1735]/80 z-10 w-44 pointer-events-none" />
+          <AppImage
             src="/admin-hero-campus.jpg"
             alt="GGPS School Campus"
-            className="w-full h-full object-cover object-center opacity-90 dark:opacity-40"
+            className="w-full h-full object-cover object-center opacity-95 dark:opacity-85"
           />
         </div>
 

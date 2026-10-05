@@ -35,8 +35,30 @@ import {
   Sparkles,
   ExternalLink,
   Check,
+  GraduationCap,
+  Link2,
 } from "lucide-react";
 import toast from "react-hot-toast";
+
+interface StagedChild {
+  studentId: string;
+  studentName: string;
+  admissionNumber: string;
+  className?: string;
+  sectionName?: string;
+  relationship: "Father" | "Mother" | "Guardian" | "Other";
+  isPrimary: boolean;
+  emergencyContact: boolean;
+}
+
+interface LinkedChildDetail {
+  _id: string;
+  studentId: any;
+  relationship: string;
+  isPrimary: boolean;
+  emergencyContact: boolean;
+  createdAt?: string;
+}
 
 interface UserItem {
   _id: string;
@@ -256,6 +278,20 @@ function UsersPageContent() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
+  // Child linking state for Create Modal (when roleName === 'Parent')
+  const [stagedChildren, setStagedChildren] = useState<StagedChild[]>([]);
+  const [studentSearchQuery, setStudentSearchQuery] = useState("");
+  const [searchedStudents, setSearchedStudents] = useState<any[]>([]);
+  const [isSearchingStudents, setIsSearchingStudents] = useState(false);
+
+  // Inspector drawer linked children state (when inspectUser is Parent)
+  const [inspectLinkedChildren, setInspectLinkedChildren] = useState<LinkedChildDetail[]>([]);
+  const [isLoadingInspectChildren, setIsLoadingInspectChildren] = useState(false);
+  const [inspectChildSearch, setInspectChildSearch] = useState("");
+  const [inspectStudentResults, setInspectStudentResults] = useState<any[]>([]);
+  const [isSearchingInspectStudents, setIsSearchingInspectStudents] = useState(false);
+  const [newInspectRel, setNewInspectRel] = useState<"Father" | "Mother" | "Guardian" | "Other">("Guardian");
+
   // New Custom Role Form
   const [newRoleName, setNewRoleName] = useState("");
 
@@ -455,6 +491,171 @@ function UsersPageContent() {
     setSelectedUserIds([]);
   };
 
+  // Student search for Create Modal
+  useEffect(() => {
+    if (formData.roleName !== "Parent" || !studentSearchQuery.trim() || studentSearchQuery.trim().length < 2) {
+      setSearchedStudents([]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setIsSearchingStudents(true);
+      try {
+        const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+        const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+        const headers: Record<string, string> = {};
+        if (token) headers["Authorization"] = `Bearer ${token}`;
+
+        const res = await fetch(`${apiBase}/api/v1/students?search=${encodeURIComponent(studentSearchQuery.trim())}&limit=8`, {
+          headers,
+          credentials: "include",
+        });
+        if (res.ok) {
+          const json = await res.json();
+          const list = Array.isArray(json) ? json : json.data || [];
+          setSearchedStudents(list);
+        }
+      } catch (err) {
+        console.error("Student search error:", err);
+      } finally {
+        setIsSearchingStudents(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [studentSearchQuery, formData.roleName]);
+
+  // Fetch linked children when inspecting a Parent user
+  const fetchInspectLinkedChildren = async (userId: string) => {
+    setIsLoadingInspectChildren(true);
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      const headers: Record<string, string> = {};
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
+      const res = await fetch(`${apiBase}/api/v1/parents/${userId}/children`, {
+        headers,
+        credentials: "include",
+      });
+      if (res.ok) {
+        const json = await res.json();
+        setInspectLinkedChildren(json.children || []);
+      } else {
+        setInspectLinkedChildren([]);
+      }
+    } catch {
+      setInspectLinkedChildren([]);
+    } finally {
+      setIsLoadingInspectChildren(false);
+    }
+  };
+
+  useEffect(() => {
+    if (inspectUser) {
+      const roleStr = typeof inspectUser.role === "object" && inspectUser.role ? inspectUser.role.name : String(inspectUser.role || "");
+      if (roleStr.toLowerCase() === "parent") {
+        fetchInspectLinkedChildren(inspectUser._id);
+      } else {
+        setInspectLinkedChildren([]);
+      }
+    }
+  }, [inspectUser]);
+
+  // Student search for Inspector Drawer
+  useEffect(() => {
+    if (!inspectChildSearch.trim() || inspectChildSearch.trim().length < 2) {
+      setInspectStudentResults([]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setIsSearchingInspectStudents(true);
+      try {
+        const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+        const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+        const headers: Record<string, string> = {};
+        if (token) headers["Authorization"] = `Bearer ${token}`;
+
+        const res = await fetch(`${apiBase}/api/v1/students?search=${encodeURIComponent(inspectChildSearch.trim())}&limit=6`, {
+          headers,
+          credentials: "include",
+        });
+        if (res.ok) {
+          const json = await res.json();
+          const list = Array.isArray(json) ? json : json.data || [];
+          setInspectStudentResults(list);
+        }
+      } catch (err) {
+        console.error("Inspect student search error:", err);
+      } finally {
+        setIsSearchingInspectStudents(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [inspectChildSearch]);
+
+  const handleUnlinkChild = async (childId: string, studentName: string) => {
+    if (!inspectUser) return;
+    if (!confirm(`Are you sure you want to unlink ${studentName} from this parent?`)) return;
+
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
+      const res = await fetch(`${apiBase}/api/v1/parents/${inspectUser._id}/children/${childId}`, {
+        method: "DELETE",
+        headers,
+        credentials: "include",
+      });
+      if (res.ok) {
+        toast.success(`Child ${studentName} unlinked.`);
+        fetchInspectLinkedChildren(inspectUser._id);
+      } else {
+        const err = await res.json().catch(() => ({}));
+        toast.error(err.message || "Failed to unlink child");
+      }
+    } catch {
+      toast.error("Error unlinking child");
+    }
+  };
+
+  const handleLinkChildToInspectUser = async (student: any) => {
+    if (!inspectUser) return;
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
+      const isPrimary = inspectLinkedChildren.length === 0;
+      const res = await fetch(`${apiBase}/api/v1/parents/${inspectUser._id}/children`, {
+        method: "POST",
+        headers,
+        credentials: "include",
+        body: JSON.stringify({
+          studentId: student._id,
+          relationship: newInspectRel,
+          isPrimary,
+          emergencyContact: true,
+        }),
+      });
+
+      if (res.ok) {
+        toast.success(`Linked ${student.firstName} ${student.lastName} successfully!`);
+        setInspectChildSearch("");
+        setInspectStudentResults([]);
+        fetchInspectLinkedChildren(inspectUser._id);
+      } else {
+        const err = await res.json().catch(() => ({}));
+        toast.error(err.message || "Failed to link child");
+      }
+    } catch {
+      toast.error("Network error while linking child");
+    }
+  };
+
   // Open Create Modal
   const openCreateModal = () => {
     setFormData({
@@ -467,6 +668,9 @@ function UsersPageContent() {
       designation: "",
       phoneNumber: "",
     });
+    setStagedChildren([]);
+    setStudentSearchQuery("");
+    setSearchedStudents([]);
     setShowPassword(false);
     setShowConfirmPassword(false);
     setIsCreateModalOpen(true);
@@ -519,19 +723,30 @@ function UsersPageContent() {
       const headers: Record<string, string> = { "Content-Type": "application/json" };
       if (token) headers["Authorization"] = `Bearer ${token}`;
 
+      const payload: any = {
+        firstName: trimmedFirst,
+        lastName: trimmedLast,
+        email: trimmedEmail,
+        password: formData.password,
+        roleName: formData.roleName,
+        designation: formData.designation?.trim(),
+        phoneNumber: formData.phoneNumber?.trim(),
+      };
+
+      if (formData.roleName === "Parent" && stagedChildren.length > 0) {
+        payload.linkedChildren = stagedChildren.map((c) => ({
+          studentId: c.studentId,
+          relationship: c.relationship,
+          isPrimary: c.isPrimary,
+          emergencyContact: c.emergencyContact,
+        }));
+      }
+
       const res = await fetch(`${apiBase}/api/users`, {
         method: "POST",
         headers,
         credentials: "include",
-        body: JSON.stringify({
-          firstName: trimmedFirst,
-          lastName: trimmedLast,
-          email: trimmedEmail,
-          password: formData.password,
-          roleName: formData.roleName,
-          designation: formData.designation?.trim(),
-          phoneNumber: formData.phoneNumber?.trim(),
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (res.ok) {
@@ -1433,6 +1648,136 @@ function UsersPageContent() {
                   </div>
                 </div>
 
+                {/* Linked Children Card (when inspecting a Parent user) */}
+                {((typeof inspectUser.role === "object" && inspectUser.role?.name?.toLowerCase() === "parent") ||
+                  String(inspectUser.role || "").toLowerCase() === "parent") && (
+                  <div className="border border-[#0050CB]/20 bg-[#E5EEFF]/30 dark:bg-[#001438]/50 rounded-2xl p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <GraduationCap className="w-4 h-4 text-[#0050CB]" />
+                        <h4 className="text-[11px] font-bold uppercase text-[#0050CB]">
+                          Linked Children ({inspectLinkedChildren.length})
+                        </h4>
+                      </div>
+                      <span className="text-[10px] font-bold text-[#0050CB] bg-[#E5EEFF] dark:bg-[#0050CB]/30 px-2 py-0.5 rounded-full">
+                        Parent Profile
+                      </span>
+                    </div>
+
+                    {isLoadingInspectChildren ? (
+                      <div className="py-3 text-center text-xs text-slate-400 animate-pulse">
+                        Loading linked children...
+                      </div>
+                    ) : inspectLinkedChildren.length === 0 ? (
+                      <p className="text-xs text-slate-400 italic">No children currently linked to this parent account.</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {inspectLinkedChildren.map((link) => {
+                          const st = link.studentId || {};
+                          const stName = typeof st === "object" ? `${st.firstName || ""} ${st.lastName || ""}`.trim() : "Student";
+                          const admNo = typeof st === "object" ? st.admissionNumber || st.studentId || "" : "";
+                          const clsName = typeof st === "object" && typeof st.classId === "object" && st.classId ? st.classId.name : typeof st === "object" ? st.grade || "" : "";
+                          const secName = typeof st === "object" && typeof st.sectionId === "object" && st.sectionId ? st.sectionId.name : "";
+                          const childId = typeof st === "object" && st._id ? st._id : link._id;
+
+                          return (
+                            <div
+                              key={link._id}
+                              className="p-3 bg-white dark:bg-[#000E28] border border-slate-200 dark:border-slate-800 rounded-xl flex items-center justify-between gap-2 shadow-xs"
+                            >
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <span className="font-extrabold text-slate-800 dark:text-white text-xs truncate">
+                                    {stName}
+                                  </span>
+                                  <span className="text-[9px] font-bold bg-[#E5EEFF] text-[#0050CB] px-1.5 py-0.5 rounded">
+                                    {link.relationship || "Guardian"}
+                                  </span>
+                                  {link.isPrimary && (
+                                    <span className="text-[9px] font-bold bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded">
+                                      Primary
+                                    </span>
+                                  )}
+                                  {link.emergencyContact && (
+                                    <span className="text-[9px] font-bold bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded">
+                                      Emergency
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-[10px] text-slate-400 mt-0.5">
+                                  {clsName && `${clsName} `}
+                                  {secName && `• Sec ${secName} `}
+                                  {admNo && `• Adm: ${admNo}`}
+                                </p>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => handleUnlinkChild(childId, stName)}
+                                title="Unlink child"
+                                className="w-7 h-7 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 flex items-center justify-center shrink-0 transition-colors"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* Quick Link Another Child in Drawer */}
+                    <div className="pt-2 border-t border-slate-200/60 dark:border-slate-800 space-y-2">
+                      <p className="text-[10px] font-bold uppercase text-slate-400">Link Another Student</p>
+                      <div className="flex gap-2">
+                        <div className="relative flex-1">
+                          <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                          <input
+                            type="text"
+                            value={inspectChildSearch}
+                            onChange={(e) => setInspectChildSearch(e.target.value)}
+                            placeholder="Search by name, adm no..."
+                            className="w-full pl-8 pr-2 py-1.5 bg-white dark:bg-[#000E28] border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-800 dark:text-white focus:outline-none focus:border-[#0050CB]"
+                          />
+                        </div>
+                        <select
+                          value={newInspectRel}
+                          onChange={(e) => setNewInspectRel(e.target.value as any)}
+                          className="px-2 py-1.5 bg-white dark:bg-[#000E28] border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-semibold text-slate-800 dark:text-white focus:outline-none focus:border-[#0050CB]"
+                        >
+                          <option value="Father">Father</option>
+                          <option value="Mother">Mother</option>
+                          <option value="Guardian">Guardian</option>
+                          <option value="Other">Other</option>
+                        </select>
+                      </div>
+
+                      {/* Search Results in Drawer */}
+                      {inspectStudentResults.length > 0 && (
+                        <div className="border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-[#000E28] max-h-36 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800 shadow-md">
+                          {inspectStudentResults.map((st) => (
+                            <div key={st._id} className="p-2 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                              <div className="min-w-0 pr-2">
+                                <p className="font-bold text-slate-800 dark:text-white text-xs truncate">
+                                  {st.firstName} {st.lastName}
+                                </p>
+                                <p className="text-[10px] text-slate-400 truncate">
+                                  Adm: {st.admissionNumber || st.studentId || "N/A"}
+                                </p>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => handleLinkChildToInspectUser(st)}
+                                className="px-2 py-1 bg-[#0050CB] text-white text-[10px] font-bold rounded hover:bg-[#003ea3] shrink-0"
+                              >
+                                + Link
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 {/* Security Actions Card */}
                 <div className="border border-slate-200 dark:border-slate-800 rounded-2xl p-4 space-y-3">
                   <h4 className="text-[11px] font-bold uppercase text-slate-400">Security & Credentials</h4>
@@ -1531,15 +1876,21 @@ function UsersPageContent() {
       {/* CREATE USER MODAL */}
       {isCreateModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-[#000E28] border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden">
-            <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+          <div className="bg-white dark:bg-[#000E28] border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+            <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-[#E5EEFF] dark:bg-[#0050CB]/20 flex items-center justify-center text-[#0050CB]">
                   <Plus className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-extrabold text-[#000E28] dark:text-white">Provision New Staff User</h3>
-                  <p className="text-xs text-slate-400">Add an educator or administrator to the school directory.</p>
+                  <h3 className="text-base font-extrabold text-[#000E28] dark:text-white">
+                    {formData.roleName === "Parent" ? "Provision Parent User" : "Provision New Staff User"}
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    {formData.roleName === "Parent"
+                      ? "Add a parent/guardian account and link their student(s)."
+                      : "Add an educator or administrator to the school directory."}
+                  </p>
                 </div>
               </div>
               <button
@@ -1550,7 +1901,7 @@ function UsersPageContent() {
               </button>
             </div>
 
-            <form onSubmit={handleCreateUser} className="p-6 space-y-4 text-xs">
+            <form onSubmit={handleCreateUser} className="p-6 space-y-4 text-xs overflow-y-auto">
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[11px] font-bold uppercase text-slate-500 mb-1">First Name *</label>
@@ -1577,7 +1928,7 @@ function UsersPageContent() {
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold uppercase text-slate-500 mb-1">Institutional Email *</label>
+                <label className="block text-[11px] font-bold uppercase text-slate-500 mb-1">Email *</label>
                 <input
                   type="email"
                   required
@@ -1647,13 +1998,15 @@ function UsersPageContent() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[11px] font-bold uppercase text-slate-500 mb-1">Designation</label>
+                  <label className="block text-[11px] font-bold uppercase text-slate-500 mb-1">
+                    {formData.roleName === "Parent" ? "Relationship Label" : "Designation"}
+                  </label>
                   <input
                     type="text"
                     value={formData.designation}
                     onChange={(e) => setFormData({ ...formData, designation: e.target.value })}
                     className="w-full px-3 py-2 bg-slate-50 dark:bg-[#001438] border border-slate-200 dark:border-slate-700 rounded-xl font-semibold text-slate-800 dark:text-white focus:outline-none focus:border-[#0050CB]"
-                    placeholder="e.g. Science Teacher"
+                    placeholder={formData.roleName === "Parent" ? "e.g. Father / Guardian" : "e.g. Science Teacher"}
                   />
                 </div>
               </div>
@@ -1668,6 +2021,195 @@ function UsersPageContent() {
                   placeholder="+91 98765 43210"
                 />
               </div>
+
+              {/* Link Child / Children Section when creating a Parent */}
+              {formData.roleName === "Parent" && (
+                <div className="border border-[#0050CB]/20 bg-[#E5EEFF]/30 dark:bg-[#001438]/50 rounded-2xl p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <GraduationCap className="w-4 h-4 text-[#0050CB]" />
+                      <h4 className="font-extrabold text-[#000E28] dark:text-white text-xs">
+                        Link Child / Children
+                      </h4>
+                    </div>
+                    <span className="text-[10px] font-bold text-[#0050CB] bg-[#E5EEFF] dark:bg-[#0050CB]/30 px-2 py-0.5 rounded-full">
+                      {stagedChildren.length} Selected
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-500">
+                    Search and link students from the school database. Multiple children can be linked.
+                  </p>
+
+                  {/* Student Search Box */}
+                  <div className="relative">
+                    <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                      type="text"
+                      value={studentSearchQuery}
+                      onChange={(e) => setStudentSearchQuery(e.target.value)}
+                      placeholder="Search student by name, admission no, class..."
+                      className="w-full pl-9 pr-4 py-2 bg-white dark:bg-[#000E28] border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-white focus:outline-none focus:border-[#0050CB]"
+                    />
+                    {isSearchingStudents && (
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 animate-pulse">
+                        Searching...
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Search Results Dropdown */}
+                  {searchedStudents.length > 0 && (
+                    <div className="border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-[#000E28] max-h-48 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800 shadow-lg">
+                      {searchedStudents.map((st) => {
+                        const isAlreadyStaged = stagedChildren.some((c) => c.studentId === st._id);
+                        const cls = typeof st.classId === "object" && st.classId ? st.classId.name : st.grade || "";
+                        const sec = typeof st.sectionId === "object" && st.sectionId ? st.sectionId.name : "";
+                        return (
+                          <div
+                            key={st._id}
+                            className="p-2.5 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                          >
+                            <div>
+                              <p className="font-bold text-slate-800 dark:text-white text-xs">
+                                {st.firstName} {st.lastName}
+                              </p>
+                              <p className="text-[10px] text-slate-400">
+                                Adm: {st.admissionNumber || st.studentId || "N/A"}{" "}
+                                {cls && `• Class: ${cls}`} {sec && `• Sec: ${sec}`}
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              disabled={isAlreadyStaged}
+                              onClick={() => {
+                                setStagedChildren((prev) => [
+                                  ...prev,
+                                  {
+                                    studentId: st._id,
+                                    studentName: `${st.firstName} ${st.lastName}`,
+                                    admissionNumber: st.admissionNumber || st.studentId || "",
+                                    className: cls,
+                                    sectionName: sec,
+                                    relationship: "Guardian",
+                                    isPrimary: prev.length === 0,
+                                    emergencyContact: true,
+                                  },
+                                ]);
+                                setStudentSearchQuery("");
+                                setSearchedStudents([]);
+                              }}
+                              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
+                                isAlreadyStaged
+                                  ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+                                  : "bg-[#0050CB] text-white hover:bg-[#003ea3]"
+                              }`}
+                            >
+                              {isAlreadyStaged ? "Linked" : "+ Link Child"}
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Staged Children List */}
+                  {stagedChildren.length > 0 && (
+                    <div className="space-y-2 pt-1">
+                      {stagedChildren.map((child, idx) => (
+                        <div
+                          key={child.studentId}
+                          className="p-3 bg-white dark:bg-[#000E28] border border-slate-200 dark:border-slate-800 rounded-xl space-y-2"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className="w-5 h-5 rounded-full bg-[#E5EEFF] dark:bg-[#0050CB]/20 text-[#0050CB] font-bold text-[10px] flex items-center justify-center">
+                                {idx + 1}
+                              </span>
+                              <div>
+                                <p className="font-extrabold text-slate-800 dark:text-white text-xs">
+                                  {child.studentName}
+                                </p>
+                                <p className="text-[10px] text-slate-400">
+                                  {child.className && `${child.className} `}
+                                  {child.sectionName && `• Sec ${child.sectionName} `}
+                                  {child.admissionNumber && `• ${child.admissionNumber}`}
+                                </p>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setStagedChildren((prev) => prev.filter((_, i) => i !== idx))}
+                              className="text-slate-400 hover:text-rose-500 p-1"
+                              title="Remove child"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+
+                          <div className="grid grid-cols-3 gap-2 pt-1 border-t border-slate-100 dark:border-slate-800 items-center">
+                            <div>
+                              <label className="block text-[9px] uppercase font-bold text-slate-400 mb-0.5">
+                                Relationship
+                              </label>
+                              <select
+                                value={child.relationship}
+                                onChange={(e) => {
+                                  const val = e.target.value as any;
+                                  setStagedChildren((prev) =>
+                                    prev.map((c, i) => (i === idx ? { ...c, relationship: val } : c))
+                                  );
+                                }}
+                                className="w-full px-2 py-1 bg-slate-50 dark:bg-[#001438] border border-slate-200 dark:border-slate-700 rounded-lg text-[11px] font-semibold text-slate-800 dark:text-white focus:outline-none focus:border-[#0050CB]"
+                              >
+                                <option value="Father">Father</option>
+                                <option value="Mother">Mother</option>
+                                <option value="Guardian">Guardian</option>
+                                <option value="Other">Other</option>
+                              </select>
+                            </div>
+
+                            <div className="flex items-center gap-1.5 pt-3">
+                              <input
+                                type="checkbox"
+                                id={`primary-${child.studentId}`}
+                                checked={child.isPrimary}
+                                onChange={(e) => {
+                                  const checked = e.target.checked;
+                                  setStagedChildren((prev) =>
+                                    prev.map((c, i) => (i === idx ? { ...c, isPrimary: checked } : c))
+                                  );
+                                }}
+                                className="w-3.5 h-3.5 rounded text-[#0050CB] focus:ring-0"
+                              />
+                              <label htmlFor={`primary-${child.studentId}`} className="text-[10px] font-medium text-slate-600 dark:text-slate-300">
+                                Primary
+                              </label>
+                            </div>
+
+                            <div className="flex items-center gap-1.5 pt-3">
+                              <input
+                                type="checkbox"
+                                id={`emerg-${child.studentId}`}
+                                checked={child.emergencyContact}
+                                onChange={(e) => {
+                                  const checked = e.target.checked;
+                                  setStagedChildren((prev) =>
+                                    prev.map((c, i) => (i === idx ? { ...c, emergencyContact: checked } : c))
+                                  );
+                                }}
+                                className="w-3.5 h-3.5 rounded text-[#0050CB] focus:ring-0"
+                              />
+                              <label htmlFor={`emerg-${child.studentId}`} className="text-[10px] font-medium text-slate-600 dark:text-slate-300">
+                                Emergency
+                              </label>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-2.5">
                 <button

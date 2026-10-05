@@ -3,6 +3,7 @@
 import React from "react";
 import { MessageSquare, Phone, ArrowRight } from "lucide-react";
 import PremiumCard from "./PremiumCard";
+import AppImage from "@/components/ui/AppImage";
 
 export interface ParentMessageCardProps {
   id: string;
@@ -41,13 +42,13 @@ export default function ParentMessageCard({
       <div>
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-[14px] bg-rose-50 dark:bg-rose-950/40 text-[#F04438] flex items-center justify-center font-bold text-base shadow-2xs shrink-0 overflow-hidden ring-1 ring-rose-200 dark:ring-rose-800/40">
-              {avatar ? (
-                <img src={avatar} alt={parentName} className="w-full h-full object-cover" />
-              ) : (
-                <span>{parentName.slice(0, 2).toUpperCase()}</span>
-              )}
-            </div>
+            <AppImage
+              src={avatar}
+              alt={parentName}
+              fallbackType="avatar"
+              name={parentName}
+              className="w-12 h-12 rounded-[14px] object-cover ring-1 ring-rose-200 dark:ring-rose-800/40 shrink-0"
+            />
 
             <div>
               <div className="flex items-center gap-1.5">

@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import AppImage from "@/components/ui/AppImage";
 import { 
   MessageSquare, Bell, Sparkles, FolderDown, HelpCircle, 
   Search, SlidersHorizontal, Phone, Video, MoreHorizontal, 
@@ -630,11 +631,13 @@ export default function TeacherMessagesPage() {
 
                     <div className="relative shrink-0">
                       <div className="relative w-10 h-10 rounded-full overflow-hidden border border-blue-100 shadow-xs">
-                        <Image
+                        <AppImage
                           src={conv.avatar}
                           alt={conv.name}
                           fill
                           sizes="40px"
+                          fallbackType="avatar"
+                          name={conv.name}
                           className="object-cover"
                         />
                       </div>
@@ -684,11 +687,13 @@ export default function TeacherMessagesPage() {
           <div className="p-3.5 sm:p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3 bg-slate-50/50 dark:bg-slate-900/30">
             <div className="flex items-center gap-3 min-w-0">
               <div className="relative w-10 h-10 rounded-full overflow-hidden border border-blue-100 shadow-xs shrink-0">
-                <Image
+                <AppImage
                   src={currentConversation?.avatar || "/aarav-profile-avatar.png"}
                   alt={currentConversation?.name || "Parent Contact"}
                   fill
                   sizes="40px"
+                  fallbackType="avatar"
+                  name={currentConversation?.name || "Parent Contact"}
                   className="object-cover"
                 />
               </div>
@@ -746,11 +751,13 @@ export default function TeacherMessagesPage() {
                   >
                     {!isMe && (
                       <div className="relative w-8 h-8 rounded-full overflow-hidden border border-blue-100 shrink-0 mt-1">
-                        <Image
+                        <AppImage
                           src={currentConversation?.avatar || "/aarav-profile-avatar.png"}
                           alt="Parent"
                           fill
                           sizes="32px"
+                          fallbackType="avatar"
+                          name={currentConversation?.name || "Parent"}
                           className="object-cover"
                         />
                       </div>
@@ -819,11 +826,13 @@ export default function TeacherMessagesPage() {
 
                     {isMe && (
                       <div className="relative w-8 h-8 rounded-full overflow-hidden border border-blue-200 shrink-0 mt-1">
-                        <Image
+                        <AppImage
                           src="/teacher-ananya-roy.jpg"
                           alt="Teacher"
                           fill
                           sizes="32px"
+                          fallbackType="avatar"
+                          name="Ananya Roy"
                           className="object-cover"
                         />
                       </div>
@@ -981,11 +990,13 @@ export default function TeacherMessagesPage() {
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-9 h-9 rounded-full overflow-hidden border border-blue-100 relative shrink-0">
-                        <Image
+                        <AppImage
                           src={contact.avatar || "/aarav-profile-avatar.png"}
                           alt={contact.name}
                           fill
                           sizes="36px"
+                          fallbackType="avatar"
+                          name={contact.name}
                           className="object-cover"
                         />
                       </div>

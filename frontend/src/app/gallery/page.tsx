@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
+import AppImage from "@/components/ui/AppImage";
 import Link from "next/link";
 import { Sparkles, Camera, ArrowRight, X, Eye } from "lucide-react";
 import { getApiBaseUrl } from "@/lib/utils";
@@ -139,15 +140,15 @@ export default function GalleryPage() {
                 onClick={() => setActivePhoto(photo)}
                 className="group relative rounded-2xl overflow-hidden bg-white dark:bg-[#001438] border border-slate-200/80 dark:border-slate-800 shadow-sm hover:shadow-xl transition-all cursor-pointer"
               >
-                <div className="relative h-60 w-full overflow-hidden bg-slate-100">
-                  <Image
+                <div className="relative h-60 w-full overflow-hidden bg-slate-100 dark:bg-slate-800">
+                  <AppImage
                     src={photo.imageUrl}
                     alt={photo.title}
                     fill
                     sizes="(max-width: 768px) 100vw, 400px"
                     className="object-cover transition-transform duration-500 group-hover:scale-105"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
                     <span className="p-3 rounded-full bg-white/20 backdrop-blur-md text-white">
                       <Eye className="w-5 h-5" />
                     </span>
@@ -201,8 +202,8 @@ export default function GalleryPage() {
               <X className="w-5 h-5" />
             </button>
 
-            <div className="relative h-80 sm:h-96 w-full bg-black">
-              <Image
+            <div className="relative h-80 sm:h-96 w-full bg-black flex items-center justify-center">
+              <AppImage
                 src={activePhoto.imageUrl}
                 alt={activePhoto.title}
                 fill

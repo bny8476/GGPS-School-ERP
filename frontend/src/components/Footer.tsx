@@ -92,9 +92,9 @@ export default function Footer() {
           {/* COLUMN 1: Brand & Mission (4 Cols) */}
           <div className="lg:col-span-4 space-y-4">
             {/* Logo Treatment with Academic Crest */}
-            <Link href="/" className="inline-flex items-center gap-3 group">
-              <AcademyLogo size="md" />
-              <span className="text-2xl font-black tracking-tight text-white">
+            <Link href="/" className="inline-flex items-center gap-3.5 group">
+              <AcademyLogo size="lg" className="shrink-0 group-hover:scale-105 transition-transform duration-200" />
+              <span className="text-2xl sm:text-[26px] font-black tracking-tight text-white">
                 GGPS <span className="text-[#38BDF8]">School</span>
               </span>
             </Link>

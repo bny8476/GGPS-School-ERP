@@ -1,7 +1,7 @@
 import React from "react";
 
 interface AcademyLogoProps {
-  size?: "sm" | "md" | "lg" | "xl";
+  size?: "sm" | "md" | "lg" | "xl" | "2xl" | "large" | string;
   className?: string;
   showText?: boolean;
   textClassName?: string;
@@ -9,20 +9,22 @@ interface AcademyLogoProps {
 }
 
 export default function AcademyLogo({
-  size = "md",
+  size = "lg",
   className = "",
   showText = false,
   textClassName = "",
   textColor = "dark",
 }: AcademyLogoProps) {
-  const sizeMap = {
+  const sizeMap: Record<string, string> = {
     sm: "w-7 h-7",
     md: "w-9 h-9",
-    lg: "w-11 h-11",
+    lg: "w-12 h-12",
     xl: "w-14 h-14",
+    "2xl": "w-16 h-16",
+    large: "w-12 h-12 sm:w-14 sm:h-14",
   };
 
-  const currentSize = sizeMap[size] || sizeMap.md;
+  const currentSize = sizeMap[size] || size;
 
   return (
     <div className={`flex items-center gap-2.5 ${className}`}>

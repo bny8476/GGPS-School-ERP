@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import toast from "react-hot-toast";
+import AppImage from "@/components/ui/AppImage";
 
 interface EventItem {
   id: string;
@@ -557,9 +558,9 @@ export default function AcademicCalendarPage() {
       ======================================================== */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Hero Card */}
-        <div className="lg:col-span-7 xl:col-span-8 relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#EFF5FF] via-[#F4F8FF] to-[#E5EEFF] border border-blue-100/90 p-6 md:p-7 shadow-xs flex flex-col justify-between">
-          <div className="absolute right-0 top-0 bottom-0 w-1/2 opacity-25 lg:opacity-35 pointer-events-none overflow-hidden flex items-center justify-end">
-            <img 
+        <div className="lg:col-span-7 xl:col-span-8 relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#EFF5FF] via-[#F4F8FF] to-[#E5EEFF] dark:from-[#001030] dark:via-[#001844] dark:to-[#002266] border border-blue-100/90 dark:border-blue-900/40 p-6 md:p-7 shadow-xs flex flex-col justify-between">
+          <div className="absolute right-0 top-0 bottom-0 w-1/2 opacity-25 lg:opacity-35 dark:opacity-40 pointer-events-none overflow-hidden flex items-center justify-end">
+            <AppImage 
               src="/admin-hero-campus.jpg" 
               alt="Campus visual" 
               className="h-full w-full object-cover object-left mask-[linear-gradient(to_left,black,transparent)]"

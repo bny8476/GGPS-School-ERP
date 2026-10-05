@@ -8,6 +8,8 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { formatHeaderDate } from "@/lib/date";
+import { useParent } from "@/context/ParentContext";
+import ParentEmptyChildState from "@/components/parent/ParentEmptyChildState";
 
 interface NotificationItem {
   id: string;
@@ -26,8 +28,10 @@ interface NotificationItem {
 }
 
 export default function NotificationsPage() {
+  const { selectedChild, children } = useParent();
   const [activeFilter, setActiveFilter] = useState<string>("All");
 
+  const childName = selectedChild ? `${selectedChild.firstName} ${selectedChild.lastName}`.trim() : "Your child";
 
   const [notifications, setNotifications] = useState<NotificationItem[]>([
     {
@@ -64,7 +68,7 @@ export default function NotificationsPage() {
       id: "n-3",
       category: "Attendance",
       title: "Morning Campus Check-In Confirmed",
-      message: "Aarav Sharma checked into campus Gate 2 at 08:24 AM via RFID transport reader.",
+      message: `${childName} checked into campus Gate 2 at 08:24 AM via RFID transport reader.`,
       time: "Today, 08:26 AM",
       isRead: false,
       accentColor: "#0D9488",
@@ -128,6 +132,10 @@ export default function NotificationsPage() {
       prev.map((n) => (n.id === id ? { ...n, isRead: !n.isRead } : n))
     );
   };
+
+  if (children.length === 0) {
+    return <ParentEmptyChildState />;
+  }
 
   return (
     <div className="space-y-5 pb-16 max-w-[1380px] mx-auto font-sans text-slate-800 dark:text-slate-100">
@@ -443,7 +451,7 @@ export default function NotificationsPage() {
                       Attendance Update
                     </p>
                     <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                      Aarav Sharma - Present
+                      {childName} - Present
                     </p>
                     <p className="text-[11px] text-slate-400">
                       Today, 08:24 AM

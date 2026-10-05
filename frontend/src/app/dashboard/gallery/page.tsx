@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import AppImage from "@/components/ui/AppImage";
 import {
   Camera,
   Image as ImageIcon,
@@ -502,7 +503,7 @@ export default function GalleryPage() {
               onClick={() => openAlbumViewer(album)}
               className="relative h-44 w-full overflow-hidden bg-slate-100 cursor-pointer"
             >
-              <Image
+              <AppImage
                 src={album.coverImage || "/sports-day-track.jpg"}
                 alt={album.title}
                 fill
@@ -651,7 +652,7 @@ export default function GalleryPage() {
           {/* Main Photo Showcase */}
           <div className="relative flex-1 my-4 flex items-center justify-center">
             <div className="relative w-full max-w-4xl h-[60vh] rounded-2xl overflow-hidden shadow-2xl border border-white/10">
-              <Image
+              <AppImage
                 src={
                   viewingAlbum.photos[lightboxPhotoIndex] ||
                   viewingAlbum.coverImage ||
@@ -677,7 +678,7 @@ export default function GalleryPage() {
                     : "border-transparent opacity-60 hover:opacity-100"
                 }`}
               >
-                <Image src={photoUrl} alt="Thumbnail" fill className="object-cover" />
+                <AppImage src={photoUrl} alt="Thumbnail" fill className="object-cover" />
               </button>
             ))}
           </div>

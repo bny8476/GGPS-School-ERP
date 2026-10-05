@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
+import AppImage from "@/components/ui/AppImage";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
@@ -31,6 +32,7 @@ import TodayActivitiesCard from "@/components/parent/TodayActivitiesCard";
 import TodayDiaryRemarkCard from "@/components/parent/TodayDiaryRemarkCard";
 import QuickActionsCard from "@/components/parent/QuickActionsCard";
 import ClassPerformanceCard from "@/components/parent/ClassPerformanceCard";
+import ParentEmptyChildState from "@/components/parent/ParentEmptyChildState";
 import { useParent } from "@/context/ParentContext";
 import { useCurrentTime } from "@/lib/date";
 
@@ -40,6 +42,7 @@ export default function ParentDashboard() {
     children,
     selectedChild,
     selectChild,
+    isLoadingChildren,
     todayAttendance,
     todayClassWork,
     todayActivities,
@@ -52,15 +55,22 @@ export default function ParentDashboard() {
   const [isFeeModalOpen, setIsFeeModalOpen] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
-  const child = selectedChild || children[0] || {
-    _id: "c10101010101010101010101",
-    firstName: "Aarav",
-    lastName: "Sharma",
-    grade: "LKG",
-    section: "Section A",
-    rollNumber: "LKG001",
-    studentPhoto: "/aarav-profile-avatar.png",
-  };
+  if (isLoadingChildren) {
+    return (
+      <div className="w-full min-h-[400px] flex items-center justify-center p-8">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-3 border-[#0050CB] border-t-transparent rounded-full animate-spin" />
+          <p className="text-xs font-bold text-slate-500">Loading student records...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (children.length === 0) {
+    return <ParentEmptyChildState />;
+  }
+
+  const child = selectedChild || children[0];
 
   const currentDateFormatted = dateLongStr;
 
@@ -83,7 +93,7 @@ export default function ParentDashboard() {
           >
             {/* Full-bleed Background Artwork */}
             <div className="absolute inset-0 w-full h-full">
-              <Image
+              <AppImage
                 src="/little-steps-clean-hero.png"
                 alt="GGPS School Family Portal"
                 fill
@@ -167,11 +177,13 @@ export default function ParentDashboard() {
                     }`}
                   >
                     <div className="relative w-5 h-5 rounded-full overflow-hidden border border-white/40 shrink-0">
-                      <Image
+                      <AppImage
                         src={photo}
                         alt={c.firstName}
                         fill
                         sizes="20px"
+                        fallbackType="avatar"
+                        name={c.firstName}
                         className="object-cover"
                       />
                     </div>
@@ -258,7 +270,7 @@ export default function ParentDashboard() {
             <div className="flex items-center gap-4">
               <div className="relative shrink-0">
                 <div className="relative w-[70px] h-[70px] rounded-full overflow-hidden border-2 border-white dark:border-white/20 shadow-md shadow-blue-500/10">
-                  <Image
+                  <AppImage
                     src={
                       child.studentPhoto ||
                       (child.firstName === "Ananya"
@@ -268,6 +280,8 @@ export default function ParentDashboard() {
                     alt={`${child.firstName} ${child.lastName}`}
                     fill
                     sizes="70px"
+                    fallbackType="avatar"
+                    name={`${child.firstName} ${child.lastName}`}
                     className="object-cover"
                   />
                 </div>
@@ -430,7 +444,7 @@ export default function ParentDashboard() {
           transition={{ duration: 0.3 }}
           className="bg-white dark:bg-[#07142F] rounded-[24px] overflow-hidden border border-blue-100/80 dark:border-white/10 shadow-[0_8px_30px_rgba(0,80,203,0.04)] relative min-h-[190px] h-full group"
         >
-          <Image
+          <AppImage
             src="/children-hero-books.jpg"
             alt="GGPS School Inspiring Academic Learning"
             fill

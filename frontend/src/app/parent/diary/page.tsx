@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from "react";
 import Image from "next/image";
+import AppImage from "@/components/ui/AppImage";
 import Link from "next/link";
 import {
   BookOpen,
@@ -23,6 +24,7 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { useParent } from "@/context/ParentContext";
+import ParentEmptyChildState from "@/components/parent/ParentEmptyChildState";
 
 interface DiaryEntry {
   id: string;
@@ -143,7 +145,7 @@ const DIARY_ENTRIES: DiaryEntry[] = [
 ];
 
 export default function DailyDiaryPage() {
-  const { children, selectedChild, selectChild } = useParent();
+  const { children, selectedChild, selectChild, isLoadingChildren } = useParent();
   const [activeFilter, setActiveFilter] = useState<"Today" | "Yesterday" | "Last 7 Days" | "Last 30 Days">("Today");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedEntry, setSelectedEntry] = useState<DiaryEntry | null>(null);
@@ -153,14 +155,22 @@ export default function DailyDiaryPage() {
     "diary-2": true,
   });
 
-  const activeChild = selectedChild || {
-    _id: "child-default",
-    firstName: "Aarav",
-    lastName: "Sharma",
-    grade: "LKG",
-    section: "Section A",
-    studentPhoto: "/aarav-profile-avatar.png",
-  };
+  const activeChild = selectedChild || children[0] || null;
+
+  if (isLoadingChildren) {
+    return (
+      <div className="w-full min-h-[400px] flex items-center justify-center p-8">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-3 border-[#0050CB] border-t-transparent rounded-full animate-spin" />
+          <p className="text-xs font-bold text-slate-500">Loading daily diary entries...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!activeChild) {
+    return <ParentEmptyChildState />;
+  }
 
   const filteredEntries = useMemo(() => {
     return DIARY_ENTRIES.filter((entry) => {
@@ -235,11 +245,13 @@ export default function DailyDiaryPage() {
             className="bg-white dark:bg-[#0B1E47] border border-slate-200 dark:border-white/10 rounded-full py-1.5 px-3.5 flex items-center gap-2.5 shadow-2xs hover:border-[#0050CB]/40 transition-all cursor-pointer"
           >
             <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 border border-slate-200 dark:border-slate-700 relative">
-              <Image
+              <AppImage
                 src={activeChild.studentPhoto || "/aarav-profile-avatar.png"}
                 alt={activeChild.firstName}
                 fill
                 sizes="32px"
+                fallbackType="avatar"
+                name={`${activeChild.firstName} ${activeChild.lastName || ""}`}
                 className="object-cover"
               />
             </div>
@@ -273,11 +285,13 @@ export default function DailyDiaryPage() {
                   }`}
                 >
                   <div className="w-7 h-7 rounded-full overflow-hidden relative shrink-0 border border-slate-200 dark:border-slate-700">
-                    <Image
+                    <AppImage
                       src={c.studentPhoto || "/aarav-profile-avatar.png"}
                       alt={c.firstName}
                       fill
                       sizes="28px"
+                      fallbackType="avatar"
+                      name={`${c.firstName} ${c.lastName || ""}`}
                       className="object-cover"
                     />
                   </div>
@@ -449,7 +463,7 @@ export default function DailyDiaryPage() {
                 <div className="flex items-center justify-between w-full md:w-auto md:justify-end gap-3.5 shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-slate-100 dark:border-slate-800">
                   {/* Photo Thumbnail */}
                   <div className="relative w-28 h-18 sm:w-32 sm:h-20 rounded-xl overflow-hidden border border-slate-200/90 dark:border-slate-700/80 shadow-2xs shrink-0 group-hover:scale-[1.02] transition-transform">
-                    <Image
+                    <AppImage
                       src={entry.image}
                       alt={entry.title}
                       fill
@@ -513,7 +527,7 @@ export default function DailyDiaryPage() {
 
             {/* High-Resolution Media Preview */}
             <div className="relative w-full h-56 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-xs">
-              <Image
+              <AppImage
                 src={selectedEntry.image}
                 alt={selectedEntry.title}
                 fill

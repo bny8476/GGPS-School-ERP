@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import ReportCardModal from "@/components/parent/ReportCardModal";
+import ParentEmptyChildState from "@/components/parent/ParentEmptyChildState";
 import { useParent } from "@/context/ParentContext";
 import { getCurrentAcademicYearFormatted, getAcademicYearDisplayOptions } from "@/lib/date";
 
@@ -50,7 +51,7 @@ interface UpcomingAssessment {
 }
 
 export default function ParentAssessmentsPage() {
-  const { selectedChild } = useParent();
+  const { selectedChild, children = [], isLoadingChildren } = useParent();
   const [activeExamFilter, setActiveExamFilter] = useState<string>("All Exams");
   const [selectedSubjectFilter, setSelectedSubjectFilter] = useState<string>("All Subjects");
   const [isSubjectDropdownOpen, setIsSubjectDropdownOpen] = useState(false);
@@ -63,16 +64,22 @@ export default function ParentAssessmentsPage() {
   const [isMarksheetModalOpen, setIsMarksheetModalOpen] = useState(false);
   const [isSyllabusModalOpen, setIsSyllabusModalOpen] = useState(false);
 
-  const child = selectedChild || {
-    _id: "c-01",
-    firstName: "Aarav",
-    lastName: "Sharma",
-    grade: "LKG",
-    section: "Section A",
-    admissionNumber: "GGPS-2024-8891",
-    rollNumber: "14",
-    teacherName: "Ms. Ananya Roy",
-  };
+  const child = selectedChild || children[0] || null;
+
+  if (isLoadingChildren) {
+    return (
+      <div className="w-full min-h-[400px] flex items-center justify-center p-8">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-3 border-[#0050CB] border-t-transparent rounded-full animate-spin" />
+          <p className="text-xs font-bold text-slate-500">Loading assessments and grades...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!child) {
+    return <ParentEmptyChildState />;
+  }
 
   // Exam type filter pills
   const examPills = [

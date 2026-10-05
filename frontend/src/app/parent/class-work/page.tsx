@@ -10,18 +10,29 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { useParent } from "@/context/ParentContext";
+import ParentEmptyChildState from "@/components/parent/ParentEmptyChildState";
 
 export default function ParentClassWorkPage() {
-  const { selectedChild, todayClassWork } = useParent();
+  const { selectedChild, children = [], todayClassWork, isLoadingChildren } = useParent();
   const [selectedSubject, setSelectedSubject] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
-  const child = selectedChild || {
-    firstName: "Aarav",
-    lastName: "Sharma",
-    grade: "LKG",
-    section: "Section A",
-  };
+  const child = selectedChild || children[0] || null;
+
+  if (isLoadingChildren) {
+    return (
+      <div className="w-full min-h-[400px] flex items-center justify-center p-8">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-3 border-[#0050CB] border-t-transparent rounded-full animate-spin" />
+          <p className="text-xs font-bold text-slate-500">Loading daily classroom work...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!child) {
+    return <ParentEmptyChildState />;
+  }
 
   const filteredWork = useMemo(() => {
     return todayClassWork.filter((item) => {

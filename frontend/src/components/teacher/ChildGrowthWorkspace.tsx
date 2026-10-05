@@ -35,6 +35,7 @@ import {
   Info
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import AppImage from '@/components/ui/AppImage';
 
 export type GrowthDomain = 'OVERVIEW' | 'PHYSICAL' | 'LEARNING' | 'SPEAKING' | 'SOCIAL' | 'HABITS' | 'CHILDREN' | 'REPORT';
 export type SkillStatus = 'Mastered' | 'Emerging' | 'Needs Help';
@@ -781,9 +782,11 @@ export default function ChildGrowthWorkspace({ students = [], onNavigateTab }: C
                       className="p-3.5 rounded-xl border border-rose-100 dark:border-rose-950/60 bg-rose-50/40 dark:bg-rose-950/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
                     >
                       <div className="flex items-center gap-3">
-                        <img
+                        <AppImage
                           src={kid.photo}
                           alt={kid.name}
+                          fallbackType="avatar"
+                          name={kid.name}
                           className="w-10 h-10 rounded-full object-cover ring-2 ring-rose-200 shrink-0"
                         />
                         <div>
@@ -859,9 +862,11 @@ export default function ChildGrowthWorkspace({ students = [], onNavigateTab }: C
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <img
+                          <AppImage
                             src={obs.studentPhoto}
                             alt={obs.studentName}
+                            fallbackType="avatar"
+                            name={obs.studentName}
                             className="w-6 h-6 rounded-full object-cover"
                           />
                           <span className="font-bold text-xs text-slate-800 dark:text-white">{obs.studentName}</span>
@@ -938,7 +943,13 @@ export default function ChildGrowthWorkspace({ students = [], onNavigateTab }: C
                     <tr key={kid.studentId} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/30">
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-3">
-                          <img src={kid.photo} alt={kid.name} className="w-8 h-8 rounded-full object-cover" />
+                          <AppImage
+                            src={kid.photo}
+                            alt={kid.name}
+                            fallbackType="avatar"
+                            name={kid.name}
+                            className="w-8 h-8 rounded-full object-cover"
+                          />
                           <div>
                             <span className="font-bold text-slate-900 dark:text-white block">{kid.name}</span>
                             <span className="text-[10px] text-slate-400 font-medium">Roll #{kid.rollNo} • {kid.age}</span>
@@ -1025,7 +1036,13 @@ export default function ChildGrowthWorkspace({ students = [], onNavigateTab }: C
                     <tr key={kid.studentId} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/30">
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-3">
-                          <img src={kid.photo} alt={kid.name} className="w-8 h-8 rounded-full object-cover" />
+                          <AppImage
+                            src={kid.photo}
+                            alt={kid.name}
+                            fallbackType="avatar"
+                            name={kid.name}
+                            className="w-8 h-8 rounded-full object-cover"
+                          />
                           <div>
                             <span className="font-bold text-slate-900 dark:text-white block">{kid.name}</span>
                             <span className="text-[10px] text-slate-400 font-medium">Roll #{kid.rollNo}</span>
@@ -1097,7 +1114,13 @@ export default function ChildGrowthWorkspace({ students = [], onNavigateTab }: C
                     <tr key={kid.studentId} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/30">
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-3">
-                          <img src={kid.photo} alt={kid.name} className="w-8 h-8 rounded-full object-cover" />
+                          <AppImage
+                            src={kid.photo}
+                            alt={kid.name}
+                            fallbackType="avatar"
+                            name={kid.name}
+                            className="w-8 h-8 rounded-full object-cover"
+                          />
                           <div>
                             <span className="font-bold text-slate-900 dark:text-white block">{kid.name}</span>
                             <span className="text-[10px] text-slate-400 font-medium">Roll #{kid.rollNo}</span>
@@ -1168,7 +1191,13 @@ export default function ChildGrowthWorkspace({ students = [], onNavigateTab }: C
                     <tr key={kid.studentId} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/30">
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-3">
-                          <img src={kid.photo} alt={kid.name} className="w-8 h-8 rounded-full object-cover" />
+                          <AppImage
+                            src={kid.photo}
+                            alt={kid.name}
+                            fallbackType="avatar"
+                            name={kid.name}
+                            className="w-8 h-8 rounded-full object-cover"
+                          />
                           <div>
                             <span className="font-bold text-slate-900 dark:text-white block">{kid.name}</span>
                             <span className="text-[10px] text-slate-400 font-medium">Roll #{kid.rollNo}</span>
@@ -1240,7 +1269,13 @@ export default function ChildGrowthWorkspace({ students = [], onNavigateTab }: C
                     <tr key={kid.studentId} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/30">
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-3">
-                          <img src={kid.photo} alt={kid.name} className="w-8 h-8 rounded-full object-cover" />
+                          <AppImage
+                            src={kid.photo}
+                            alt={kid.name}
+                            fallbackType="avatar"
+                            name={kid.name}
+                            className="w-8 h-8 rounded-full object-cover"
+                          />
                           <div>
                             <span className="font-bold text-slate-900 dark:text-white block">{kid.name}</span>
                             <span className="text-[10px] text-slate-400 font-medium">Roll #{kid.rollNo}</span>
@@ -1294,9 +1329,11 @@ export default function ChildGrowthWorkspace({ students = [], onNavigateTab }: C
               >
                 <div>
                   <div className="flex items-start justify-between gap-3 mb-3">
-                    <img
+                    <AppImage
                       src={kid.photo}
                       alt={kid.name}
+                      fallbackType="avatar"
+                      name={kid.name}
                       className="w-12 h-12 rounded-full object-cover ring-2 ring-blue-100 dark:ring-blue-950"
                     />
                     <div className="text-right">
@@ -1482,7 +1519,13 @@ export default function ChildGrowthWorkspace({ students = [], onNavigateTab }: C
                     if (!sel) return null;
                     return (
                       <div className="flex items-center gap-2.5 p-2 rounded-xl bg-[#E5EEFF]/60 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900/50">
-                        <img src={sel.photo} alt={sel.name} className="w-7 h-7 rounded-full object-cover ring-1 ring-blue-300 dark:ring-blue-800" />
+                        <AppImage
+                          src={sel.photo}
+                          alt={sel.name}
+                          fallbackType="avatar"
+                          name={sel.name}
+                          className="w-7 h-7 rounded-full object-cover ring-1 ring-blue-300 dark:ring-blue-800"
+                        />
                         <div className="flex-1 min-w-0">
                           <span className="font-bold text-slate-800 dark:text-white text-[11px] block truncate">{sel.name}</span>
                           <span className="text-[10px] text-slate-500 dark:text-slate-400">LKG-A • Roll {sel.rollNo} • {sel.gender}</span>
@@ -1666,9 +1709,11 @@ export default function ChildGrowthWorkspace({ students = [], onNavigateTab }: C
           <div className="h-full w-full max-w-md bg-white dark:bg-slate-900 shadow-2xl p-6 overflow-y-auto space-y-6 custom-scrollbar animate-in slide-in-from-right duration-200 border-l border-slate-200 dark:border-slate-800">
             <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-3">
-                <img
+                <AppImage
                   src={selectedChildForDetail.photo}
                   alt={selectedChildForDetail.name}
+                  fallbackType="avatar"
+                  name={selectedChildForDetail.name}
                   className="w-12 h-12 rounded-full object-cover ring-2 ring-[#0050CB]"
                 />
                 <div>

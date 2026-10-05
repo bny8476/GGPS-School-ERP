@@ -6,6 +6,9 @@ import env from './config/env';
 import logger from './utils/logger';
 import Conversation from './models/Conversation';
 import Notification from './models/Notification';
+import Parent from './models/Parent';
+import Student from './models/Student';
+import StudentParent from './models/StudentParent';
 
 let io: SocketIOServer;
 const onlineUserSockets = new Map<string, Set<string>>();
@@ -113,6 +116,40 @@ export const initSocket = (httpServer: HttpServer): SocketIOServer => {
     if (user.campusId) socket.join(`campus:${user.campusId}`);
     if (user.schoolId) socket.join(`school:${user.schoolId}`);
     if (user.parentId) socket.join(`parent:${user.parentId}`);
+
+    // If connected user is a Parent, join rooms for their verified linked children
+    if (user.role === 'Parent' && mongoose.connection.readyState === 1) {
+      Parent.findOne({
+        $or: [{ userId: user.id }, { primaryEmail: (user as any).email }],
+      })
+        .then(async (parentDoc) => {
+          if (parentDoc) {
+            socket.join(`parent:${parentDoc._id}`);
+            const links = await StudentParent.find({
+              parentId: parentDoc._id,
+              status: { $ne: 'inactive' },
+            }).select('studentId');
+            const direct = await Student.find({
+              parentId: parentDoc._id,
+              status: { $ne: 'Inactive' },
+            }).select('_id');
+            const studentIds = [
+              ...new Set([
+                ...links.map((l) => String(l.studentId)),
+                ...direct.map((d) => String(d._id)),
+              ]),
+            ];
+            for (const sId of studentIds) {
+              socket.join(`student:${sId}`);
+            }
+            const students = await Student.find({ _id: { $in: studentIds } }).select('classId');
+            for (const s of students) {
+              if (s.classId) socket.join(`class:${s.classId}`);
+            }
+          }
+        })
+        .catch(() => {});
+    }
 
     // Durable Outbox On-Connect Replay: Deliver unread pending notifications missed while offline
     if (mongoose.connection.readyState === 1) {

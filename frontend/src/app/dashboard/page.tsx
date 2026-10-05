@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import AppImage from '@/components/ui/AppImage';
 import { 
   Users, GraduationCap, Calendar, Wallet, UserCheck, 
   Clock, AlertTriangle, FileText, Image as ImageIcon, 
@@ -246,7 +247,7 @@ export default function DashboardOverview() {
                         <div key={album._id} className="border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden group bg-slate-50 dark:bg-[#000E28]/60">
                           <div className="h-36 bg-slate-100 dark:bg-slate-800 relative">
                             {album.mediaUrls && album.mediaUrls.length > 0 ? (
-                              <img src={album.mediaUrls[0]} alt={album.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                              <AppImage src={album.mediaUrls[0]} alt={album.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center text-slate-400">
                                 <ImageIcon className="h-8 w-8" />

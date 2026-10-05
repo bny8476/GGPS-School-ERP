@@ -10,6 +10,8 @@ import toast from "react-hot-toast";
 import QRCode from "qrcode";
 import GGPSLogo from "@/components/parent/GGPSLogo";
 import { authFetch } from "@/lib/apiClient";
+import { getApiBaseUrl } from "@/lib/utils";
+import AppImage from "@/components/ui/AppImage";
 
 interface IdCardParentModalProps {
   isOpen: boolean;
@@ -42,7 +44,7 @@ export default function IdCardParentModal({ isOpen, onClose, child }: IdCardPare
       setLoading(true);
       try {
         const token = localStorage.getItem("token");
-        const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+        const apiBase = getApiBaseUrl();
         
         // Try querying by child._id first
         let res = await authFetch(`${apiBase}/api/v1/id-cards?studentId=${child._id}&status=active`, {
@@ -318,9 +320,11 @@ export default function IdCardParentModal({ isOpen, onClose, child }: IdCardPare
                       {/* Photo + Core Details */}
                       <div className="p-4 flex flex-col items-center flex-1 justify-around text-center">
                         <div className="w-24 h-28 rounded-xl border-2 border-[#0050CB] overflow-hidden bg-slate-100 shadow-md">
-                          <img
+                          <AppImage
                             src={idCard.studentId?.studentPhoto || idCard.photoUrl || child.studentPhoto || "/aarav-hero-student.jpg"}
                             alt={child.firstName}
+                            fallbackType="avatar"
+                            name={`${child.firstName} ${child.lastName}`}
                             className="w-full h-full object-cover"
                           />
                         </div>

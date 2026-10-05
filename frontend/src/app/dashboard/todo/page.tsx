@@ -9,6 +9,7 @@ import {
   SlidersHorizontal, CheckSquare, CornerDownRight, BellRing
 } from "lucide-react";
 import Link from "next/link";
+import AppImage from "@/components/ui/AppImage";
 import toast from "react-hot-toast";
 
 interface TaskItem {
@@ -360,7 +361,7 @@ export default function TodoPage() {
       {/* HERO BANNER SECTION */}
       <div className="relative overflow-hidden rounded-[24px] bg-gradient-to-r from-[#EBF3FF] via-[#F3F7FF] to-[#E5EEFF] dark:from-[#001A48] dark:via-[#001438] dark:to-[#002766] p-6 sm:p-8 border border-blue-100/60 dark:border-slate-800 shadow-xs">
         <div 
-          className="absolute top-0 right-0 bottom-0 w-1/2 opacity-20 dark:opacity-10 bg-no-repeat bg-cover bg-right pointer-events-none"
+          className="absolute top-0 right-0 bottom-0 w-1/2 opacity-25 dark:opacity-35 bg-no-repeat bg-cover bg-right pointer-events-none"
           style={{ backgroundImage: `url('/todo-hero-banner.png')` }}
         />
 
@@ -905,7 +906,7 @@ export default function TodoPage() {
             </div>
 
             <div className="w-24 h-24 rounded-xl overflow-hidden shadow-sm shrink-0 border border-white/60">
-              <img 
+              <AppImage 
                 src="/stay-focused-illustration.png" 
                 alt="Stay Focused" 
                 className="w-full h-full object-cover"

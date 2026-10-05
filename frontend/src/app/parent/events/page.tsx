@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from "react";
 import Image from "next/image";
+import AppImage from "@/components/ui/AppImage";
 import Link from "next/link";
 import { 
   Calendar as CalendarIcon, Clock, MapPin, Users, Star, 
@@ -645,7 +646,7 @@ export default function SchoolEventsPage() {
               
               {/* Left Photo with Featured Badge */}
               <div className="md:col-span-5 relative min-h-[220px] md:min-h-full">
-                <Image
+                <AppImage
                   src={featuredEvent.image}
                   alt={featuredEvent.title}
                   fill
@@ -812,7 +813,7 @@ export default function SchoolEventsPage() {
                     >
                       {/* Top Thumbnail Image */}
                       <div className="relative h-44 w-full overflow-hidden">
-                        <Image
+                        <AppImage
                           src={card.image}
                           alt={card.title}
                           fill

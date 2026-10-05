@@ -37,6 +37,7 @@ import {
 import toast from "react-hot-toast";
 import { useAuthStore } from "@/stores/authStore";
 import { getApiBaseUrl } from "@/lib/utils";
+import AppImage from "@/components/ui/AppImage";
 
 type FilterTab = "all" | "class_teacher" | "subject_faculty" | "coordinator";
 
@@ -719,9 +720,11 @@ export default function ChatPage() {
                 >
                   {/* Contact Avatar */}
                   <div className="relative w-11 h-11 rounded-full overflow-hidden shrink-0 bg-slate-200 dark:bg-slate-700 ring-1 ring-slate-200 dark:ring-slate-700">
-                    <img
+                    <AppImage
                       src={conv.avatar}
                       alt={conv.name}
+                      fallbackType="avatar"
+                      name={conv.name}
                       className="w-full h-full object-cover"
                     />
                     {conv.online && (
@@ -776,9 +779,11 @@ export default function ChatPage() {
           <div className="h-18 px-5 border-b border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#000E28] flex items-center justify-between shrink-0">
             <div className="flex items-center gap-3 min-w-0">
               <div className="relative w-10 h-10 rounded-full overflow-hidden bg-slate-200 shrink-0 ring-1 ring-slate-200 dark:ring-slate-700">
-                <img
+                <AppImage
                   src={activeConversation.avatar}
                   alt={activeConversation.name}
+                  fallbackType="avatar"
+                  name={activeConversation.name}
                   className="w-full h-full object-cover"
                 />
               </div>
@@ -851,9 +856,11 @@ export default function ChatPage() {
                 >
                   {!isMe && (
                     <div className="w-7 h-7 rounded-full overflow-hidden shrink-0 bg-slate-200 mb-1 ring-1 ring-slate-200 dark:ring-slate-700">
-                      <img
+                      <AppImage
                         src={activeConversation.avatar}
                         alt={activeConversation.name}
+                        fallbackType="avatar"
+                        name={activeConversation.name}
                         className="w-full h-full object-cover"
                       />
                     </div>
@@ -987,9 +994,11 @@ export default function ChatPage() {
             {/* Profile Avatar & Name */}
             <div className="flex items-center gap-3.5 mb-3.5">
               <div className="relative w-14 h-14 rounded-full overflow-hidden bg-slate-200 ring-2 ring-slate-100 dark:ring-slate-700 shrink-0">
-                <img
+                <AppImage
                   src={activeConversation.avatar}
                   alt={activeConversation.name}
+                  fallbackType="avatar"
+                  name={activeConversation.name}
                   className="w-full h-full object-cover"
                 />
               </div>
