@@ -17,6 +17,13 @@ import {
   closeEnquiry,
 } from '../controllers/admissionController';
 import { protect, authorize } from '../middleware/auth';
+import { validate } from '../middleware/validate';
+import {
+  createEnquirySchema,
+  createAdmissionSchema,
+  addEnquiryFollowUpSchema,
+  addEnquiryNoteSchema,
+} from '../validators/admissionValidator';
 import rateLimit from 'express-rate-limit';
 
 const router = express.Router();
@@ -40,7 +47,7 @@ const staffAuth = [protect, authorize('Admin', 'Receptionist', 'SuperAdmin', 'Pr
 // ==========================================
 
 // Public enquiry endpoints
-router.post('/enquiries', enquiryLimiter, createEnquiry);
+router.post('/enquiries', enquiryLimiter, validate(createEnquirySchema), createEnquiry);
 router.get('/enquiries/:enquiryId', getEnquiryById);
 
 // Admin / Staff enquiry management endpoints
@@ -49,18 +56,17 @@ router.get('/enquiries/detail/:id', staffAuth, getEnquiryDetail);
 router.patch('/enquiries/:id', staffAuth, updateEnquiry);
 router.patch('/enquiries/:id/status', staffAuth, updateEnquiryStatus);
 router.patch('/enquiries/:id/assignment', staffAuth, assignEnquiry);
-router.post('/enquiries/:id/follow-ups', staffAuth, addEnquiryFollowUp);
-router.post('/enquiries/:id/notes', staffAuth, addEnquiryNote);
+router.post('/enquiries/:id/follow-ups', staffAuth, validate(addEnquiryFollowUpSchema), addEnquiryFollowUp);
+router.post('/enquiries/:id/notes', staffAuth, validate(addEnquiryNoteSchema), addEnquiryNote);
 router.post('/enquiries/:id/convert', staffAuth, convertEnquiryToApplication);
 router.post('/enquiries/:id/close', staffAuth, closeEnquiry);
 
 // ==========================================
 // 2. FORMAL ADMISSIONS / APPLICATIONS
 // ==========================================
-router.post('/', enquiryLimiter, createAdmission);
+router.post('/', enquiryLimiter, validate(createAdmissionSchema), createAdmission);
 router.get('/', staffAuth, getAdmissions);
 router.put('/:id', staffAuth, updateAdmission);
 router.post('/:id/approve', staffAuth, approveAdmission);
 
 export default router;
-

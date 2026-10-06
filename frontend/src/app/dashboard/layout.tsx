@@ -107,7 +107,8 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const userStr = localStorage.getItem('user');
-    if (userStr) {
+    const token = localStorage.getItem('token');
+    if (userStr && token) {
       try {
         const parsed = JSON.parse(userStr);
         setUser(parsed);
@@ -128,14 +129,25 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   const handleLogout = async () => {
     try {
       const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+      const token = localStorage.getItem('token');
+      const refreshToken = localStorage.getItem('refreshToken');
       await fetch(`${apiBase}/api/v1/auth/logout`, {
         method: "POST",
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
         credentials: "include",
+        body: JSON.stringify({ refreshToken }),
       });
     } catch (e) {
       console.warn("Logout request failed:", e);
     } finally {
+      localStorage.removeItem('token');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('user');
       useAuthStore.getState().logout();
+      router.push('/login');
     }
   };
 

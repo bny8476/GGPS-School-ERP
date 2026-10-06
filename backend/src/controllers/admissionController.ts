@@ -22,6 +22,7 @@ import {
 } from '../services/sequenceService';
 import { emailService } from '../services/emailService';
 import { emitToRole, emitToUser, broadcastEvent } from '../socket';
+import { escapeRegex } from '../utils/sanitizers';
 
 // @desc    Get all admissions (with search, filter, pagination)
 // @route   GET /api/admissions
@@ -34,7 +35,7 @@ export const getAdmissions = async (req: Request, res: Response) => {
     if (status) filter.status = status;
 
     if (search) {
-      const searchRegex = new RegExp(String(search).trim(), 'i');
+      const searchRegex = new RegExp(escapeRegex(String(search).trim()), 'i');
       filter.$or = [
         { childFirstName: searchRegex },
         { childLastName: searchRegex },
@@ -107,39 +108,58 @@ export const createAdmission = async (req: Request, res: Response) => {
       });
     }
 
-    // Generate unique official enquiry reference (e.g. GGPS-ENQ-2026-001)
-    const enquiryReference = body.applicationNumber || (await generateNextEnquiryNumber(academicYear));
+    // Generate unique official identifier
+    const isApplication = body.stage !== 'Enquiry';
+    const appNumber = body.applicationNumber || (isApplication 
+      ? await generateNextAdmissionNumber(academicYear, gradeAppliedFor) 
+      : await generateNextEnquiryNumber(academicYear));
+    const enquiryReference = appNumber;
 
     const admission = await Admission.create({
-      applicationNumber: enquiryReference,
-      enquiryReference,
+      applicationNumber: appNumber,
+      enquiryReference: isApplication ? (body.enquiryReference || appNumber) : appNumber,
       childFirstName,
+      childMiddleName: body.childMiddleName || body.student?.middleName || '',
       childLastName: childLastName || '-',
       dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
       gender: ['Male', 'Female', 'Other'].includes(gender) ? gender : 'Other',
       parentName,
+      fatherName: body.fatherName || body.parent?.fatherName || '',
+      motherName: body.motherName || body.parent?.motherName || '',
+      guardianName: body.guardianName || body.parent?.guardianName || '',
       relationship,
       contactNumber,
       parentPhone: contactNumber,
       email: email || undefined,
       parentEmail: email || undefined,
-      address: body.address || '',
+      address: body.address || body.parent?.address || '',
       gradeAppliedFor,
       academicYear,
       preferredContactMethod,
-      status: body.status || 'New',
-      stage: body.stage || 'Enquiry',
+      status: body.status || (isApplication ? 'Submitted' : 'New'),
+      stage: body.stage || (isApplication ? 'Application' : 'Enquiry'),
       notes: message,
+      previousSchool: body.previousSchool || '',
+      previousClass: body.previousClass || '',
+      previousAcademicYear: body.previousAcademicYear || '',
+      tcAvailable: !!body.tcAvailable,
+      medicalNotes: body.medicalNotes || '',
+      source: body.source || 'Website',
+      referral: body.referral || '',
       documents: body.documents || [],
+      feeStatus: body.feeStatus || 'Pending',
+      feeAmount: body.feeAmount !== undefined ? Number(body.feeAmount) : 25000,
+      feePaid: body.feePaid !== undefined ? Number(body.feePaid) : 0,
     });
 
     // Notify administrators via realtime socket
     emitToRole('Admin', 'admission:new', admission);
     broadcastEvent('notification:new', {
       type: 'admission',
-      title: 'New Admission Enquiry Received',
-      message: `New admission enquiry ${enquiryReference} received for ${childFirstName} ${childLastName !== '-' ? childLastName : ''} (${gradeAppliedFor})`,
-      enquiryReference,
+      title: isApplication ? 'New Admission Application Submitted' : 'New Admission Enquiry Received',
+      message: `${isApplication ? 'Application' : 'Enquiry'} ${appNumber} received for ${childFirstName} ${childLastName !== '-' ? childLastName : ''} (${gradeAppliedFor})`,
+      enquiryReference: appNumber,
+      applicationNumber: appNumber,
     });
 
     // Create persistent Notification in database for Admin role
@@ -392,9 +412,13 @@ export const updateAdmission = async (req: Request, res: Response) => {
     const {
       childFirstName,
       childLastName,
+      childMiddleName,
       dateOfBirth,
       gender,
       parentName,
+      fatherName,
+      motherName,
+      guardianName,
       contactNumber,
       parentPhone,
       email,
@@ -409,14 +433,30 @@ export const updateAdmission = async (req: Request, res: Response) => {
       waitlistPosition,
       notes,
       documents,
+      feeStatus,
+      feeAmount,
+      feePaid,
+      paymentMethod,
+      receiptNumber,
+      medicalNotes,
+      previousSchool,
+      previousClass,
+      previousAcademicYear,
+      tcAvailable,
+      source,
+      referral,
     } = req.body;
 
     const allowedUpdates: Record<string, any> = {};
     if (childFirstName !== undefined) allowedUpdates.childFirstName = childFirstName;
+    if (childMiddleName !== undefined) allowedUpdates.childMiddleName = childMiddleName;
     if (childLastName !== undefined) allowedUpdates.childLastName = childLastName;
     if (dateOfBirth !== undefined) allowedUpdates.dateOfBirth = dateOfBirth;
     if (gender !== undefined) allowedUpdates.gender = gender;
     if (parentName !== undefined) allowedUpdates.parentName = parentName;
+    if (fatherName !== undefined) allowedUpdates.fatherName = fatherName;
+    if (motherName !== undefined) allowedUpdates.motherName = motherName;
+    if (guardianName !== undefined) allowedUpdates.guardianName = guardianName;
     if (contactNumber !== undefined) allowedUpdates.contactNumber = contactNumber;
     if (parentPhone !== undefined) allowedUpdates.parentPhone = parentPhone;
     if (email !== undefined) allowedUpdates.email = email;
@@ -430,7 +470,19 @@ export const updateAdmission = async (req: Request, res: Response) => {
     if (admissionScore !== undefined) allowedUpdates.admissionScore = admissionScore;
     if (waitlistPosition !== undefined) allowedUpdates.waitlistPosition = waitlistPosition;
     if (notes !== undefined) allowedUpdates.notes = notes;
+    if (medicalNotes !== undefined) allowedUpdates.medicalNotes = medicalNotes;
+    if (previousSchool !== undefined) allowedUpdates.previousSchool = previousSchool;
+    if (previousClass !== undefined) allowedUpdates.previousClass = previousClass;
+    if (previousAcademicYear !== undefined) allowedUpdates.previousAcademicYear = previousAcademicYear;
+    if (tcAvailable !== undefined) allowedUpdates.tcAvailable = tcAvailable;
+    if (source !== undefined) allowedUpdates.source = source;
+    if (referral !== undefined) allowedUpdates.referral = referral;
     if (documents !== undefined) allowedUpdates.documents = documents;
+    if (feeStatus !== undefined) allowedUpdates.feeStatus = feeStatus;
+    if (feeAmount !== undefined) allowedUpdates.feeAmount = Number(feeAmount);
+    if (feePaid !== undefined) allowedUpdates.feePaid = Number(feePaid);
+    if (paymentMethod !== undefined) allowedUpdates.paymentMethod = paymentMethod;
+    if (receiptNumber !== undefined) allowedUpdates.receiptNumber = receiptNumber;
 
     const admission = await Admission.findByIdAndUpdate(req.params.id, allowedUpdates, {
       new: true,
@@ -441,8 +493,8 @@ export const updateAdmission = async (req: Request, res: Response) => {
       return res.status(404).json({ success: false, message: 'Admission record not found' });
     }
 
-    // Auto-approve if stage changed to 'Approved' or 'Enrolled' and studentId not yet created
-    if ((allowedUpdates.stage === 'Approved' || allowedUpdates.status === 'Admission Confirmed') && !admission.studentId) {
+    // Auto-approve if status explicitly changed to 'Admission Confirmed' or stage to 'Enrolled' and studentId not yet created
+    if ((allowedUpdates.status === 'Admission Confirmed' || allowedUpdates.stage === 'Enrolled') && !admission.studentId) {
       return approveAdmission(req, res);
     }
 
@@ -520,9 +572,23 @@ export const createEnquiry = async (req: Request, res: Response) => {
     const validContactMethod = ['Phone', 'WhatsApp', 'Email'].includes(preferredContactMethod)
       ? (preferredContactMethod as 'Phone' | 'WhatsApp' | 'Email')
       : 'Phone';
-    const validSource = ['Website', 'Home Page', 'Admission Page', 'Referral', 'Other'].includes(source)
-      ? (source as 'Website' | 'Home Page' | 'Admission Page' | 'Referral' | 'Other')
+    const validSource = [
+      'Website',
+      'Home Page',
+      'Admission Page',
+      'Referral',
+      'Phone',
+      'Walk-in',
+      'Direct',
+      'Social Media',
+      'Other',
+    ].includes(source)
+      ? source
       : 'Website';
+
+    const initialStatus = body.status || 'NEW';
+    const initialNotes = body.notes ? [{ text: String(body.notes).trim(), createdAt: new Date() }] : [];
+    const followUpDate = body.followUpDate ? new Date(body.followUpDate) : undefined;
 
     const enquiry = await AdmissionEnquiry.create({
       enquiryId,
@@ -543,18 +609,30 @@ export const createEnquiry = async (req: Request, res: Response) => {
       message,
       preferredVisitDate,
       source: validSource,
-      status: 'NEW',
-      followUps: [],
-      notes: [],
+      status: initialStatus,
+      nextFollowUpDate: followUpDate,
+      followUps: followUpDate
+        ? [
+            {
+              date: followUpDate,
+              notes: 'Initial follow-up scheduled during enquiry registration',
+              type: 'Phone',
+              createdAt: new Date(),
+            },
+          ]
+        : [],
+      notes: initialNotes,
     });
 
     // Also sync to Admission collection for pipeline compatibility
     const nameParts = childName.split(/\s+/);
+    const resolvedFirstName = String(body.childFirstName || nameParts[0] || 'Child').trim();
+    const resolvedLastName = String(body.childLastName || nameParts.slice(1).join(' ') || nameParts[0] || 'Student').trim();
     await Admission.create({
       applicationNumber: enquiryId,
       enquiryReference: enquiryId,
-      childFirstName: nameParts[0] || 'Child',
-      childLastName: nameParts.slice(1).join(' ') || '-',
+      childFirstName: resolvedFirstName,
+      childLastName: resolvedLastName,
       dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
       gender: ['Male', 'Female', 'Other'].includes(gender) ? gender : 'Other',
       parentName,
@@ -741,7 +819,7 @@ export const getEnquiries = async (req: Request, res: Response) => {
           parent: { name: 'Rahul Kumar', email: 'rahul.kumar@gmail.com', phone: '+91 98401 22334', relationship: 'Father' },
           child: { name: 'Arun Kumar', classApplied: 'LKG', dateOfBirth: new Date('2022-04-15'), gender: 'Male' },
           preferredContactMethod: 'Phone',
-          message: 'Interested in LKG admission for AY 2026-27. Inquiring about school bus transport and timing.',
+          message: 'Interested in LKG admission for AY 2026-27. Inquiring about school curriculum and timing.',
           source: 'Website',
           status: 'NEW',
           followUps: [],
@@ -1155,7 +1233,7 @@ export const convertEnquiryToApplication = async (req: Request, res: Response) =
 
     const nameParts = enquiry.child.name.trim().split(/\s+/);
     const childFirstName = nameParts[0] || 'Student';
-    const childLastName = nameParts.slice(1).join(' ') || '-';
+    const childLastName = nameParts.slice(1).join(' ') || nameParts[0] || 'Student';
 
     // 1. Create formal Admission application record
     const application = await Admission.create({

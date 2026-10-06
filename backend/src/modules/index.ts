@@ -23,7 +23,6 @@ import {
 } from './learning';
 import {
   operationsRoutes,
-  transportRoutes,
   bookRoutes,
   daycareRoutes,
   eventsRoutes,
@@ -124,7 +123,6 @@ export function registerDomainModules(apiRouter: Router): void {
 
   // Operations
   apiRouter.use('/operations', operationsRoutes);
-  apiRouter.use('/transport', transportRoutes);
   apiRouter.use('/books', bookRoutes);
   apiRouter.use('/daycare', daycareRoutes);
   apiRouter.use('/events', eventsRoutes);

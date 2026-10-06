@@ -118,14 +118,18 @@ export default function NotificationDrawer({ onNavigateTab }: NotificationDrawer
 
   const fetchNotifications = async () => {
     try {
-      setLoading(true);
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      if (!token) {
+        return;
+      }
+      setLoading(true);
       const apiBase = getApiBaseUrl();
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 3000);
 
-      const headers: Record<string, string> = {};
-      if (token) headers['Authorization'] = `Bearer ${token}`;
+      const headers: Record<string, string> = {
+        'Authorization': `Bearer ${token}`
+      };
 
       let res = await authFetch(`${apiBase}/api/v1/notifications`, {
         headers,

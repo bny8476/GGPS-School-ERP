@@ -22,6 +22,18 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { authFetch } from '@/lib/apiClient';
+import {
+  NAME_REGEX,
+  EMAIL_REGEX,
+  TEN_DIGIT_PHONE_REGEX,
+  preventNonAlphaKey,
+  preventNonNumericKey,
+  sanitizeNameInput,
+  sanitizePhoneInput,
+  handleNamePaste,
+  handlePhonePaste,
+  validateDOB,
+} from '@/lib/validationUtils';
 
 interface AddStudentModalProps {
   isOpen: boolean;
@@ -56,6 +68,7 @@ export default function AddStudentModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [createdStudent, setCreatedStudent] = useState<CreatedStudentResult | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Form State
   const [formData, setFormData] = useState({
@@ -92,21 +105,74 @@ export default function AddStudentModal({
 
   const handleChange = (field: string, val: any) => {
     setFormData((prev) => ({ ...prev, [field]: val }));
+    if (errors[field]) {
+      setErrors((prev) => {
+        const next = { ...prev };
+        delete next[field];
+        return next;
+      });
+    }
   };
 
   const handleNext = () => {
+    const stepErrors: Record<string, string> = {};
+
     if (currentStep === 1) {
-      if (!formData.firstName.trim() || !formData.lastName.trim()) {
-        toast.error('First and last name are required.');
+      const fName = formData.firstName.trim();
+      const lName = formData.lastName.trim();
+
+      if (!fName) {
+        stepErrors.firstName = 'First name is required';
+      } else if (!NAME_REGEX.test(fName)) {
+        stepErrors.firstName = 'First name can contain only letters, spaces, hyphens, apostrophes, and periods';
+      } else if (fName.length < 1) {
+        stepErrors.firstName = 'First name is required';
+      }
+
+      if (!lName) {
+        stepErrors.lastName = 'Last name is required';
+      } else if (!NAME_REGEX.test(lName)) {
+        stepErrors.lastName = 'Last name can contain only letters, spaces, hyphens, apostrophes, and periods';
+      }
+
+      if (formData.dateOfBirth) {
+        const dobCheck = validateDOB(formData.dateOfBirth);
+        if (!dobCheck.valid) {
+          stepErrors.dateOfBirth = dobCheck.error || 'Date of birth cannot be in the future';
+        }
+      }
+
+      if (Object.keys(stepErrors).length > 0) {
+        setErrors(stepErrors);
+        toast.error(Object.values(stepErrors)[0]);
         return;
       }
     }
+
     if (currentStep === 2) {
-      if (!formData.emergencyContact.trim()) {
-        toast.error('Parent contact number is required.');
+      if (formData.parentName.trim() && !NAME_REGEX.test(formData.parentName.trim())) {
+        stepErrors.parentName = 'Parent name can contain only letters, spaces, hyphens, apostrophes, and periods';
+      }
+
+      const phone = formData.emergencyContact.trim();
+      if (!phone) {
+        stepErrors.emergencyContact = 'Parent contact phone number is required';
+      } else if (!TEN_DIGIT_PHONE_REGEX.test(phone)) {
+        stepErrors.emergencyContact = 'Enter a valid 10-digit mobile number';
+      }
+
+      if (formData.parentEmail.trim() && !EMAIL_REGEX.test(formData.parentEmail.trim())) {
+        stepErrors.parentEmail = 'Enter a valid email address';
+      }
+
+      if (Object.keys(stepErrors).length > 0) {
+        setErrors(stepErrors);
+        toast.error(Object.values(stepErrors)[0]);
         return;
       }
     }
+
+    setErrors({});
     setCurrentStep((prev) => Math.min(STEPS.length, prev + 1));
   };
 
@@ -442,41 +508,70 @@ export default function AddStudentModal({
                   >
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-xs font-bold text-[#000E28] dark:text-slate-300 mb-1.5">
-                          First Name *
+                        <label htmlFor="firstName" className="block text-xs font-bold text-[#000E28] dark:text-slate-300 mb-1.5">
+                          First Name <span className="text-[#FF690C]">*</span>
                         </label>
                         <input
+                          id="firstName"
                           type="text"
                           required
                           placeholder="e.g. Aarav"
                           value={formData.firstName}
-                          onChange={(e) => handleChange('firstName', e.target.value)}
-                          className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm text-[#000E28] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0050CB]/30"
+                          onKeyDown={preventNonAlphaKey}
+                          onChange={(e) => handleChange('firstName', sanitizeNameInput(e.target.value))}
+                          onPaste={(e) => handleNamePaste(e, (v) => handleChange('firstName', v))}
+                          className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border text-xs sm:text-sm text-[#000E28] dark:text-white focus:outline-none transition-all ${
+                            errors.firstName
+                              ? 'border-rose-400 focus:ring-2 focus:ring-rose-500/15'
+                              : 'border-slate-200 dark:border-slate-700 focus:border-[#0050CB] focus:ring-2 focus:ring-[#0050CB]/30'
+                          }`}
                         />
+                        {errors.firstName && (
+                          <p className="text-[11px] text-rose-500 font-semibold mt-1">{errors.firstName}</p>
+                        )}
                       </div>
                       <div>
-                        <label className="block text-xs font-bold text-[#000E28] dark:text-slate-300 mb-1.5">
-                          Last Name *
+                        <label htmlFor="lastName" className="block text-xs font-bold text-[#000E28] dark:text-slate-300 mb-1.5">
+                          Last Name <span className="text-[#FF690C]">*</span>
                         </label>
                         <input
+                          id="lastName"
                           type="text"
                           required
                           placeholder="e.g. Sharma"
                           value={formData.lastName}
-                          onChange={(e) => handleChange('lastName', e.target.value)}
-                          className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm text-[#000E28] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0050CB]/30"
+                          onKeyDown={preventNonAlphaKey}
+                          onChange={(e) => handleChange('lastName', sanitizeNameInput(e.target.value))}
+                          onPaste={(e) => handleNamePaste(e, (v) => handleChange('lastName', v))}
+                          className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border text-xs sm:text-sm text-[#000E28] dark:text-white focus:outline-none transition-all ${
+                            errors.lastName
+                              ? 'border-rose-400 focus:ring-2 focus:ring-rose-500/15'
+                              : 'border-slate-200 dark:border-slate-700 focus:border-[#0050CB] focus:ring-2 focus:ring-[#0050CB]/30'
+                          }`}
                         />
+                        {errors.lastName && (
+                          <p className="text-[11px] text-rose-500 font-semibold mt-1">{errors.lastName}</p>
+                        )}
                       </div>
                       <div>
-                        <label className="block text-xs font-bold text-[#000E28] dark:text-slate-300 mb-1.5">
-                          Date of Birth *
+                        <label htmlFor="dateOfBirth" className="block text-xs font-bold text-[#000E28] dark:text-slate-300 mb-1.5">
+                          Date of Birth
                         </label>
                         <input
+                          id="dateOfBirth"
                           type="date"
+                          max={new Date().toISOString().split("T")[0]}
                           value={formData.dateOfBirth}
                           onChange={(e) => handleChange('dateOfBirth', e.target.value)}
-                          className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm text-[#000E28] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0050CB]/30"
+                          className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border text-xs sm:text-sm text-[#000E28] dark:text-white focus:outline-none transition-all ${
+                            errors.dateOfBirth
+                              ? 'border-rose-400 focus:ring-2 focus:ring-rose-500/15'
+                              : 'border-slate-200 dark:border-slate-700 focus:border-[#0050CB] focus:ring-2 focus:ring-[#0050CB]/30'
+                          }`}
                         />
+                        {errors.dateOfBirth && (
+                          <p className="text-[11px] text-rose-500 font-semibold mt-1">{errors.dateOfBirth}</p>
+                        )}
                       </div>
                       <div>
                         <label className="block text-xs font-bold text-[#000E28] dark:text-slate-300 mb-1.5">
@@ -537,41 +632,70 @@ export default function AddStudentModal({
                   >
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="sm:col-span-2">
-                        <label className="block text-xs font-bold text-[#000E28] dark:text-slate-300 mb-1.5">
-                          Primary Parent / Guardian Full Name *
+                        <label htmlFor="parentName" className="block text-xs font-bold text-[#000E28] dark:text-slate-300 mb-1.5">
+                          Primary Parent / Guardian Full Name
                         </label>
                         <input
+                          id="parentName"
                           type="text"
                           placeholder="e.g. Vikram Sharma"
                           value={formData.parentName}
-                          onChange={(e) => handleChange('parentName', e.target.value)}
-                          className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm text-[#000E28] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0050CB]/30"
+                          onKeyDown={preventNonAlphaKey}
+                          onChange={(e) => handleChange('parentName', sanitizeNameInput(e.target.value))}
+                          onPaste={(e) => handleNamePaste(e, (v) => handleChange('parentName', v))}
+                          className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border text-xs sm:text-sm text-[#000E28] dark:text-white focus:outline-none transition-all ${
+                            errors.parentName
+                              ? 'border-rose-400 focus:ring-2 focus:ring-rose-500/15'
+                              : 'border-slate-200 dark:border-slate-700 focus:border-[#0050CB] focus:ring-2 focus:ring-[#0050CB]/30'
+                          }`}
                         />
+                        {errors.parentName && (
+                          <p className="text-[11px] text-rose-500 font-semibold mt-1">{errors.parentName}</p>
+                        )}
                       </div>
                       <div>
-                        <label className="block text-xs font-bold text-[#000E28] dark:text-slate-300 mb-1.5">
-                          Contact Phone *
+                        <label htmlFor="emergencyContact" className="block text-xs font-bold text-[#000E28] dark:text-slate-300 mb-1.5">
+                          Contact Phone <span className="text-[#FF690C]">*</span>
                         </label>
                         <input
+                          id="emergencyContact"
                           type="tel"
                           required
-                          placeholder="+91 98765 43210"
+                          maxLength={10}
+                          placeholder="9876543210"
                           value={formData.emergencyContact}
-                          onChange={(e) => handleChange('emergencyContact', e.target.value)}
-                          className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm text-[#000E28] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0050CB]/30"
+                          onKeyDown={preventNonNumericKey}
+                          onChange={(e) => handleChange('emergencyContact', sanitizePhoneInput(e.target.value))}
+                          onPaste={(e) => handlePhonePaste(e, (v) => handleChange('emergencyContact', v))}
+                          className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border text-xs sm:text-sm text-[#000E28] dark:text-white focus:outline-none transition-all ${
+                            errors.emergencyContact
+                              ? 'border-rose-400 focus:ring-2 focus:ring-rose-500/15'
+                              : 'border-slate-200 dark:border-slate-700 focus:border-[#0050CB] focus:ring-2 focus:ring-[#0050CB]/30'
+                          }`}
                         />
+                        {errors.emergencyContact && (
+                          <p className="text-[11px] text-rose-500 font-semibold mt-1">{errors.emergencyContact}</p>
+                        )}
                       </div>
                       <div>
-                        <label className="block text-xs font-bold text-[#000E28] dark:text-slate-300 mb-1.5">
+                        <label htmlFor="parentEmail" className="block text-xs font-bold text-[#000E28] dark:text-slate-300 mb-1.5">
                           Email Address
                         </label>
                         <input
+                          id="parentEmail"
                           type="email"
                           placeholder="vikram.sharma@example.com"
                           value={formData.parentEmail}
                           onChange={(e) => handleChange('parentEmail', e.target.value)}
-                          className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm text-[#000E28] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0050CB]/30"
+                          className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border text-xs sm:text-sm text-[#000E28] dark:text-white focus:outline-none transition-all ${
+                            errors.parentEmail
+                              ? 'border-rose-400 focus:ring-2 focus:ring-rose-500/15'
+                              : 'border-slate-200 dark:border-slate-700 focus:border-[#0050CB] focus:ring-2 focus:ring-[#0050CB]/30'
+                          }`}
                         />
+                        {errors.parentEmail && (
+                          <p className="text-[11px] text-rose-500 font-semibold mt-1">{errors.parentEmail}</p>
+                        )}
                       </div>
                       <div className="sm:col-span-2">
                         <label className="block text-xs font-bold text-[#000E28] dark:text-slate-300 mb-1.5">

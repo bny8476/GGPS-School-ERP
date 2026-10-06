@@ -20,9 +20,9 @@ export default function FeatureFlagsPage() {
       category: "Academics",
     },
     {
-      key: "gps_tracking",
-      name: "Real-Time Bus GPS Tracking",
-      description: "Broadcasts live bus coordinates and ETA push notifications to parent app.",
+      key: "biometric_attendance",
+      name: "Biometric Smart Gate Access",
+      description: "Automated student & staff arrival verification at main campus security gates.",
       enabled: true,
       category: "Operations",
     },

@@ -25,6 +25,18 @@ import {
 import { useLanguage } from "@/context/LanguageContext";
 
 import toast from 'react-hot-toast';
+import {
+  NAME_REGEX,
+  EMAIL_REGEX,
+  TEN_DIGIT_PHONE_REGEX,
+  preventNonAlphaKey,
+  preventNonNumericKey,
+  sanitizeNameInput,
+  sanitizePhoneInput,
+  handleNamePaste,
+  handlePhonePaste,
+  validateDOB,
+} from "@/lib/validationUtils";
 
 export default function AdmissionsPage() {
   const { t } = useLanguage();
@@ -45,34 +57,115 @@ export default function AdmissionsPage() {
     address: "",
   });
 
+  // Validation Error States
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+      setErrors((prev) => {
+        const next = { ...prev };
+        delete next[name];
+        return next;
+      });
+    }
   };
 
   const handleNextStep1 = (e: React.FormEvent) => {
     e.preventDefault();
-    if (
-      !formData.childFirstName ||
-      !formData.childLastName ||
-      !formData.dateOfBirth ||
-      !formData.gender ||
-      !formData.gradeAppliedFor
-    ) {
-      alert("Please fill in all required student details.");
+    const newErrors: Record<string, string> = {};
+
+    const firstName = formData.childFirstName.trim();
+    if (!firstName) {
+      newErrors.childFirstName = "Student first name is required";
+    } else if (!NAME_REGEX.test(firstName)) {
+      newErrors.childFirstName = "First name can contain only letters, spaces, hyphens, apostrophes, and periods";
+    } else if (firstName.length < 2) {
+      newErrors.childFirstName = "First name must be at least 2 characters";
+    }
+
+    const lastName = formData.childLastName.trim();
+    if (!lastName) {
+      newErrors.childLastName = "Student last name is required";
+    } else if (!NAME_REGEX.test(lastName)) {
+      newErrors.childLastName = "Last name can contain only letters, spaces, hyphens, apostrophes, and periods";
+    }
+
+    if (!formData.dateOfBirth) {
+      newErrors.dateOfBirth = "Date of birth is required";
+    } else {
+      const dobResult = validateDOB(formData.dateOfBirth);
+      if (!dobResult.valid) {
+        newErrors.dateOfBirth = dobResult.error || "Date of birth cannot be in the future";
+      }
+    }
+
+    if (!formData.gender) {
+      newErrors.gender = "Please select gender";
+    }
+
+    if (!formData.gradeAppliedFor) {
+      newErrors.gradeAppliedFor = "Please select grade applied for";
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      const firstField = Object.keys(newErrors)[0];
+      const el = document.getElementById(firstField);
+      if (el) el.focus();
       return;
     }
+
+    setErrors({});
     setCurrentStep(2);
   };
 
   const handleNextStep2 = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.parentName || !formData.email || !formData.contactNumber) {
-      alert("Please fill in all required parent details.");
+    const newErrors: Record<string, string> = {};
+
+    const parentName = formData.parentName.trim();
+    if (!parentName) {
+      newErrors.parentName = "Parent/Guardian name is required";
+    } else if (!NAME_REGEX.test(parentName)) {
+      newErrors.parentName = "Name can contain only letters, spaces, hyphens, apostrophes, and periods";
+    } else if (parentName.length < 2) {
+      newErrors.parentName = "Name must be at least 2 characters";
+    }
+
+    const email = formData.email.trim();
+    if (!email) {
+      newErrors.email = "Email address is required";
+    } else if (!EMAIL_REGEX.test(email)) {
+      newErrors.email = "Please enter a valid email address (e.g. name@example.com)";
+    }
+
+    const phone = formData.contactNumber.trim();
+    if (!phone) {
+      newErrors.contactNumber = "Contact number is required";
+    } else if (!TEN_DIGIT_PHONE_REGEX.test(phone)) {
+      newErrors.contactNumber = "Please enter a valid 10-digit mobile number";
+    }
+
+    const address = formData.address.trim();
+    if (!address) {
+      newErrors.address = "Home address is required";
+    } else if (address.length < 5) {
+      newErrors.address = "Address must be at least 5 characters";
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      const firstField = Object.keys(newErrors)[0];
+      const el = document.getElementById(firstField);
+      if (el) el.focus();
       return;
     }
+
+    setErrors({});
     setCurrentStep(3);
   };
 
@@ -83,17 +176,17 @@ export default function AdmissionsPage() {
     try {
       const data = {
         student: {
-          firstName: formData.childFirstName,
-          lastName: formData.childLastName,
+          firstName: formData.childFirstName.trim(),
+          lastName: formData.childLastName.trim(),
           dateOfBirth: formData.dateOfBirth,
           gender: formData.gender,
           gradeAppliedFor: formData.gradeAppliedFor,
         },
         parent: {
-          name: formData.parentName,
-          email: formData.email,
-          contactNumber: formData.contactNumber,
-          address: formData.address,
+          name: formData.parentName.trim(),
+          email: formData.email.trim().toLowerCase(),
+          contactNumber: formData.contactNumber.trim(),
+          address: formData.address.trim(),
         },
       };
 
@@ -109,11 +202,11 @@ export default function AdmissionsPage() {
         setIsSubmitted(true);
       } else {
         const err = await response.json();
-        toast.error(`Submission failed: ${err.message}`);
+        toast.error(`Submission failed: ${err.message || 'Validation error'}`);
       }
     } catch (error) {
       console.error("Error submitting form:", error);
-      toast.error("A network error occurred.");
+      toast.error("A network error occurred. Please check your connection.");
     } finally {
       setIsLoading(false);
     }
@@ -132,6 +225,7 @@ export default function AdmissionsPage() {
         contactNumber: "",
         address: "",
       });
+      setErrors({});
       setCurrentStep(1);
     }
   };
@@ -278,8 +372,8 @@ export default function AdmissionsPage() {
                 animate={{
                   scale: currentStep === 3 ? 1.06 : 1,
                   backgroundColor: currentStep === 3 ? "#0050CB" : "#FFFFFF",
-                  color: currentStep === 3 ? "#FFFFFF" : "#94A3B8",
-                  borderColor: currentStep === 3 ? "#0050CB" : "#E2E8F0",
+                  color: currentStep >= 3 ? "#FFFFFF" : "#94A3B8",
+                  borderColor: currentStep >= 3 ? "#0050CB" : "#E2E8F0",
                 }}
                 transition={{ duration: 0.35, ease: "easeOut" }}
                 className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-all ${
@@ -309,7 +403,7 @@ export default function AdmissionsPage() {
           
           {/* STEP 1: STUDENT INFORMATION */}
           {currentStep === 1 && (
-            <form onSubmit={handleNextStep1} className="space-y-6">
+            <form onSubmit={handleNextStep1} className="space-y-6" noValidate>
               
               {/* Card Header */}
               <div className="flex items-center gap-3.5 pb-6 border-b border-slate-100">
@@ -337,16 +431,40 @@ export default function AdmissionsPage() {
                   <div className="relative">
                     <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                     <input
-                      required
                       type="text"
                       id="childFirstName"
                       name="childFirstName"
                       value={formData.childFirstName}
-                      onChange={handleChange}
+                      onKeyDown={preventNonAlphaKey}
+                      onChange={(e) => {
+                        const val = sanitizeNameInput(e.target.value);
+                        setFormData((p) => ({ ...p, childFirstName: val }));
+                        if (errors.childFirstName) {
+                          setErrors((p) => {
+                            const next = { ...p };
+                            delete next.childFirstName;
+                            return next;
+                          });
+                        }
+                      }}
+                      onPaste={(e) =>
+                        handleNamePaste(e, (val) =>
+                          setFormData((p) => ({ ...p, childFirstName: val }))
+                        )
+                      }
                       placeholder="e.g. Emma"
-                      className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#0050CB] focus:ring-2 focus:ring-[#0050CB]/15 transition-all"
+                      className={`w-full pl-10 pr-4 py-2.5 bg-white border rounded-xl text-sm font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none transition-all ${
+                        errors.childFirstName
+                          ? "border-rose-400 focus:ring-2 focus:ring-rose-500/15"
+                          : "border-slate-200 focus:border-[#0050CB] focus:ring-2 focus:ring-[#0050CB]/15"
+                      }`}
                     />
                   </div>
+                  {errors.childFirstName && (
+                    <p className="text-[11px] text-rose-500 font-semibold mt-1">
+                      {errors.childFirstName}
+                    </p>
+                  )}
                 </div>
 
                 {/* Last Name */}
@@ -357,16 +475,40 @@ export default function AdmissionsPage() {
                   <div className="relative">
                     <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                     <input
-                      required
                       type="text"
                       id="childLastName"
                       name="childLastName"
                       value={formData.childLastName}
-                      onChange={handleChange}
+                      onKeyDown={preventNonAlphaKey}
+                      onChange={(e) => {
+                        const val = sanitizeNameInput(e.target.value);
+                        setFormData((p) => ({ ...p, childLastName: val }));
+                        if (errors.childLastName) {
+                          setErrors((p) => {
+                            const next = { ...p };
+                            delete next.childLastName;
+                            return next;
+                          });
+                        }
+                      }}
+                      onPaste={(e) =>
+                        handleNamePaste(e, (val) =>
+                          setFormData((p) => ({ ...p, childLastName: val }))
+                        )
+                      }
                       placeholder="e.g. Smith"
-                      className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#0050CB] focus:ring-2 focus:ring-[#0050CB]/15 transition-all"
+                      className={`w-full pl-10 pr-4 py-2.5 bg-white border rounded-xl text-sm font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none transition-all ${
+                        errors.childLastName
+                          ? "border-rose-400 focus:ring-2 focus:ring-rose-500/15"
+                          : "border-slate-200 focus:border-[#0050CB] focus:ring-2 focus:ring-[#0050CB]/15"
+                      }`}
                     />
                   </div>
+                  {errors.childLastName && (
+                    <p className="text-[11px] text-rose-500 font-semibold mt-1">
+                      {errors.childLastName}
+                    </p>
+                  )}
                 </div>
 
                 {/* Date of Birth */}
@@ -377,15 +519,24 @@ export default function AdmissionsPage() {
                   <div className="relative">
                     <CalendarIcon className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                     <input
-                      required
                       type="date"
                       id="dob"
                       name="dateOfBirth"
+                      max={new Date().toISOString().split("T")[0]}
                       value={formData.dateOfBirth}
                       onChange={handleChange}
-                      className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 focus:outline-none focus:border-[#0050CB] focus:ring-2 focus:ring-[#0050CB]/15 transition-all"
+                      className={`w-full pl-10 pr-4 py-2.5 bg-white border rounded-xl text-sm font-medium text-slate-700 focus:outline-none transition-all ${
+                        errors.dateOfBirth
+                          ? "border-rose-400 focus:ring-2 focus:ring-rose-500/15"
+                          : "border-slate-200 focus:border-[#0050CB] focus:ring-2 focus:ring-[#0050CB]/15"
+                      }`}
                     />
                   </div>
+                  {errors.dateOfBirth && (
+                    <p className="text-[11px] text-rose-500 font-semibold mt-1">
+                      {errors.dateOfBirth}
+                    </p>
+                  )}
                 </div>
 
                 {/* Gender */}
@@ -396,12 +547,15 @@ export default function AdmissionsPage() {
                   <div className="relative">
                     <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                     <select
-                      required
                       id="gender"
                       name="gender"
                       value={formData.gender}
                       onChange={handleChange}
-                      className="w-full pl-10 pr-10 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 focus:outline-none focus:border-[#0050CB] focus:ring-2 focus:ring-[#0050CB]/15 transition-all appearance-none cursor-pointer"
+                      className={`w-full pl-10 pr-10 py-2.5 bg-white border rounded-xl text-sm font-medium text-slate-700 focus:outline-none transition-all appearance-none cursor-pointer ${
+                        errors.gender
+                          ? "border-rose-400 focus:ring-2 focus:ring-rose-500/15"
+                          : "border-slate-200 focus:border-[#0050CB] focus:ring-2 focus:ring-[#0050CB]/15"
+                      }`}
                     >
                       <option value="">Select Gender</option>
                       <option value="Male">Male</option>
@@ -410,6 +564,11 @@ export default function AdmissionsPage() {
                     </select>
                     <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                   </div>
+                  {errors.gender && (
+                    <p className="text-[11px] text-rose-500 font-semibold mt-1">
+                      {errors.gender}
+                    </p>
+                  )}
                 </div>
 
               </div>
@@ -422,12 +581,15 @@ export default function AdmissionsPage() {
                 <div className="relative">
                   <GraduationCap className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                   <select
-                    required
                     id="grade"
                     name="gradeAppliedFor"
                     value={formData.gradeAppliedFor}
                     onChange={handleChange}
-                    className="w-full pl-10 pr-10 py-3 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 focus:outline-none focus:border-[#0050CB] focus:ring-2 focus:ring-[#0050CB]/15 transition-all appearance-none cursor-pointer"
+                    className={`w-full pl-10 pr-10 py-3 bg-white border rounded-xl text-sm font-medium text-slate-700 focus:outline-none transition-all appearance-none cursor-pointer ${
+                      errors.gradeAppliedFor
+                        ? "border-rose-400 focus:ring-2 focus:ring-rose-500/15"
+                        : "border-slate-200 focus:border-[#0050CB] focus:ring-2 focus:ring-[#0050CB]/15"
+                    }`}
                   >
                     <option value="">Select a Grade Level</option>
                     <option value="Pre-KG">Pre-KG (2.5 - 3.5 Years)</option>
@@ -436,6 +598,11 @@ export default function AdmissionsPage() {
                   </select>
                   <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                 </div>
+                {errors.gradeAppliedFor && (
+                  <p className="text-[11px] text-rose-500 font-semibold mt-1">
+                    {errors.gradeAppliedFor}
+                  </p>
+                )}
               </div>
 
               {/* Information Notice Banner */}
@@ -471,7 +638,7 @@ export default function AdmissionsPage() {
 
           {/* STEP 2: PARENT / GUARDIAN */}
           {currentStep === 2 && (
-            <form onSubmit={handleNextStep2} className="space-y-6">
+            <form onSubmit={handleNextStep2} className="space-y-6" noValidate>
               
               {/* Card Header */}
               <div className="flex items-center gap-3.5 pb-6 border-b border-slate-100">
@@ -499,16 +666,40 @@ export default function AdmissionsPage() {
                   <div className="relative">
                     <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                     <input
-                      required
                       type="text"
                       id="parentName"
                       name="parentName"
                       value={formData.parentName}
-                      onChange={handleChange}
+                      onKeyDown={preventNonAlphaKey}
+                      onChange={(e) => {
+                        const val = sanitizeNameInput(e.target.value);
+                        setFormData((p) => ({ ...p, parentName: val }));
+                        if (errors.parentName) {
+                          setErrors((p) => {
+                            const next = { ...p };
+                            delete next.parentName;
+                            return next;
+                          });
+                        }
+                      }}
+                      onPaste={(e) =>
+                        handleNamePaste(e, (val) =>
+                          setFormData((p) => ({ ...p, parentName: val }))
+                        )
+                      }
                       placeholder="e.g. Michael Smith"
-                      className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#0050CB] focus:ring-2 focus:ring-[#0050CB]/15 transition-all"
+                      className={`w-full pl-10 pr-4 py-2.5 bg-white border rounded-xl text-sm font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none transition-all ${
+                        errors.parentName
+                          ? "border-rose-400 focus:ring-2 focus:ring-rose-500/15"
+                          : "border-slate-200 focus:border-[#0050CB] focus:ring-2 focus:ring-[#0050CB]/15"
+                      }`}
                     />
                   </div>
+                  {errors.parentName && (
+                    <p className="text-[11px] text-rose-500 font-semibold mt-1">
+                      {errors.parentName}
+                    </p>
+                  )}
                 </div>
 
                 {/* Email Address */}
@@ -519,16 +710,24 @@ export default function AdmissionsPage() {
                   <div className="relative">
                     <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                     <input
-                      required
                       type="email"
                       id="email"
                       name="email"
                       value={formData.email}
                       onChange={handleChange}
                       placeholder="michael.s@example.com"
-                      className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#0050CB] focus:ring-2 focus:ring-[#0050CB]/15 transition-all"
+                      className={`w-full pl-10 pr-4 py-2.5 bg-white border rounded-xl text-sm font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none transition-all ${
+                        errors.email
+                          ? "border-rose-400 focus:ring-2 focus:ring-rose-500/15"
+                          : "border-slate-200 focus:border-[#0050CB] focus:ring-2 focus:ring-[#0050CB]/15"
+                      }`}
                     />
                   </div>
+                  {errors.email && (
+                    <p className="text-[11px] text-rose-500 font-semibold mt-1">
+                      {errors.email}
+                    </p>
+                  )}
                 </div>
 
                 {/* Contact Number */}
@@ -539,16 +738,41 @@ export default function AdmissionsPage() {
                   <div className="relative">
                     <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                     <input
-                      required
                       type="tel"
                       id="phone"
                       name="contactNumber"
                       value={formData.contactNumber}
-                      onChange={handleChange}
-                      placeholder="+1 (555) 123-4567"
-                      className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#0050CB] focus:ring-2 focus:ring-[#0050CB]/15 transition-all"
+                      maxLength={10}
+                      onKeyDown={preventNonNumericKey}
+                      onChange={(e) => {
+                        const val = sanitizePhoneInput(e.target.value);
+                        setFormData((p) => ({ ...p, contactNumber: val }));
+                        if (errors.contactNumber) {
+                          setErrors((p) => {
+                            const next = { ...p };
+                            delete next.contactNumber;
+                            return next;
+                          });
+                        }
+                      }}
+                      onPaste={(e) =>
+                        handlePhonePaste(e, (val) =>
+                          setFormData((p) => ({ ...p, contactNumber: val }))
+                        )
+                      }
+                      placeholder="9840123456"
+                      className={`w-full pl-10 pr-4 py-2.5 bg-white border rounded-xl text-sm font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none transition-all ${
+                        errors.contactNumber
+                          ? "border-rose-400 focus:ring-2 focus:ring-rose-500/15"
+                          : "border-slate-200 focus:border-[#0050CB] focus:ring-2 focus:ring-[#0050CB]/15"
+                      }`}
                     />
                   </div>
+                  {errors.contactNumber && (
+                    <p className="text-[11px] text-rose-500 font-semibold mt-1">
+                      {errors.contactNumber}
+                    </p>
+                  )}
                 </div>
 
                 {/* Home Address */}
@@ -559,16 +783,24 @@ export default function AdmissionsPage() {
                   <div className="relative">
                     <MapPin className="w-4 h-4 text-slate-400 absolute left-3.5 top-3 pointer-events-none" />
                     <textarea
-                      required
                       rows={3}
                       id="address"
                       name="address"
                       value={formData.address}
                       onChange={handleChange}
                       placeholder="Enter full permanent address..."
-                      className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#0050CB] focus:ring-2 focus:ring-[#0050CB]/15 transition-all resize-none"
+                      className={`w-full pl-10 pr-4 py-2.5 bg-white border rounded-xl text-sm font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none transition-all resize-none ${
+                        errors.address
+                          ? "border-rose-400 focus:ring-2 focus:ring-rose-500/15"
+                          : "border-slate-200 focus:border-[#0050CB] focus:ring-2 focus:ring-[#0050CB]/15"
+                      }`}
                     />
                   </div>
+                  {errors.address && (
+                    <p className="text-[11px] text-rose-500 font-semibold mt-1">
+                      {errors.address}
+                    </p>
+                  )}
                 </div>
 
               </div>

@@ -369,7 +369,7 @@ export default function ParentDashboard() {
       </div>
 
       {/* ========================================================
-          ROW D: CLASS PERFORMANCE | NOTICES & EVENTS | BUS BANNER
+          ROW D: CLASS PERFORMANCE | NOTICES & EVENTS | ACADEMIC EXCELLENCE BANNER
       ======================================================== */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-stretch">
         {/* Class Performance */}

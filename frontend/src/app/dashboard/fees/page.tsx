@@ -17,6 +17,15 @@ import AdminDataTable, { Column } from '@/components/admin/AdminDataTable';
 import { downloadFile } from '@/lib/fileDownload';
 import { printDocument, exportToCSV } from '@/lib/exportUtils';
 import { authFetch } from '@/lib/apiClient';
+import {
+  NAME_REGEX,
+  preventNonAlphaKey,
+  preventNonDecimalKey,
+  sanitizeNameInput,
+  sanitizeAmountInput,
+  handleNamePaste,
+  handleAmountPaste,
+} from '@/lib/validationUtils';
 
 // Types
 interface FeeRecord {
@@ -247,6 +256,19 @@ function FeesFinanceContent() {
   // Handlers
   const handleCreateFee = async (e: React.FormEvent) => {
     e.preventDefault();
+    const amt = Number(feeForm.totalAmount);
+    if (!feeForm.totalAmount || isNaN(amt) || amt <= 0) {
+      toast.error('Please enter a valid positive fee amount');
+      return;
+    }
+    if (!feeForm.dueDate) {
+      toast.error('Please select a due date');
+      return;
+    }
+    if (!feeForm.feeType?.trim()) {
+      toast.error('Please enter fee description');
+      return;
+    }
     try {
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
       const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
@@ -260,8 +282,8 @@ function FeesFinanceContent() {
         _id: 'f_' + Date.now(),
         studentId: { firstName: 'Student', lastName: 'Record', admissionNumber: 'GGPS-2026-NEW' },
         grade: feeForm.grade,
-        feeType: feeForm.feeType,
-        totalAmount: Number(feeForm.totalAmount),
+        feeType: feeForm.feeType.trim(),
+        totalAmount: amt,
         amountPaid: 0,
         status: 'Unpaid',
         dueDate: feeForm.dueDate,
@@ -280,6 +302,11 @@ function FeesFinanceContent() {
   const handleUpdateFee = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!showUpdateFeeModal.fee) return;
+    const paidAmt = Number(updateFeeForm.amountPaid);
+    if (isNaN(paidAmt) || paidAmt < 0) {
+      toast.error('Please enter a valid non-negative collection amount');
+      return;
+    }
     try {
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
       const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
@@ -295,7 +322,7 @@ function FeesFinanceContent() {
         if (f._id === showUpdateFeeModal.fee._id) {
           return {
             ...f,
-            amountPaid: Number(updateFeeForm.amountPaid),
+            amountPaid: paidAmt,
             status: updateFeeForm.status,
             receiptNumber: recNum,
             paymentMode: updateFeeForm.paymentMode,
@@ -314,13 +341,17 @@ function FeesFinanceContent() {
 
   const handleDirectCollect = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!collectForm.amount) {
-      toast.error('Please enter payment amount');
+    if (!collectForm.studentName?.trim()) {
+      toast.error('Please enter student name or admission number');
+      return;
+    }
+    const amt = Number(collectForm.amount);
+    if (!collectForm.amount || isNaN(amt) || amt <= 0) {
+      toast.error('Please enter a valid positive payment amount');
       return;
     }
 
     const recNum = `GGPS-REC-2026-${Math.floor(1000 + Math.random() * 9000)}`;
-    const amt = Number(collectForm.amount);
 
     // If an existing fee record matches
     let updated = false;
@@ -376,6 +407,16 @@ function FeesFinanceContent() {
 
   const handleCreateExpense = async (e: React.FormEvent) => {
     e.preventDefault();
+    const desc = expenseForm.description?.trim();
+    if (!desc || desc.length < 3) {
+      toast.error('Please provide an expense description (at least 3 characters)');
+      return;
+    }
+    const amt = Number(expenseForm.amount);
+    if (!expenseForm.amount || isNaN(amt) || amt <= 0) {
+      toast.error('Please enter a valid positive expense amount');
+      return;
+    }
     try {
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
       const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
@@ -387,9 +428,9 @@ function FeesFinanceContent() {
 
       const newExpense: ExpenseRecord = {
         _id: 'e_' + Date.now(),
-        description: expenseForm.description,
+        description: desc,
         category: expenseForm.category,
-        amount: Number(expenseForm.amount),
+        amount: amt,
         date: expenseForm.date
       };
 
@@ -409,7 +450,15 @@ function FeesFinanceContent() {
     const l = Number(structureForm.labFee) || 0;
     const s = Number(structureForm.sportsFee) || 0;
     const ex = Number(structureForm.examFee) || 0;
+    if (t < 0 || d < 0 || l < 0 || s < 0 || ex < 0) {
+      toast.error('Fee components cannot be negative');
+      return;
+    }
     const total = t + d + l + s + ex;
+    if (total <= 0) {
+      toast.error('Total tariff structure must be greater than zero');
+      return;
+    }
 
     const newItem: FeeStructureItem = {
       id: 'fs-' + Date.now(),
@@ -430,12 +479,21 @@ function FeesFinanceContent() {
 
   const handleCreateScholarship = (e: React.FormEvent) => {
     e.preventDefault();
-    const pct = Number(scholarshipForm.discountPercentage) || 0;
+    const trimmedName = scholarshipForm.studentName?.trim();
+    if (!trimmedName || !NAME_REGEX.test(trimmedName)) {
+      toast.error('Please enter a valid student name (letters, spaces, hyphens, and initials with dots)');
+      return;
+    }
+    const pct = Number(scholarshipForm.discountPercentage);
+    if (isNaN(pct) || pct < 1 || pct > 100) {
+      toast.error('Discount percentage must be between 1% and 100%');
+      return;
+    }
     const approxBenefit = Math.round((45000 * pct) / 100);
 
     const newSch: ScholarshipRecord = {
       id: 'sch-' + Date.now(),
-      studentName: scholarshipForm.studentName,
+      studentName: trimmedName,
       admissionNo: scholarshipForm.admissionNo || `GGPS-2026-${Math.floor(100 + Math.random() * 900)}`,
       grade: scholarshipForm.grade,
       category: scholarshipForm.category,
@@ -446,7 +504,7 @@ function FeesFinanceContent() {
     };
 
     setScholarships(prev => [newSch, ...prev]);
-    toast.success(`Concession granted to ${scholarshipForm.studentName}`);
+    toast.success(`Concession granted to ${trimmedName}`);
     setShowScholarshipModal(false);
     setScholarshipForm({ studentName: '', admissionNo: '', grade: 'Pre-KG', category: 'Sibling Discount', discountPercentage: '15' });
   };
@@ -882,8 +940,11 @@ function FeesFinanceContent() {
                     <span className="absolute left-3 top-2.5 font-bold text-slate-400">₹</span>
                     <input
                       type="number"
+                      min={0}
                       value={collectForm.amount}
-                      onChange={(e) => setCollectForm({ ...collectForm, amount: e.target.value })}
+                      onKeyDown={preventNonDecimalKey}
+                      onPaste={(e) => handleAmountPaste(e, (clean) => setCollectForm((prev) => ({ ...prev, amount: clean })))}
+                      onChange={(e) => setCollectForm({ ...collectForm, amount: sanitizeAmountInput(e.target.value) })}
                       className="w-full pl-8 pr-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#000E28] font-black text-emerald-600 text-sm"
                       placeholder="e.g. 32000"
                       required
@@ -1418,8 +1479,11 @@ function FeesFinanceContent() {
                 <label className="block font-bold text-slate-600 dark:text-slate-300 mb-1">Total Amount (₹)</label>
                 <input
                   type="number"
+                  min={0}
                   value={feeForm.totalAmount}
-                  onChange={(e) => setFeeForm({ ...feeForm, totalAmount: e.target.value })}
+                  onKeyDown={preventNonDecimalKey}
+                  onPaste={(e) => handleAmountPaste(e, (clean) => setFeeForm((prev) => ({ ...prev, totalAmount: clean })))}
+                  onChange={(e) => setFeeForm({ ...feeForm, totalAmount: sanitizeAmountInput(e.target.value) })}
                   className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#000E28] font-bold text-emerald-600"
                   placeholder="32000"
                   required
@@ -1483,8 +1547,11 @@ function FeesFinanceContent() {
                 <label className="block font-bold text-slate-600 dark:text-slate-300 mb-1">Amount Collected (₹)</label>
                 <input
                   type="number"
+                  min={0}
                   value={updateFeeForm.amountPaid}
-                  onChange={(e) => setUpdateFeeForm({ ...updateFeeForm, amountPaid: e.target.value })}
+                  onKeyDown={preventNonDecimalKey}
+                  onPaste={(e) => handleAmountPaste(e, (clean) => setUpdateFeeForm((prev) => ({ ...prev, amountPaid: clean })))}
+                  onChange={(e) => setUpdateFeeForm({ ...updateFeeForm, amountPaid: sanitizeAmountInput(e.target.value) })}
                   className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#000E28] font-bold text-emerald-600 text-sm"
                   required
                 />
@@ -1694,8 +1761,11 @@ function FeesFinanceContent() {
                 <label className="block font-bold text-slate-600 dark:text-slate-300 mb-1">Amount (₹)</label>
                 <input
                   type="number"
+                  min={0}
                   value={expenseForm.amount}
-                  onChange={(e) => setExpenseForm({ ...expenseForm, amount: e.target.value })}
+                  onKeyDown={preventNonDecimalKey}
+                  onPaste={(e) => handleAmountPaste(e, (clean) => setExpenseForm((prev) => ({ ...prev, amount: clean })))}
+                  onChange={(e) => setExpenseForm({ ...expenseForm, amount: sanitizeAmountInput(e.target.value) })}
                   className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#000E28] font-bold"
                   placeholder="45000"
                   required
@@ -1752,8 +1822,10 @@ function FeesFinanceContent() {
                   <label className="block font-bold text-slate-600 dark:text-slate-300 mb-1">Tuition Fee (₹)</label>
                   <input
                     type="number"
+                    min={0}
                     value={structureForm.tuitionFee}
-                    onChange={(e) => setStructureForm({ ...structureForm, tuitionFee: e.target.value })}
+                    onKeyDown={preventNonDecimalKey}
+                    onChange={(e) => setStructureForm({ ...structureForm, tuitionFee: sanitizeAmountInput(e.target.value) })}
                     className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#000E28] font-bold"
                     placeholder="30000"
                     required
@@ -1763,8 +1835,10 @@ function FeesFinanceContent() {
                   <label className="block font-bold text-slate-600 dark:text-slate-300 mb-1">Development Fee (₹)</label>
                   <input
                     type="number"
+                    min={0}
                     value={structureForm.developmentFee}
-                    onChange={(e) => setStructureForm({ ...structureForm, developmentFee: e.target.value })}
+                    onKeyDown={preventNonDecimalKey}
+                    onChange={(e) => setStructureForm({ ...structureForm, developmentFee: sanitizeAmountInput(e.target.value) })}
                     className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#000E28] font-bold"
                     placeholder="6000"
                   />
@@ -1776,8 +1850,10 @@ function FeesFinanceContent() {
                   <label className="block font-bold text-slate-600 dark:text-slate-300 mb-1">Lab (₹)</label>
                   <input
                     type="number"
+                    min={0}
                     value={structureForm.labFee}
-                    onChange={(e) => setStructureForm({ ...structureForm, labFee: e.target.value })}
+                    onKeyDown={preventNonDecimalKey}
+                    onChange={(e) => setStructureForm({ ...structureForm, labFee: sanitizeAmountInput(e.target.value) })}
                     className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#000E28] font-bold"
                     placeholder="3000"
                   />
@@ -1786,8 +1862,10 @@ function FeesFinanceContent() {
                   <label className="block font-bold text-slate-600 dark:text-slate-300 mb-1">Sports (₹)</label>
                   <input
                     type="number"
+                    min={0}
                     value={structureForm.sportsFee}
-                    onChange={(e) => setStructureForm({ ...structureForm, sportsFee: e.target.value })}
+                    onKeyDown={preventNonDecimalKey}
+                    onChange={(e) => setStructureForm({ ...structureForm, sportsFee: sanitizeAmountInput(e.target.value) })}
                     className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#000E28] font-bold"
                     placeholder="2500"
                   />
@@ -1796,8 +1874,10 @@ function FeesFinanceContent() {
                   <label className="block font-bold text-slate-600 dark:text-slate-300 mb-1">Exam (₹)</label>
                   <input
                     type="number"
+                    min={0}
                     value={structureForm.examFee}
-                    onChange={(e) => setStructureForm({ ...structureForm, examFee: e.target.value })}
+                    onKeyDown={preventNonDecimalKey}
+                    onChange={(e) => setStructureForm({ ...structureForm, examFee: sanitizeAmountInput(e.target.value) })}
                     className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#000E28] font-bold"
                     placeholder="1500"
                   />
@@ -1855,7 +1935,9 @@ function FeesFinanceContent() {
                 <input
                   type="text"
                   value={scholarshipForm.studentName}
-                  onChange={(e) => setScholarshipForm({ ...scholarshipForm, studentName: e.target.value })}
+                  onKeyDown={preventNonAlphaKey}
+                  onPaste={(e) => handleNamePaste(e, (clean) => setScholarshipForm((prev) => ({ ...prev, studentName: clean })))}
+                  onChange={(e) => setScholarshipForm({ ...scholarshipForm, studentName: sanitizeNameInput(e.target.value) })}
                   className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#000E28] font-bold"
                   placeholder="e.g. Diya Patel"
                   required
@@ -1894,7 +1976,10 @@ function FeesFinanceContent() {
                 <label className="block font-bold text-slate-600 dark:text-slate-300 mb-1">Discount Percentage (%)</label>
                 <input
                   type="number"
+                  min={1}
+                  max={100}
                   value={scholarshipForm.discountPercentage}
+                  onKeyDown={preventNonDecimalKey}
                   onChange={(e) => setScholarshipForm({ ...scholarshipForm, discountPercentage: e.target.value })}
                   className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#000E28] font-bold text-[#FF690C]"
                   placeholder="15"

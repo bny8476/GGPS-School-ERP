@@ -13,6 +13,7 @@ import TimeTable from '../models/TimeTable';
 import Fee from '../models/Fee';
 import Notification from '../models/Notification';
 import { generateReportCardPDF } from '../utils/pdfGenerator';
+import { escapeRegex } from '../utils/sanitizers';
 
 /**
  * Authoritative Security Helper:
@@ -105,7 +106,7 @@ export const getParents = async (req: Request, res: Response): Promise<void> => 
     let query: Record<string, any> = {};
 
     if (search) {
-      const searchRegex = new RegExp(String(search).trim(), 'i');
+      const searchRegex = new RegExp(escapeRegex(String(search).trim()), 'i');
       query.$or = [
         { fatherName: searchRegex },
         { motherName: searchRegex },

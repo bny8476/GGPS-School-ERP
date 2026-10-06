@@ -16,6 +16,7 @@ import {
   peekNextIdentifiers,
 } from '../services/sequenceService';
 import { emitToRole, emitToRoom } from '../socket';
+import { escapeRegex } from '../utils/sanitizers';
 
 // Helper to resolve linked student IDs for a Parent user
 export async function getLinkedStudentIdsForParent(parentUserId: string): Promise<mongoose.Types.ObjectId[]> {
@@ -73,7 +74,7 @@ export const getStudents = async (req: Request, res: Response) => {
     // 3. Search by name, admissionNumber, studentId, parent name, phone number, class, and section
     if (search) {
       const searchTrimmed = String(search).trim();
-      const searchRegex = new RegExp(searchTrimmed, 'i');
+      const searchRegex = new RegExp(escapeRegex(searchTrimmed), 'i');
 
       const [matchingParents, matchingClasses, matchingSections] = await Promise.all([
         Parent.find({
@@ -384,8 +385,6 @@ export const updateStudent = async (req: Request, res: Response) => {
       medicalNotes,
       emergencyContact,
       studentPhoto,
-      transportId,
-      transportStopId,
       parentId,
       enrollmentDate,
       status,
@@ -403,8 +402,6 @@ export const updateStudent = async (req: Request, res: Response) => {
     if (medicalNotes !== undefined) allowedUpdates.medicalNotes = medicalNotes;
     if (emergencyContact !== undefined) allowedUpdates.emergencyContact = emergencyContact;
     if (studentPhoto !== undefined) allowedUpdates.studentPhoto = studentPhoto;
-    if (transportId !== undefined) allowedUpdates.transportId = transportId;
-    if (transportStopId !== undefined) allowedUpdates.transportStopId = transportStopId;
     if (parentId !== undefined) allowedUpdates.parentId = parentId;
     if (enrollmentDate !== undefined) allowedUpdates.enrollmentDate = enrollmentDate;
     if (status !== undefined) allowedUpdates.status = status;

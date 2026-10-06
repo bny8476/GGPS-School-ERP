@@ -486,11 +486,11 @@ export default function TeacherHomeWorkspace({
             </div>
 
             <div className="space-y-2.5 pt-3">
-              {/* End-of-Day Transit Summary */}
+              {/* End-of-Day Dismissal Summary */}
               <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 text-[11px] flex items-center justify-between text-slate-600 dark:text-slate-300">
-                <span className="font-medium">🚌 Bus #04: <strong className="text-slate-800 dark:text-white">18</strong></span>
+                <span className="font-medium">🏫 Main Gate Dismissal: <strong className="text-slate-800 dark:text-white">18</strong></span>
                 <span className="text-slate-300 dark:text-slate-700">•</span>
-                <span className="font-medium">🚗 Parent Pickup: <strong className="text-slate-800 dark:text-white">10</strong></span>
+                <span className="font-medium">🤝 Parent Handover: <strong className="text-slate-800 dark:text-white">10</strong></span>
               </div>
 
               <button

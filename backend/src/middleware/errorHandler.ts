@@ -28,14 +28,14 @@ export const errorHandler = (
       field: e.path,
       message: e.message,
     }));
-    message = `Validation Error: ${errorDetails.map((d: any) => d.message).join(', ')}`;
+    message = errorDetails.map((d: any) => d.message).join('. ') || 'Form validation failed. Please check the entered values.';
     errors = errorDetails;
   }
   // 3. Mongoose CastError (e.g. invalid ObjectId)
   else if (err.name === 'CastError') {
     statusCode = 400;
     code = 'INVALID_ID_FORMAT';
-    message = `Resource not found or invalid identifier format for parameter '${err.path}'`;
+    message = `Resource not found or invalid format for identifier`;
   }
   // 4. MongoDB Duplicate Key Error (code 11000)
   else if (err.code === 11000) {
@@ -59,8 +59,12 @@ export const errorHandler = (
   else if (err.name === 'ZodError' && err.issues) {
     statusCode = 400;
     code = 'SCHEMA_VALIDATION_ERROR';
-    errors = err.issues;
-    message = `Validation Error: ${err.issues.map((i: any) => `${i.path.join('.')}: ${i.message}`).join(', ')}`;
+    const cleanErrors = err.issues.map((i: any) => ({
+      field: i.path.filter((p: any) => p !== 'body' && p !== 'query' && p !== 'params').join('.') || 'general',
+      message: i.message,
+    }));
+    errors = cleanErrors;
+    message = cleanErrors.map((i: any) => i.message).join('. ') || 'Please correct the invalid fields.';
   }
 
   // Structured Logging

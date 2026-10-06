@@ -34,20 +34,27 @@ const UserSchema: Schema = new Schema(
   {
     firstName: {
       type: String,
-      required: true,
+      required: [true, 'First name is required'],
       trim: true,
+      minlength: [1, 'First name is required'],
+      maxlength: [50, 'First name cannot exceed 50 characters'],
+      match: [/^(?=.*[a-zA-Z])[a-zA-Z\s'.-]+$/, 'First name can contain only letters, spaces, hyphens, apostrophes, and periods'],
     },
     lastName: {
       type: String,
-      required: true,
+      required: [true, 'Last name is required'],
       trim: true,
+      minlength: [1, 'Last name is required'],
+      maxlength: [50, 'Last name cannot exceed 50 characters'],
+      match: [/^(?=.*[a-zA-Z])[a-zA-Z\s'.-]+$/, 'Last name can contain only letters, spaces, hyphens, apostrophes, and periods'],
     },
     email: {
       type: String,
-      required: true,
+      required: [true, 'Email is required'],
       unique: true,
       trim: true,
       lowercase: true,
+      match: [/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/, 'Enter a valid email address'],
     },
     passwordHash: {
       type: String,

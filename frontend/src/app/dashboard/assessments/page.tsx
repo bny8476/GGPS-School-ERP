@@ -8,7 +8,9 @@ import {
   Star, BarChart2, Lightbulb, ArrowRight, Home, Trash2, Eye, RefreshCw
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useRouter } from 'next/navigation';
 import { getApiBaseUrl } from '@/lib/utils';
+import { authFetch } from '@/lib/apiClient';
 import { printDocument } from '@/lib/exportUtils';
 import { downloadPdf } from '@/lib/fileDownload';
 
@@ -157,6 +159,7 @@ function EmptyFolderIllustration() {
 }
 
 export default function AssessmentsPage() {
+  const router = useRouter();
   const [assessments, setAssessments] = useState<any[]>([]);
   const [students, setStudents] = useState<any[]>([]);
   const [classes, setClasses] = useState<any[]>([]);
@@ -183,28 +186,36 @@ export default function AssessmentsPage() {
     setIsLoading(true);
     try {
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      if (!token) {
+        setIsLoading(false);
+        router.push('/login?redirect=/dashboard/assessments');
+        return;
+      }
       const apiBase = getApiBaseUrl();
-      const headers = {
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-      };
 
       const [assmRes, stuRes, classRes] = await Promise.allSettled([
-        fetch(`${apiBase}/api/assessments`, { headers, credentials: 'include' }),
-        fetch(`${apiBase}/api/students`, { headers, credentials: 'include' }),
-        fetch(`${apiBase}/api/classes`, { headers, credentials: 'include' })
+        authFetch(`${apiBase}/api/assessments`),
+        authFetch(`${apiBase}/api/students`),
+        authFetch(`${apiBase}/api/classes`)
       ]);
 
-      if (assmRes.status === 'fulfilled' && assmRes.value.ok) {
-        const data = await assmRes.value.json();
-        setAssessments(Array.isArray(data) ? data : []);
+      if (assmRes.status === 'fulfilled') {
+        if (assmRes.value.status === 401) {
+          router.push('/login?redirect=/dashboard/assessments');
+          return;
+        }
+        if (assmRes.value.ok) {
+          const data = await assmRes.value.json().catch(() => null);
+          setAssessments(Array.isArray(data) ? data : (data?.data || []));
+        }
       }
       if (stuRes.status === 'fulfilled' && stuRes.value.ok) {
-        const data = await stuRes.value.json();
-        setStudents(Array.isArray(data) ? data : []);
+        const data = await stuRes.value.json().catch(() => null);
+        setStudents(Array.isArray(data) ? data : (data?.data || []));
       }
       if (classRes.status === 'fulfilled' && classRes.value.ok) {
-        const data = await classRes.value.json();
-        setClasses(Array.isArray(data) ? data : []);
+        const data = await classRes.value.json().catch(() => null);
+        setClasses(Array.isArray(data) ? data : (data?.data || []));
       }
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -236,15 +247,12 @@ export default function AssessmentsPage() {
 
     setIsSaving(true);
     try {
-      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
       const apiBase = getApiBaseUrl();
-      const res = await fetch(`${apiBase}/api/assessments`, {
+      const res = await authFetch(`${apiBase}/api/assessments`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
-        credentials: 'include',
         body: JSON.stringify({
           childId: selectedStudent,
           term: selectedTerm,
@@ -279,14 +287,9 @@ export default function AssessmentsPage() {
   const handleDeleteAssessment = async (id: string) => {
     if (!confirm('Are you sure you want to delete this assessment record?')) return;
     try {
-      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
       const apiBase = getApiBaseUrl();
-      const res = await fetch(`${apiBase}/api/assessments/${id}`, {
+      const res = await authFetch(`${apiBase}/api/assessments/${id}`, {
         method: 'DELETE',
-        headers: {
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-        },
-        credentials: 'include'
       });
       if (res.ok) {
         toast.success('Assessment record deleted');

@@ -1,5 +1,4 @@
 import operationsRoutes from '../../routes/operationsRoutes';
-import transportRoutes from '../../routes/transportRoutes';
 import bookRoutes from '../../routes/bookRoutes';
 import daycareRoutes from '../../routes/daycareRoutes';
 import eventsRoutes from '../../routes/eventsRoutes';
@@ -9,7 +8,6 @@ import inventoryRoutes from '../../routes/inventoryRoutes';
 import visitorRoutes from '../../routes/visitorRoutes';
 
 export * as operationsController from '../../controllers/operationsController';
-export * as transportController from '../../controllers/transportController';
 export * as bookController from '../../controllers/bookController';
 export * as daycareController from '../../controllers/daycareController';
 export * as eventController from '../../controllers/eventController';
@@ -20,7 +18,6 @@ export * as visitorController from '../../controllers/visitorController';
 
 export {
   operationsRoutes,
-  transportRoutes,
   bookRoutes,
   daycareRoutes,
   eventsRoutes,

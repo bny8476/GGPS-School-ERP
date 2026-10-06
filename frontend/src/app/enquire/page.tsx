@@ -39,38 +39,40 @@ import {
 import toast from "react-hot-toast";
 import { getApiBaseUrl } from "@/lib/utils";
 import { useLanguage } from "@/context/LanguageContext";
+import {
+  createNameSchema,
+  emailSchema,
+  phoneSchema,
+  optionalDobSchema,
+} from "@/schemas";
+import {
+  preventNonAlphaKey,
+  preventNonNumericKey,
+  sanitizeNameInput,
+  sanitizePhoneInput,
+  handleNamePaste,
+  handlePhonePaste,
+} from "@/lib/validationUtils";
 
 // ==========================================
 // ZOD VALIDATION SCHEMA
 // ==========================================
 const enquirySchema = z.object({
-  parentName: z
-    .string()
-    .min(2, "Parent/Guardian name is required (min 2 characters)")
-    .max(80, "Name is too long"),
-  email: z
-    .string()
-    .min(1, "Enter a valid email address")
-    .email("Enter a valid email address"),
-  phone: z
-    .string()
-    .min(10, "Enter a valid phone number (at least 10 digits)")
-    .regex(/^[0-9+\-\s()]{10,20}$/, "Enter a valid phone number format"),
+  parentName: createNameSchema("Parent/Guardian name", 2, 80),
+  email: emailSchema,
+  phone: phoneSchema,
   relationship: z.enum(["Father", "Mother", "Guardian", "Other"]),
-  childName: z
-    .string()
-    .min(2, "Child name is required (min 2 characters)")
-    .max(80, "Name is too long"),
-  dateOfBirth: z.string().optional(),
+  childName: createNameSchema("Child name", 2, 80),
+  dateOfBirth: optionalDobSchema,
   gender: z.enum(["Male", "Female", "Other"]),
   classApplied: z.enum(["PreKG", "LKG", "UKG"], {
     errorMap: () => ({ message: "Please select the class applying for" }),
   }),
-  academicYear: z.string().min(1, "Academic year is required"),
+  academicYear: z.string().trim().min(1, "Academic year is required"),
   preferredContactMethod: z.enum(["Phone", "WhatsApp", "Email"]),
   message: z.string().max(600, "Message cannot exceed 600 characters").optional(),
   preferredVisitDate: z.string().optional(),
-  source: z.enum(["Website", "Home Page", "Admission Page", "Referral", "Other"]),
+  source: z.enum(["Website", "Home Page", "Admission Page", "Referral", "Other"]).optional(),
 });
 
 type EnquiryFormData = z.infer<typeof enquirySchema>;
@@ -98,10 +100,12 @@ export default function AdmissionEnquirePage() {
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
     reset,
   } = useForm<EnquiryFormData>({
     resolver: zodResolver(enquirySchema),
+    mode: "onChange",
     defaultValues: {
       parentName: "",
       email: "",
@@ -307,7 +311,7 @@ export default function AdmissionEnquirePage() {
                   </div>
                   <div>
                     <h3 className="text-xs font-bold text-[#000E28] dark:text-white">Transparent Fee Information</h3>
-                    <p className="text-[11px] text-slate-500">Clear breakdown of tuition, activity kits, transport, and uniforms.</p>
+                    <p className="text-[11px] text-slate-500">Clear breakdown of tuition, activity kits, day care, and uniforms.</p>
                   </div>
                 </div>
 
@@ -502,6 +506,9 @@ export default function AdmissionEnquirePage() {
                           type="text"
                           placeholder="e.g. Rahul Kumar"
                           {...register("parentName")}
+                          onKeyDown={preventNonAlphaKey}
+                          onChange={(e) => setValue("parentName", sanitizeNameInput(e.target.value), { shouldValidate: true })}
+                          onPaste={(e) => handleNamePaste(e, (v) => setValue("parentName", v, { shouldValidate: true }))}
                           className={`w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-900 border text-xs sm:text-sm text-[#000E28] dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 transition-all ${
                             errors.parentName
                               ? "border-rose-400 focus:ring-rose-500/10"
@@ -539,8 +546,12 @@ export default function AdmissionEnquirePage() {
                           <input
                             id="phone"
                             type="tel"
-                            placeholder="+91 98400 XXXXX"
+                            placeholder="9840123456"
+                            maxLength={10}
                             {...register("phone")}
+                            onKeyDown={preventNonNumericKey}
+                            onChange={(e) => setValue("phone", sanitizePhoneInput(e.target.value), { shouldValidate: true })}
+                            onPaste={(e) => handlePhonePaste(e, (v) => setValue("phone", v, { shouldValidate: true }))}
                             className={`w-full h-11 pl-9 pr-3.5 rounded-xl bg-slate-50 dark:bg-slate-900 border text-xs sm:text-sm text-[#000E28] dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 transition-all ${
                               errors.phone
                                 ? "border-rose-400 focus:ring-rose-500/10"
@@ -597,6 +608,9 @@ export default function AdmissionEnquirePage() {
                           type="text"
                           placeholder="e.g. Arun Kumar"
                           {...register("childName")}
+                          onKeyDown={preventNonAlphaKey}
+                          onChange={(e) => setValue("childName", sanitizeNameInput(e.target.value), { shouldValidate: true })}
+                          onPaste={(e) => handleNamePaste(e, (v) => setValue("childName", v, { shouldValidate: true }))}
                           className={`w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-900 border text-xs sm:text-sm text-[#000E28] dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 transition-all ${
                             errors.childName
                               ? "border-rose-400 focus:ring-rose-500/10"
@@ -616,9 +630,17 @@ export default function AdmissionEnquirePage() {
                         <input
                           id="dateOfBirth"
                           type="date"
+                          max={new Date().toISOString().split("T")[0]}
                           {...register("dateOfBirth")}
-                          className="w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm text-[#000E28] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0050CB]/10 focus:border-[#0050CB]"
+                          className={`w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-900 border text-xs sm:text-sm text-[#000E28] dark:text-white focus:outline-none focus:ring-2 transition-all ${
+                            errors.dateOfBirth
+                              ? "border-rose-400 focus:ring-rose-500/10"
+                              : "border-slate-200 dark:border-slate-700 focus:border-[#0050CB] focus:ring-[#0050CB]/10"
+                          }`}
                         />
+                        {errors.dateOfBirth && (
+                          <p className="text-[11px] text-rose-500 font-semibold">{errors.dateOfBirth.message}</p>
+                        )}
                       </div>
 
                       {/* Class Applying For */}
@@ -724,7 +746,7 @@ export default function AdmissionEnquirePage() {
                       <textarea
                         id="message"
                         rows={3}
-                        placeholder="Any questions about curriculum, school transport, or campus visits..."
+                        placeholder="Any questions about curriculum, admissions timeline, or campus visits..."
                         {...register("message")}
                         className="w-full p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm text-[#000E28] dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0050CB]/10 focus:border-[#0050CB] resize-none"
                       />

@@ -109,7 +109,6 @@ interface IdCardItem {
     showEmergencyContact: boolean;
     showQRCode: boolean;
     showBarcode: boolean;
-    busRoute?: string;
     house?: string;
     notes?: string;
   };
@@ -198,7 +197,6 @@ export default function IdCardGeneratorPage() {
     showEmergencyContact: true,
     showQRCode: true,
     showBarcode: true,
-    busRoute: "",
     house: "",
     notes: "",
   });

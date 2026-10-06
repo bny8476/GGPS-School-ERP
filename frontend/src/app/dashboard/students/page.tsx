@@ -15,6 +15,7 @@ import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import AdminStatCard from '@/components/admin/AdminStatCard';
 import AdminDataTable, { Column } from '@/components/admin/AdminDataTable';
 import AddStudentModal from '@/components/admin/AddStudentModal';
+import { authFetch } from '@/lib/apiClient';
 
 interface StudentRecord {
   _id: string;
@@ -32,7 +33,6 @@ interface StudentRecord {
   parentName?: string;
   parentPhone?: string;
   feeStatus?: string;
-  busRoute?: string;
   parentId?: any;
 }
 
@@ -61,13 +61,9 @@ function StudentsDirectoryContent() {
       let loadedStudents: StudentRecord[] = [];
 
       if (token) {
-        const headers: Record<string, string> = {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        };
         const [studentsRes, parentsRes] = await Promise.all([
-          fetch(`${apiBase}/api/v1/students`, { headers, credentials: 'include' }).catch(() => null),
-          fetch(`${apiBase}/api/v1/parents`, { headers, credentials: 'include' }).catch(() => null)
+          authFetch(`${apiBase}/api/v1/students`).catch(() => null),
+          authFetch(`${apiBase}/api/v1/parents`).catch(() => null)
         ]);
 
         if (studentsRes && studentsRes.ok) {
@@ -81,14 +77,14 @@ function StudentsDirectoryContent() {
 
       if (!loadedStudents || loadedStudents.length === 0) {
         loadedStudents = [
-          { _id: 'std_01', firstName: 'Aarav', lastName: 'Sharma', studentId: 'GGPS2026LKG001', admissionNumber: 'GGPS2026Admin001', grade: 'LKG', section: 'A', gender: 'Male', status: 'Active', bloodGroup: 'O+', attendanceRate: 98, emergencyContact: '+91 98765 43210', parentName: 'Rajesh Sharma', parentPhone: '+91 98765 43210', feeStatus: 'Paid', busRoute: 'Route 4' },
-          { _id: 'std_02', firstName: 'Diya', lastName: 'Patel', studentId: 'GGPS2026UKG001', admissionNumber: 'GGPS2026Admin002', grade: 'UKG', section: 'B', gender: 'Female', status: 'Active', bloodGroup: 'B+', attendanceRate: 94, emergencyContact: '+91 98111 22334', parentName: 'Sanjay Patel', parentPhone: '+91 98111 22334', feeStatus: 'Paid', busRoute: 'Route 2' },
-          { _id: 'std_03', firstName: 'Vihaan', lastName: 'Verma', studentId: 'GGPS2026UKG002', admissionNumber: 'GGPS2026Admin003', grade: 'UKG', section: 'A', gender: 'Male', status: 'Active', bloodGroup: 'A+', attendanceRate: 92, emergencyContact: '+91 97234 56789', parentName: 'Ananya Verma', parentPhone: '+91 97234 56789', feeStatus: 'Pending', busRoute: 'Route 4' },
-          { _id: 'std_04', firstName: 'Ananya', lastName: 'Iyer', studentId: 'GGPS2026PREKG001', admissionNumber: 'GGPS2026Admin004', grade: 'PreKG', section: 'A', gender: 'Female', status: 'Active', bloodGroup: 'AB+', attendanceRate: 88, emergencyContact: '+91 94440 12345', parentName: 'Karthik Iyer', parentPhone: '+91 94440 12345', feeStatus: 'Paid', busRoute: 'Self' },
-          { _id: 'std_05', firstName: 'Ishaan', lastName: 'Gupta', studentId: 'GGPS2026LKG002', admissionNumber: 'GGPS2026Admin005', grade: 'LKG', section: 'B', gender: 'Male', status: 'Active', bloodGroup: 'O-', attendanceRate: 96, emergencyContact: '+91 99887 76655', parentName: 'Meera Gupta', parentPhone: '+91 99887 76655', feeStatus: 'Overdue', busRoute: 'Route 1' },
-          { _id: 'std_06', firstName: 'Sanya', lastName: 'Malhotra', studentId: 'GGPS2026PREKG002', admissionNumber: 'GGPS2026Admin006', grade: 'PreKG', section: 'B', gender: 'Female', status: 'Active', bloodGroup: 'B-', attendanceRate: 95, emergencyContact: '+91 98223 34455', parentName: 'Vikram Malhotra', parentPhone: '+91 98223 34455', feeStatus: 'Paid', busRoute: 'Route 3' },
-          { _id: 'std_07', firstName: 'Kabir', lastName: 'Deshmukh', studentId: 'GGPS2026UKG003', admissionNumber: 'GGPS2026Admin007', grade: 'UKG', section: 'A', gender: 'Male', status: 'Inactive', bloodGroup: 'A-', attendanceRate: 74, emergencyContact: '+91 98334 45566', parentName: 'Sunil Deshmukh', parentPhone: '+91 98334 45566', feeStatus: 'Pending', busRoute: 'Route 2' },
-          { _id: 'std_08', firstName: 'Meera', lastName: 'Nambiar', studentId: 'GGPS2026LKG003', admissionNumber: 'GGPS2026Admin008', grade: 'LKG', section: 'A', gender: 'Female', status: 'Active', bloodGroup: 'O+', attendanceRate: 99, emergencyContact: '+91 98770 11223', parentName: 'Gopal Nambiar', parentPhone: '+91 98770 11223', feeStatus: 'Paid', busRoute: 'Self' },
+          { _id: 'std_01', firstName: 'Aarav', lastName: 'Sharma', studentId: 'GGPS2026LKG001', admissionNumber: 'GGPS2026Admin001', grade: 'LKG', section: 'A', gender: 'Male', status: 'Active', bloodGroup: 'O+', attendanceRate: 98, emergencyContact: '+91 98765 43210', parentName: 'Rajesh Sharma', parentPhone: '+91 98765 43210', feeStatus: 'Paid' },
+          { _id: 'std_02', firstName: 'Diya', lastName: 'Patel', studentId: 'GGPS2026UKG001', admissionNumber: 'GGPS2026Admin002', grade: 'UKG', section: 'B', gender: 'Female', status: 'Active', bloodGroup: 'B+', attendanceRate: 94, emergencyContact: '+91 98111 22334', parentName: 'Sanjay Patel', parentPhone: '+91 98111 22334', feeStatus: 'Paid' },
+          { _id: 'std_03', firstName: 'Vihaan', lastName: 'Verma', studentId: 'GGPS2026UKG002', admissionNumber: 'GGPS2026Admin003', grade: 'UKG', section: 'A', gender: 'Male', status: 'Active', bloodGroup: 'A+', attendanceRate: 92, emergencyContact: '+91 97234 56789', parentName: 'Ananya Verma', parentPhone: '+91 97234 56789', feeStatus: 'Pending' },
+          { _id: 'std_04', firstName: 'Ananya', lastName: 'Iyer', studentId: 'GGPS2026PREKG001', admissionNumber: 'GGPS2026Admin004', grade: 'PreKG', section: 'A', gender: 'Female', status: 'Active', bloodGroup: 'AB+', attendanceRate: 88, emergencyContact: '+91 94440 12345', parentName: 'Karthik Iyer', parentPhone: '+91 94440 12345', feeStatus: 'Paid' },
+          { _id: 'std_05', firstName: 'Ishaan', lastName: 'Gupta', studentId: 'GGPS2026LKG002', admissionNumber: 'GGPS2026Admin005', grade: 'LKG', section: 'B', gender: 'Male', status: 'Active', bloodGroup: 'O-', attendanceRate: 96, emergencyContact: '+91 99887 76655', parentName: 'Meera Gupta', parentPhone: '+91 99887 76655', feeStatus: 'Overdue' },
+          { _id: 'std_06', firstName: 'Sanya', lastName: 'Malhotra', studentId: 'GGPS2026PREKG002', admissionNumber: 'GGPS2026Admin006', grade: 'PreKG', section: 'B', gender: 'Female', status: 'Active', bloodGroup: 'B-', attendanceRate: 95, emergencyContact: '+91 98223 34455', parentName: 'Vikram Malhotra', parentPhone: '+91 98223 34455', feeStatus: 'Paid' },
+          { _id: 'std_07', firstName: 'Kabir', lastName: 'Deshmukh', studentId: 'GGPS2026UKG003', admissionNumber: 'GGPS2026Admin007', grade: 'UKG', section: 'A', gender: 'Male', status: 'Inactive', bloodGroup: 'A-', attendanceRate: 74, emergencyContact: '+91 98334 45566', parentName: 'Sunil Deshmukh', parentPhone: '+91 98334 45566', feeStatus: 'Pending' },
+          { _id: 'std_08', firstName: 'Meera', lastName: 'Nambiar', studentId: 'GGPS2026LKG003', admissionNumber: 'GGPS2026Admin008', grade: 'LKG', section: 'A', gender: 'Female', status: 'Active', bloodGroup: 'O+', attendanceRate: 99, emergencyContact: '+91 98770 11223', parentName: 'Gopal Nambiar', parentPhone: '+91 98770 11223', feeStatus: 'Paid' },
         ];
       }
 
@@ -108,11 +104,9 @@ function StudentsDirectoryContent() {
   const handleDelete = async (id: string, name: string) => {
     if (!confirm(`Are you sure you want to delete the student record for "${name}"?`)) return;
     try {
-      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
       const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
-      await fetch(`${apiBase}/api/students/${id}`, {
+      await authFetch(`${apiBase}/api/students/${id}`, {
         method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token || ''}` }
       });
       toast.success('Student record removed');
       fetchStudents();

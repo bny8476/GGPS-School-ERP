@@ -1,8 +1,32 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
-export type EnquiryStatus = 'NEW' | 'CONTACTED' | 'FOLLOW_UP' | 'CONVERTED' | 'CLOSED' | 'LOST';
+export type EnquiryStatus =
+  | 'NEW'
+  | 'CONTACTED'
+  | 'FOLLOW_UP'
+  | 'QUALIFIED'
+  | 'APPLICATION_STARTED'
+  | 'CONVERTED'
+  | 'CLOSED'
+  | 'LOST'
+  | 'New'
+  | 'Contacted'
+  | 'Follow-up'
+  | 'Qualified'
+  | 'Application Started'
+  | 'Converted'
+  | 'Closed';
 export type ContactMethod = 'Phone' | 'WhatsApp' | 'Email';
-export type EnquirySource = 'Website' | 'Home Page' | 'Admission Page' | 'Referral' | 'Other';
+export type EnquirySource =
+  | 'Website'
+  | 'Home Page'
+  | 'Admission Page'
+  | 'Referral'
+  | 'Phone'
+  | 'Walk-in'
+  | 'Direct'
+  | 'Social Media'
+  | 'Other';
 export type FollowUpType = 'Phone' | 'WhatsApp' | 'Email' | 'Visit' | 'Other';
 
 export interface IFollowUp {
@@ -140,14 +164,51 @@ const AdmissionEnquirySchema: Schema = new Schema(
       index: true,
     },
     parent: {
-      name: { type: String, required: true, trim: true, index: true },
-      email: { type: String, required: true, trim: true, lowercase: true, index: true },
-      phone: { type: String, required: true, trim: true, index: true },
+      name: {
+        type: String,
+        required: [true, "Parent's name is required"],
+        trim: true,
+        minlength: [2, "Parent's name must be at least 2 characters"],
+        maxlength: [80, "Parent's name cannot exceed 80 characters"],
+        match: [/^(?=.*[a-zA-Z])[a-zA-Z\s'.-]+$/, "Parent's name can contain only letters, spaces, hyphens, apostrophes, and periods"],
+        index: true,
+      },
+      email: {
+        type: String,
+        required: [true, 'Email address is required'],
+        trim: true,
+        lowercase: true,
+        match: [/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/, 'Enter a valid email address'],
+        index: true,
+      },
+      phone: {
+        type: String,
+        required: [true, 'Phone number is required'],
+        trim: true,
+        match: [/^[6-9]\d{9}$|^\d{10}$/, 'Enter a valid 10-digit mobile number'],
+        index: true,
+      },
       relationship: { type: String, trim: true, default: 'Parent' },
     },
     child: {
-      name: { type: String, required: true, trim: true, index: true },
-      dateOfBirth: { type: Date },
+      name: {
+        type: String,
+        required: [true, "Child's name is required"],
+        trim: true,
+        minlength: [2, "Child's name must be at least 2 characters"],
+        maxlength: [80, "Child's name cannot exceed 80 characters"],
+        match: [/^(?=.*[a-zA-Z])[a-zA-Z\s'.-]+$/, "Child's name can contain only letters, spaces, hyphens, apostrophes, and periods"],
+        index: true,
+      },
+      dateOfBirth: {
+        type: Date,
+        validate: {
+          validator: function (v: Date) {
+            return !v || v <= new Date();
+          },
+          message: 'Date of birth cannot be in the future',
+        },
+      },
       classApplied: {
         type: String,
         required: true,
@@ -161,17 +222,43 @@ const AdmissionEnquirySchema: Schema = new Schema(
       enum: ['Phone', 'WhatsApp', 'Email'],
       default: 'Phone',
     },
-    message: { type: String, trim: true },
+    message: { type: String, trim: true, maxlength: 600 },
     preferredVisitDate: { type: Date },
     source: {
       type: String,
-      enum: ['Website', 'Home Page', 'Admission Page', 'Referral', 'Other'],
+      enum: [
+        'Website',
+        'Home Page',
+        'Admission Page',
+        'Referral',
+        'Phone',
+        'Walk-in',
+        'Direct',
+        'Social Media',
+        'Other',
+      ],
       default: 'Website',
       index: true,
     },
     status: {
       type: String,
-      enum: ['NEW', 'CONTACTED', 'FOLLOW_UP', 'CONVERTED', 'CLOSED', 'LOST'],
+      enum: [
+        'NEW',
+        'CONTACTED',
+        'FOLLOW_UP',
+        'QUALIFIED',
+        'APPLICATION_STARTED',
+        'CONVERTED',
+        'CLOSED',
+        'LOST',
+        'New',
+        'Contacted',
+        'Follow-up',
+        'Qualified',
+        'Application Started',
+        'Converted',
+        'Closed',
+      ],
       default: 'NEW',
       index: true,
     },

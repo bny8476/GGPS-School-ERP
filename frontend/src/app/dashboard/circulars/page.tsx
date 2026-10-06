@@ -50,14 +50,14 @@ const initialKindergartenCirculars: CircularItem[] = [
   {
     _id: 'c-101',
     refNo: 'CIRC-2026-014',
-    title: 'Monsoon Preschool Arrival & Dispersal Safety Advisory',
+    title: 'Monsoon Preschool Arrival & Campus Safety Advisory',
     category: 'Logistics',
     audience: 'All Parents',
     cohort: 'Pre-KG, LKG, UKG',
     isUrgent: true,
-    message: 'In view of continuous rain forecasts, morning toddler gates will open 15 minutes early at 08:00 AM. School buses will operate with dual-attendant assistance for safe umbrella transitions. Parents doing self-pickup are requested to use North Gate 2.',
+    message: 'In view of continuous rain forecasts, morning toddler gates will open 15 minutes early at 08:00 AM. Covered walkways will operate with dedicated staff assistance for safe umbrella transitions. Parents doing morning drop-off are requested to use North Gate 2.',
     date: '2026-09-24',
-    author: 'Principal Desk & Transport Wing',
+    author: 'Principal Desk & Campus Administration',
     readCount: 148,
     totalRecipients: 154,
   },
@@ -397,7 +397,7 @@ export default function CircularsPage() {
               <option value="Curricular">Curricular & Milestones</option>
               <option value="Events">Preschool Events</option>
               <option value="Health & Safety">Pediatric Health & Safety</option>
-              <option value="Logistics">Logistics & Bus Routes</option>
+              <option value="Logistics">Campus Operations & Timings</option>
               <option value="Administrative">Administrative & Fees</option>
             </select>
           </div>
@@ -633,7 +633,7 @@ export default function CircularsPage() {
                     <option value="Curricular">Curricular & Milestones</option>
                     <option value="Events">Preschool Events</option>
                     <option value="Health & Safety">Pediatric Health & Safety</option>
-                    <option value="Logistics">Logistics & Bus Routes</option>
+                    <option value="Logistics">Campus Operations & Timings</option>
                     <option value="Administrative">Administrative & Fees</option>
                   </select>
                 </div>

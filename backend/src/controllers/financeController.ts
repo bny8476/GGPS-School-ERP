@@ -18,6 +18,7 @@ import { emitToUser, emitToRole } from '../socket';
 import { generateFeeInvoicePDF, generatePaymentReceiptPDF } from '../utils/pdfGenerator';
 import * as XLSX from 'xlsx';
 import AuditLog from '../models/AuditLog';
+import { escapeRegex } from '../utils/sanitizers';
 
 // @desc    Get all fees (with role isolation & search/filter/pagination)
 // @route   GET /api/finance/fees
@@ -54,7 +55,7 @@ export const getFees = async (req: Request, res: Response) => {
     }
 
     if (search) {
-      const searchRegex = new RegExp(String(search).trim(), 'i');
+      const searchRegex = new RegExp(escapeRegex(String(search).trim()), 'i');
       query.$or = [
         { invoiceNumber: searchRegex },
         { title: searchRegex },

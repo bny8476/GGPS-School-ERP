@@ -19,9 +19,20 @@ import {
   Check,
   RefreshCw,
   Phone,
-  AlertCircle
+  AlertCircle,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import {
+  NAME_REGEX,
+  TEN_DIGIT_PHONE_REGEX,
+  preventNonAlphaKey,
+  preventNonNumericKey,
+  sanitizeNameInput,
+  sanitizePhoneInput,
+  handleNamePaste,
+  handlePhonePaste,
+  validateDOB,
+} from '@/lib/validationUtils';
 
 export interface EnrolledStudentResult {
   id: string;
@@ -95,6 +106,7 @@ export default function EnrollChildModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [enrolledSuccessData, setEnrolledSuccessData] = useState<EnrolledStudentResult | null>(null);
   const [hasCopiedAdmission, setHasCopiedAdmission] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Fetch or calculate authoritative dynamic preview whenever scope changes
   useEffect(() => {
@@ -156,19 +168,57 @@ export default function EnrollChildModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!name.trim()) {
-      toast.error('Please enter the child full name');
-      return;
+    const newErrors: Record<string, string> = {};
+    const cleanChildName = name.trim();
+    if (!cleanChildName) {
+      newErrors.name = 'Please enter the child full name';
+    } else if (!NAME_REGEX.test(cleanChildName)) {
+      newErrors.name = 'Name can contain only letters, spaces, hyphens, apostrophes, and periods';
+    } else if (cleanChildName.length < 2) {
+      newErrors.name = 'Name must be at least 2 characters';
     }
-    if (!address.trim()) {
-      toast.error('Please provide residential address');
-      return;
+
+    if (dob) {
+      const dobCheck = validateDOB(dob);
+      if (!dobCheck.valid) {
+        newErrors.dob = dobCheck.error || 'Date of birth cannot be in the future';
+      }
     }
-    if (!parentName.trim() || !phone.trim()) {
-      toast.error('Please provide primary parent name and contact phone');
+
+    const cleanParentName = parentName.trim();
+    if (!cleanParentName) {
+      newErrors.parentName = 'Primary parent name is required';
+    } else if (!NAME_REGEX.test(cleanParentName)) {
+      newErrors.parentName = 'Name can contain only letters, spaces, hyphens, apostrophes, and periods';
+    } else if (cleanParentName.length < 2) {
+      newErrors.parentName = 'Name must be at least 2 characters';
+    }
+
+    const cleanPhone = phone.trim();
+    if (!cleanPhone) {
+      newErrors.phone = 'Contact phone number is required';
+    } else if (!TEN_DIGIT_PHONE_REGEX.test(cleanPhone)) {
+      newErrors.phone = 'Please enter a valid 10-digit mobile number';
+    }
+
+    if (emergencyPhone.trim() && !TEN_DIGIT_PHONE_REGEX.test(emergencyPhone.trim())) {
+      newErrors.emergencyPhone = 'Please enter a valid 10-digit emergency phone number';
+    }
+
+    const cleanAddress = address.trim();
+    if (!cleanAddress) {
+      newErrors.address = 'Please provide residential address';
+    } else if (cleanAddress.length < 5) {
+      newErrors.address = 'Address must be at least 5 characters';
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      toast.error(Object.values(newErrors)[0]);
       return;
     }
 
+    setErrors({});
     setIsSubmitting(true);
 
     const cleanYear = academicYear.match(/\b(20\d{2})\b/)?.[1] || '2026';
@@ -543,17 +593,26 @@ export default function EnrollChildModal({
               {/* Child Name & Demographics */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="sm:col-span-2">
-                  <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                    Child Full Name *
+                  <label htmlFor="enrollChildName" className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                    Child Full Name <span className="text-[#FF690C]">*</span>
                   </label>
                   <input
+                    id="enrollChildName"
                     type="text"
                     required
                     value={name}
-                    onChange={(e) => setName(e.target.value)}
+                    onKeyDown={preventNonAlphaKey}
+                    onChange={(e) => {
+                      setName(sanitizeNameInput(e.target.value));
+                      if (errors.name) setErrors((p) => { const n = { ...p }; delete n.name; return n; });
+                    }}
+                    onPaste={(e) => handleNamePaste(e, (v) => setName(v))}
                     placeholder="e.g. Advait Nair"
-                    className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500/20"
+                    className={`w-full p-2.5 rounded-xl border bg-white dark:bg-slate-900 text-slate-800 dark:text-white transition-all ${
+                      errors.name ? 'border-rose-400 focus:ring-2 focus:ring-rose-500/20' : 'border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-blue-500/20'
+                    }`}
                   />
+                  {errors.name && <p className="text-[11px] text-rose-500 font-semibold mt-1">{errors.name}</p>}
                 </div>
 
                 <div>
@@ -573,15 +632,23 @@ export default function EnrollChildModal({
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                  <label htmlFor="enrollDob" className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
                     Date of Birth
                   </label>
                   <input
+                    id="enrollDob"
                     type="date"
+                    max={new Date().toISOString().split("T")[0]}
                     value={dob}
-                    onChange={(e) => setDob(e.target.value)}
-                    className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-white"
+                    onChange={(e) => {
+                      setDob(e.target.value);
+                      if (errors.dob) setErrors((p) => { const n = { ...p }; delete n.dob; return n; });
+                    }}
+                    className={`w-full p-2.5 rounded-xl border bg-white dark:bg-slate-900 text-slate-800 dark:text-white transition-all ${
+                      errors.dob ? 'border-rose-400 focus:ring-2 focus:ring-rose-500/20' : 'border-slate-200 dark:border-slate-700'
+                    }`}
                   />
+                  {errors.dob && <p className="text-[11px] text-rose-500 font-semibold mt-1">{errors.dob}</p>}
                 </div>
 
                 <div>
@@ -662,20 +729,27 @@ export default function EnrollChildModal({
               </div>
 
               <div>
-                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                  Residential Home Address *
+                <label htmlFor="enrollAddress" className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                  Residential Home Address <span className="text-[#FF690C]">*</span>
                 </label>
                 <div className="relative">
                   <MapPin className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
                   <input
+                    id="enrollAddress"
                     type="text"
                     required
                     value={address}
-                    onChange={(e) => setAddress(e.target.value)}
+                    onChange={(e) => {
+                      setAddress(e.target.value);
+                      if (errors.address) setErrors((p) => { const n = { ...p }; delete n.address; return n; });
+                    }}
                     placeholder="e.g. Flat 402, Lotus Towers, Golf Course Rd, Gurgaon"
-                    className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500/20"
+                    className={`w-full pl-9 pr-3 py-2.5 rounded-xl border bg-white dark:bg-slate-900 text-slate-800 dark:text-white transition-all ${
+                      errors.address ? 'border-rose-400 focus:ring-2 focus:ring-rose-500/20' : 'border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-blue-500/20'
+                    }`}
                   />
                 </div>
+                {errors.address && <p className="text-[11px] text-rose-500 font-semibold mt-1">{errors.address}</p>}
               </div>
             </div>
 
@@ -705,34 +779,53 @@ export default function EnrollChildModal({
                 </div>
 
                 <div>
-                  <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                    Primary Parent Name *
+                  <label htmlFor="enrollParentName" className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                    Primary Parent Name <span className="text-[#FF690C]">*</span>
                   </label>
                   <input
+                    id="enrollParentName"
                     type="text"
                     required
                     value={parentName}
-                    onChange={(e) => setParentName(e.target.value)}
+                    onKeyDown={preventNonAlphaKey}
+                    onChange={(e) => {
+                      setParentName(sanitizeNameInput(e.target.value));
+                      if (errors.parentName) setErrors((p) => { const n = { ...p }; delete n.parentName; return n; });
+                    }}
+                    onPaste={(e) => handleNamePaste(e, (v) => setParentName(v))}
                     placeholder="e.g. Suresh Nair"
-                    className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-white"
+                    className={`w-full p-2.5 rounded-xl border bg-white dark:bg-slate-900 text-slate-800 dark:text-white transition-all ${
+                      errors.parentName ? 'border-rose-400 focus:ring-2 focus:ring-rose-500/20' : 'border-slate-200 dark:border-slate-700'
+                    }`}
                   />
+                  {errors.parentName && <p className="text-[11px] text-rose-500 font-semibold mt-1">{errors.parentName}</p>}
                 </div>
 
                 <div>
-                  <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                    Contact Phone *
+                  <label htmlFor="enrollPhone" className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                    Contact Phone <span className="text-[#FF690C]">*</span>
                   </label>
                   <div className="relative">
                     <Phone className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" />
                     <input
-                      type="text"
+                      id="enrollPhone"
+                      type="tel"
                       required
+                      maxLength={10}
                       value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder="e.g. +91 98765 11223"
-                      className="w-full pl-8 pr-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-white"
+                      onKeyDown={preventNonNumericKey}
+                      onChange={(e) => {
+                        setPhone(sanitizePhoneInput(e.target.value));
+                        if (errors.phone) setErrors((p) => { const n = { ...p }; delete n.phone; return n; });
+                      }}
+                      onPaste={(e) => handlePhonePaste(e, (v) => setPhone(v))}
+                      placeholder="9876511223"
+                      className={`w-full pl-8 pr-3 py-2.5 rounded-xl border bg-white dark:bg-slate-900 text-slate-800 dark:text-white transition-all ${
+                        errors.phone ? 'border-rose-400 focus:ring-2 focus:ring-rose-500/20' : 'border-slate-200 dark:border-slate-700'
+                      }`}
                     />
                   </div>
+                  {errors.phone && <p className="text-[11px] text-rose-500 font-semibold mt-1">{errors.phone}</p>}
                 </div>
               </div>
 
@@ -751,16 +844,26 @@ export default function EnrollChildModal({
                 </div>
 
                 <div>
-                  <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                  <label htmlFor="enrollEmergencyPhone" className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
                     Emergency Secondary Phone
                   </label>
                   <input
-                    type="text"
+                    id="enrollEmergencyPhone"
+                    type="tel"
+                    maxLength={10}
                     value={emergencyPhone}
-                    onChange={(e) => setEmergencyPhone(e.target.value)}
-                    placeholder="e.g. +91 98112 34567 (Grandmother)"
-                    className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-white"
+                    onKeyDown={preventNonNumericKey}
+                    onChange={(e) => {
+                      setEmergencyPhone(sanitizePhoneInput(e.target.value));
+                      if (errors.emergencyPhone) setErrors((p) => { const n = { ...p }; delete n.emergencyPhone; return n; });
+                    }}
+                    onPaste={(e) => handlePhonePaste(e, (v) => setEmergencyPhone(v))}
+                    placeholder="9811234567"
+                    className={`w-full p-2.5 rounded-xl border bg-white dark:bg-slate-900 text-slate-800 dark:text-white transition-all ${
+                      errors.emergencyPhone ? 'border-rose-400 focus:ring-2 focus:ring-rose-500/20' : 'border-slate-200 dark:border-slate-700'
+                    }`}
                   />
+                  {errors.emergencyPhone && <p className="text-[11px] text-rose-500 font-semibold mt-1">{errors.emergencyPhone}</p>}
                 </div>
               </div>
             </div>

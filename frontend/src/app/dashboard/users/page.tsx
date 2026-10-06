@@ -39,6 +39,17 @@ import {
   Link2,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import {
+  NAME_REGEX,
+  EMAIL_REGEX,
+  TEN_DIGIT_PHONE_REGEX,
+  preventNonAlphaKey,
+  preventNonNumericKey,
+  sanitizeNameInput,
+  sanitizePhoneInput,
+  handleNamePaste,
+  handlePhonePaste,
+} from "@/lib/validationUtils";
 
 interface StagedChild {
   studentId: string;
@@ -701,18 +712,44 @@ function UsersPageContent() {
     const trimmedLast = formData.lastName.trim();
     const trimmedEmail = formData.email.trim();
 
-    if (!trimmedFirst || !trimmedLast || !trimmedEmail || !formData.password) {
-      toast.error("Please fill in first name, last name, institutional email, and password.");
+    if (!trimmedFirst) {
+      toast.error("Please enter a first name.");
+      return;
+    }
+    if (!NAME_REGEX.test(trimmedFirst)) {
+      toast.error("First name can only contain letters, spaces, hyphens, apostrophes, and periods.");
+      return;
+    }
+    if (!trimmedLast) {
+      toast.error("Please enter a last name.");
+      return;
+    }
+    if (!NAME_REGEX.test(trimmedLast)) {
+      toast.error("Last name can only contain letters, spaces, hyphens, apostrophes, and periods.");
+      return;
+    }
+    if (!trimmedEmail) {
+      toast.error("Please enter an institutional email.");
+      return;
+    }
+    if (!EMAIL_REGEX.test(trimmedEmail)) {
+      toast.error("Please enter a valid institutional email address (e.g. name@ggps.edu.in).");
       return;
     }
 
-    if (formData.password.length < 6) {
-      toast.error("Password must be at least 6 characters long.");
+    if (!formData.password || formData.password.length < 8) {
+      toast.error("Password must be at least 8 characters long.");
       return;
     }
 
     if (formData.password !== formData.confirmPassword) {
       toast.error("Passwords do not match. Please verify both password fields.");
+      return;
+    }
+
+    const cleanedPhone = formData.phoneNumber ? sanitizePhoneInput(formData.phoneNumber) : "";
+    if (cleanedPhone && !TEN_DIGIT_PHONE_REGEX.test(cleanedPhone)) {
+      toast.error("Phone number must be a valid 10-digit number.");
       return;
     }
 
@@ -726,11 +763,11 @@ function UsersPageContent() {
       const payload: any = {
         firstName: trimmedFirst,
         lastName: trimmedLast,
-        email: trimmedEmail,
+        email: trimmedEmail.toLowerCase(),
         password: formData.password,
         roleName: formData.roleName,
         designation: formData.designation?.trim(),
-        phoneNumber: formData.phoneNumber?.trim(),
+        phoneNumber: cleanedPhone,
       };
 
       if (formData.roleName === "Parent" && stagedChildren.length > 0) {
@@ -770,6 +807,37 @@ function UsersPageContent() {
     e.preventDefault();
     if (!selectedUser) return;
 
+    const trimmedFirst = formData.firstName.trim();
+    const trimmedLast = formData.lastName.trim();
+    const trimmedEmail = formData.email.trim();
+
+    if (!trimmedFirst) {
+      toast.error("Please enter a first name.");
+      return;
+    }
+    if (!NAME_REGEX.test(trimmedFirst)) {
+      toast.error("First name can only contain letters, spaces, hyphens, apostrophes, and periods.");
+      return;
+    }
+    if (trimmedLast && !NAME_REGEX.test(trimmedLast)) {
+      toast.error("Last name can only contain letters, spaces, hyphens, apostrophes, and periods.");
+      return;
+    }
+    if (!trimmedEmail) {
+      toast.error("Please enter an institutional email.");
+      return;
+    }
+    if (!EMAIL_REGEX.test(trimmedEmail)) {
+      toast.error("Please enter a valid email address.");
+      return;
+    }
+
+    const cleanedPhone = formData.phoneNumber ? sanitizePhoneInput(formData.phoneNumber) : "";
+    if (cleanedPhone && !TEN_DIGIT_PHONE_REGEX.test(cleanedPhone)) {
+      toast.error("Phone number must be a valid 10-digit number.");
+      return;
+    }
+
     setIsSaving(true);
     try {
       const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
@@ -777,11 +845,19 @@ function UsersPageContent() {
       const headers: Record<string, string> = { "Content-Type": "application/json" };
       if (token) headers["Authorization"] = `Bearer ${token}`;
 
+      const editPayload = {
+        ...formData,
+        firstName: trimmedFirst,
+        lastName: trimmedLast,
+        email: trimmedEmail.toLowerCase(),
+        phoneNumber: cleanedPhone,
+      };
+
       await fetch(`${apiBase}/api/users/${selectedUser._id}`, {
         method: "PUT",
         headers,
         credentials: "include",
-        body: JSON.stringify(formData),
+        body: JSON.stringify(editPayload),
       });
 
       setUsers((prev) =>
@@ -864,7 +940,14 @@ function UsersPageContent() {
   const handleCreateCustomRole = async (e: React.FormEvent) => {
     e.preventDefault();
     const formatted = newRoleName.trim();
-    if (!formatted) return;
+    if (!formatted) {
+      toast.error("Please enter a role title.");
+      return;
+    }
+    if (!/^[a-zA-Z\s\-]+$/.test(formatted)) {
+      toast.error("Role title can only contain letters, spaces, and hyphens.");
+      return;
+    }
 
     if (rolesList.includes(formatted)) {
       toast.error("A role with this name already exists.");
@@ -1844,7 +1927,8 @@ function UsersPageContent() {
                   required
                   value={newRoleName}
                   onChange={(e) => setNewRoleName(e.target.value)}
-                  placeholder="e.g. Librarian, Hostel Warden, Transport Head"
+                  onKeyDown={preventNonAlphaKey}
+                  placeholder="e.g. Librarian, Hostel Warden, Lab Assistant"
                   className="w-full px-3 py-2 bg-slate-50 dark:bg-[#001438] border border-slate-200 dark:border-slate-700 rounded-xl font-semibold text-slate-800 dark:text-white focus:outline-none focus:border-[#0050CB]"
                 />
               </div>
@@ -1909,7 +1993,9 @@ function UsersPageContent() {
                     type="text"
                     required
                     value={formData.firstName}
-                    onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                    onKeyDown={preventNonAlphaKey}
+                    onPaste={(e) => handleNamePaste(e, (clean) => setFormData((prev) => ({ ...prev, firstName: clean })))}
+                    onChange={(e) => setFormData({ ...formData, firstName: sanitizeNameInput(e.target.value) })}
                     className="w-full px-3 py-2 bg-slate-50 dark:bg-[#001438] border border-slate-200 dark:border-slate-700 rounded-xl font-semibold text-slate-800 dark:text-white focus:outline-none focus:border-[#0050CB]"
                     placeholder="e.g. Ramesh"
                   />
@@ -1920,7 +2006,9 @@ function UsersPageContent() {
                     type="text"
                     required
                     value={formData.lastName}
-                    onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                    onKeyDown={preventNonAlphaKey}
+                    onPaste={(e) => handleNamePaste(e, (clean) => setFormData((prev) => ({ ...prev, lastName: clean })))}
+                    onChange={(e) => setFormData({ ...formData, lastName: sanitizeNameInput(e.target.value) })}
                     className="w-full px-3 py-2 bg-slate-50 dark:bg-[#001438] border border-slate-200 dark:border-slate-700 rounded-xl font-semibold text-slate-800 dark:text-white focus:outline-none focus:border-[#0050CB]"
                     placeholder="e.g. Kumar"
                   />
@@ -1933,7 +2021,7 @@ function UsersPageContent() {
                   type="email"
                   required
                   value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value.toLowerCase().trim() })}
                   className="w-full px-3 py-2 bg-slate-50 dark:bg-[#001438] border border-slate-200 dark:border-slate-700 rounded-xl font-semibold text-slate-800 dark:text-white focus:outline-none focus:border-[#0050CB]"
                   placeholder="ramesh.k@ggps.edu.in"
                 />
@@ -1949,7 +2037,7 @@ function UsersPageContent() {
                       value={formData.password}
                       onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                       className="w-full px-3 py-2 pr-9 bg-slate-50 dark:bg-[#001438] border border-slate-200 dark:border-slate-700 rounded-xl font-semibold text-slate-800 dark:text-white focus:outline-none focus:border-[#0050CB]"
-                      placeholder="Min 6 characters"
+                      placeholder="Min 8 characters"
                     />
                     <button
                       type="button"
@@ -2014,11 +2102,14 @@ function UsersPageContent() {
               <div>
                 <label className="block text-[11px] font-bold uppercase text-slate-500 mb-1">Phone Number</label>
                 <input
-                  type="text"
+                  type="tel"
+                  maxLength={10}
                   value={formData.phoneNumber}
-                  onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+                  onKeyDown={preventNonNumericKey}
+                  onPaste={(e) => handlePhonePaste(e, (clean) => setFormData((prev) => ({ ...prev, phoneNumber: clean })))}
+                  onChange={(e) => setFormData({ ...formData, phoneNumber: sanitizePhoneInput(e.target.value) })}
                   className="w-full px-3 py-2 bg-slate-50 dark:bg-[#001438] border border-slate-200 dark:border-slate-700 rounded-xl font-semibold text-slate-800 dark:text-white focus:outline-none focus:border-[#0050CB]"
-                  placeholder="+91 98765 43210"
+                  placeholder="10-digit mobile number"
                 />
               </div>
 
@@ -2262,7 +2353,9 @@ function UsersPageContent() {
                     type="text"
                     required
                     value={formData.firstName}
-                    onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                    onKeyDown={preventNonAlphaKey}
+                    onPaste={(e) => handleNamePaste(e, (clean) => setFormData((prev) => ({ ...prev, firstName: clean })))}
+                    onChange={(e) => setFormData({ ...formData, firstName: sanitizeNameInput(e.target.value) })}
                     className="w-full px-3 py-2 bg-slate-50 dark:bg-[#001438] border border-slate-200 dark:border-slate-700 rounded-xl font-semibold text-slate-800 dark:text-white focus:outline-none focus:border-[#0050CB]"
                   />
                 </div>
@@ -2271,7 +2364,9 @@ function UsersPageContent() {
                   <input
                     type="text"
                     value={formData.lastName}
-                    onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                    onKeyDown={preventNonAlphaKey}
+                    onPaste={(e) => handleNamePaste(e, (clean) => setFormData((prev) => ({ ...prev, lastName: clean })))}
+                    onChange={(e) => setFormData({ ...formData, lastName: sanitizeNameInput(e.target.value) })}
                     className="w-full px-3 py-2 bg-slate-50 dark:bg-[#001438] border border-slate-200 dark:border-slate-700 rounded-xl font-semibold text-slate-800 dark:text-white focus:outline-none focus:border-[#0050CB]"
                   />
                 </div>
@@ -2283,7 +2378,7 @@ function UsersPageContent() {
                   type="email"
                   required
                   value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value.toLowerCase().trim() })}
                   className="w-full px-3 py-2 bg-slate-50 dark:bg-[#001438] border border-slate-200 dark:border-slate-700 rounded-xl font-semibold text-slate-800 dark:text-white focus:outline-none focus:border-[#0050CB]"
                 />
               </div>
@@ -2317,10 +2412,14 @@ function UsersPageContent() {
               <div>
                 <label className="block text-[11px] font-bold uppercase text-slate-500 mb-1">Phone Number</label>
                 <input
-                  type="text"
+                  type="tel"
+                  maxLength={10}
                   value={formData.phoneNumber}
-                  onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+                  onKeyDown={preventNonNumericKey}
+                  onPaste={(e) => handlePhonePaste(e, (clean) => setFormData((prev) => ({ ...prev, phoneNumber: clean })))}
+                  onChange={(e) => setFormData({ ...formData, phoneNumber: sanitizePhoneInput(e.target.value) })}
                   className="w-full px-3 py-2 bg-slate-50 dark:bg-[#001438] border border-slate-200 dark:border-slate-700 rounded-xl font-semibold text-slate-800 dark:text-white focus:outline-none focus:border-[#0050CB]"
+                  placeholder="10-digit mobile number"
                 />
               </div>
 

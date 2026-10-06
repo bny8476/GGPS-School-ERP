@@ -31,6 +31,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import GgpsCrestLogo from "@/components/ui/GgpsCrestLogo";
 import { getApiBaseUrl } from "@/lib/utils";
+import { EMAIL_REGEX, sanitizeEmailInput } from "@/lib/validationUtils";
 
 type PortalRole = "admin" | "teacher" | "parent";
 
@@ -75,6 +76,8 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState("");
+  const [emailError, setEmailError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
@@ -90,6 +93,8 @@ export default function LoginPage() {
   const handleRoleChange = (newRole: PortalRole) => {
     setSelectedRole(newRole);
     setError("");
+    setEmailError("");
+    setPasswordError("");
     const isCurrentPreset = ROLE_OPTIONS.some((r) => r.demoEmail.toLowerCase() === email.trim().toLowerCase());
     if (!email || isCurrentPreset) {
       const cfg = ROLE_OPTIONS.find((r) => r.id === newRole);
@@ -110,12 +115,14 @@ export default function LoginPage() {
 
   const handleRequestResetCode = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!forgotEmail) { setForgotError("Please enter your registered email."); return; }
+    const cleanForgotEmail = forgotEmail.trim().toLowerCase();
+    if (!cleanForgotEmail) { setForgotError("Please enter your registered email."); return; }
+    if (!EMAIL_REGEX.test(cleanForgotEmail)) { setForgotError("Enter a valid email address."); return; }
     setForgotLoading(true); setForgotError(""); setForgotSuccess("");
     try {
       const res = await fetch(`${getApiBaseUrl()}/api/v1/auth/forgot-password`, {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: forgotEmail.trim() }),
+        body: JSON.stringify({ email: cleanForgotEmail }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Failed to send reset code");
@@ -126,12 +133,13 @@ export default function LoginPage() {
 
   const handleVerifyCode = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!forgotCode) { setForgotError("Please enter the verification code."); return; }
+    const cleanCode = forgotCode.trim();
+    if (!cleanCode || cleanCode.length < 4) { setForgotError("Please enter the 6-digit verification code."); return; }
     setForgotLoading(true); setForgotError(""); setForgotSuccess("");
     try {
       const res = await fetch(`${getApiBaseUrl()}/api/v1/auth/verify-reset-code`, {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: forgotEmail.trim(), code: forgotCode.trim() }),
+        body: JSON.stringify({ email: forgotEmail.trim().toLowerCase(), code: cleanCode }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Invalid or expired code");
@@ -142,13 +150,13 @@ export default function LoginPage() {
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (forgotNewPw.length < 6) { setForgotError("Password must be at least 6 characters."); return; }
+    if (forgotNewPw.length < 8) { setForgotError("Password must be at least 8 characters long."); return; }
     if (forgotNewPw !== forgotConfirmPw) { setForgotError("Passwords do not match."); return; }
     setForgotLoading(true); setForgotError(""); setForgotSuccess("");
     try {
       const res = await fetch(`${getApiBaseUrl()}/api/v1/auth/reset-password`, {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: forgotEmail.trim(), code: forgotCode.trim(), newPassword: forgotNewPw }),
+        body: JSON.stringify({ email: forgotEmail.trim().toLowerCase(), code: forgotCode.trim(), newPassword: forgotNewPw }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Failed to reset password");
@@ -162,6 +170,28 @@ export default function LoginPage() {
   // --- Main Login ---
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    const cleanEmail = email.trim().toLowerCase();
+    let hasError = false;
+
+    if (!cleanEmail) {
+      setEmailError("Email address is required");
+      hasError = true;
+    } else if (!EMAIL_REGEX.test(cleanEmail)) {
+      setEmailError("Enter a valid email address");
+      hasError = true;
+    } else {
+      setEmailError("");
+    }
+
+    if (!password) {
+      setPasswordError("Password is required");
+      hasError = true;
+    } else {
+      setPasswordError("");
+    }
+
+    if (hasError) return;
+
     setIsLoading(true); setError("");
     try {
       const apiBase = getApiBaseUrl();
@@ -185,6 +215,9 @@ export default function LoginPage() {
         setIsSuccess(true);
         useAuthStore.getState().setAuth(data);
         localStorage.setItem("token", data.token);
+        if (data.refreshToken) {
+          localStorage.setItem("refreshToken", data.refreshToken);
+        }
         localStorage.setItem("user", JSON.stringify(data));
         if (rememberMe) { localStorage.setItem("ggps_remembered_email", cleanEmail); localStorage.setItem("ggps_remembered_role", selectedRole); }
         else { localStorage.removeItem("ggps_remembered_email"); localStorage.removeItem("ggps_remembered_role"); }
@@ -478,11 +511,27 @@ export default function LoginPage() {
                   type="email"
                   id="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (emailError) setEmailError("");
+                  }}
+                  onBlur={() => {
+                    const clean = email.trim();
+                    if (clean && !EMAIL_REGEX.test(clean)) {
+                      setEmailError("Enter a valid email address");
+                    }
+                  }}
                   placeholder="Enter your email address"
-                  className="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-[#07111F] border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-medium text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0050CB]/40 focus:border-[#0050CB] transition-all"
+                  className={`w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-[#07111F] border rounded-2xl text-sm font-medium text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 transition-all ${
+                    emailError
+                      ? "border-rose-400 dark:border-rose-500 focus:ring-rose-400/30"
+                      : "border-slate-200 dark:border-white/10 focus:ring-[#0050CB]/40 focus:border-[#0050CB]"
+                  }`}
                 />
               </div>
+              {emailError && (
+                <p className="mt-1.5 text-xs text-rose-500 dark:text-rose-400 font-medium">{emailError}</p>
+              )}
             </div>
 
             {/* Password */}
@@ -506,9 +555,16 @@ export default function LoginPage() {
                   type={showPassword ? "text" : "password"}
                   id="password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (passwordError) setPasswordError("");
+                  }}
                   placeholder="Enter your password"
-                  className="w-full pl-10 pr-11 py-3 bg-slate-50 dark:bg-[#07111F] border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-medium text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0050CB]/40 focus:border-[#0050CB] transition-all"
+                  className={`w-full pl-10 pr-11 py-3 bg-slate-50 dark:bg-[#07111F] border rounded-2xl text-sm font-medium text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 transition-all ${
+                    passwordError
+                      ? "border-rose-400 dark:border-rose-500 focus:ring-rose-400/30"
+                      : "border-slate-200 dark:border-white/10 focus:ring-[#0050CB]/40 focus:border-[#0050CB]"
+                  }`}
                 />
                 <button
                   type="button"
@@ -519,6 +575,9 @@ export default function LoginPage() {
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
+              {passwordError && (
+                <p className="mt-1.5 text-xs text-rose-500 dark:text-rose-400 font-medium">{passwordError}</p>
+              )}
             </div>
 
             {/* Remember Me */}

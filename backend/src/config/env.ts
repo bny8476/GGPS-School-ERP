@@ -11,7 +11,7 @@ const envSchema = z.object({
   JWT_SECRET: z.string().min(8).optional(),
   JWT_REFRESH_SECRET: z.string().min(8, 'JWT Refresh Secret must be at least 8 characters').optional(),
   PAYMENT_GATEWAY_SECRET: z.string().min(8).optional(),
-  ACCESS_TOKEN_EXPIRES_IN: z.string().default('15m'),
+  ACCESS_TOKEN_EXPIRES_IN: z.string().default('24h'),
   REFRESH_TOKEN_EXPIRES_IN: z.string().default('7d'),
   CLIENT_URL: z.string().default('http://localhost:3000'),
   CORS_ORIGINS: z.string().optional(),

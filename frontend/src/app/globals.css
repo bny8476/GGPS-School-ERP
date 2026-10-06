@@ -55,13 +55,17 @@
   }
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 /* Seamless Hero Continuous Background & Image Masking */
 .hero-continuous-bg {
   background:
     radial-gradient(
-      circle at 70% 45%,
-      rgba(207, 232, 255, 0.8),
-      transparent 42%
+      ellipse 65% 55% at 72% 46%,
+      rgba(207, 232, 255, 0.75),
+      transparent 50%
     ),
     linear-gradient(
       135deg,
@@ -74,21 +78,21 @@
 :where(.dark, .dark *, [data-theme="dark"], [data-theme="dark"] *) .hero-continuous-bg {
   background:
     radial-gradient(
-      circle at 70% 45%,
-      rgba(0, 80, 203, 0.28),
-      transparent 42%
+      ellipse 65% 55% at 72% 46%,
+      rgba(47, 140, 255, 0.18),
+      transparent 55%
     ),
     linear-gradient(
-      135deg,
-      #000a1f 0%,
-      #000E28 45%,
-      #000a1f 100%
+      140deg,
+      #020817 0%,
+      #06142D 48%,
+      #071B38 100%
     );
 }
 
 .hero-seamless-mask {
-  -webkit-mask-image: radial-gradient(ellipse 92% 88% at 55% 50%, black 72%, transparent 100%);
-  mask-image: radial-gradient(ellipse 92% 88% at 55% 50%, black 72%, transparent 100%);
+  -webkit-mask-image: radial-gradient(ellipse 84% 80% at 54% 50%, #000000 52%, rgba(0, 0, 0, 0.92) 68%, rgba(0, 0, 0, 0.4) 86%, transparent 100%);
+  mask-image: radial-gradient(ellipse 84% 80% at 54% 50%, #000000 52%, rgba(0, 0, 0, 0.92) 68%, rgba(0, 0, 0, 0.4) 86%, transparent 100%);
 }
 
 @layer base {

@@ -14,8 +14,6 @@ export interface IStudent extends Document {
   medicalNotes?: string;
   emergencyContact?: string;
   studentPhoto?: string;
-  transportId?: mongoose.Types.ObjectId;
-  transportStopId?: mongoose.Types.ObjectId;
   parentId?: mongoose.Types.ObjectId;
   schoolId?: mongoose.Types.ObjectId;
   campusId?: mongoose.Types.ObjectId;
@@ -43,13 +41,19 @@ const StudentSchema: Schema = new Schema(
     },
     firstName: {
       type: String,
-      required: true,
+      required: [true, 'First name is required'],
       trim: true,
+      minlength: [1, 'First name is required'],
+      maxlength: [50, 'First name cannot exceed 50 characters'],
+      match: [/^(?=.*[a-zA-Z])[a-zA-Z\s'.-]+$/, 'First name can contain only letters, spaces, hyphens, apostrophes, and periods'],
     },
     lastName: {
       type: String,
-      required: true,
+      required: [true, 'Last name is required'],
       trim: true,
+      minlength: [1, 'Last name is required'],
+      maxlength: [50, 'Last name cannot exceed 50 characters'],
+      match: [/^(?=.*[a-zA-Z])[a-zA-Z\s'.-]+$/, 'Last name can contain only letters, spaces, hyphens, apostrophes, and periods'],
     },
     gender: {
       type: String,
@@ -57,6 +61,12 @@ const StudentSchema: Schema = new Schema(
     },
     dateOfBirth: {
       type: Date,
+      validate: {
+        validator: function (v: Date) {
+          return !v || v <= new Date();
+        },
+        message: 'Date of birth cannot be in the future',
+      },
     },
     grade: {
       type: String,
@@ -79,21 +89,16 @@ const StudentSchema: Schema = new Schema(
     medicalNotes: {
       type: String,
       trim: true,
+      maxlength: [500, 'Medical notes cannot exceed 500 characters'],
     },
     emergencyContact: {
       type: String,
       trim: true,
+      match: [/^\d{10}$/, 'Emergency contact must be a valid 10-digit number'],
     },
     studentPhoto: {
       type: String,
       trim: true,
-    },
-    transportId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'TransportRoute',
-    },
-    transportStopId: {
-      type: mongoose.Schema.Types.ObjectId,
     },
     parentId: {
       type: mongoose.Schema.Types.ObjectId,

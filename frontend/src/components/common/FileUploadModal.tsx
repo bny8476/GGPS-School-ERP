@@ -6,6 +6,7 @@ import {
   Trash2, RefreshCw, ShieldCheck, ArrowUpRight 
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { validateFileUpload } from '@/lib/validationUtils';
 
 interface FileUploadModalProps {
   isOpen: boolean;
@@ -53,15 +54,12 @@ export default function FileUploadModal({
   if (!isOpen) return null;
 
   const validateAndSetFile = (selectedFile: File) => {
-    // 25MB max
-    if (selectedFile.size > 25 * 1024 * 1024) {
-      toast.error('File size exceeds the 25MB maximum limit.');
-      return;
-    }
-
-    const ext = '.' + selectedFile.name.split('.').pop()?.toLowerCase();
-    if (!ACCEPTED_EXTENSIONS.includes(ext)) {
-      toast.error(`File extension ${ext} is not supported. Please upload a PDF, DOCX, XLSX, Image, or ZIP.`);
+    const check = validateFileUpload(selectedFile, {
+      maxSizeMB: 25,
+      allowedExtensions: ACCEPTED_EXTENSIONS,
+    });
+    if (!check.valid) {
+      toast.error(check.error || 'Invalid file selected.');
       return;
     }
 
@@ -85,6 +83,11 @@ export default function FileUploadModal({
     e.preventDefault();
     if (!file) {
       toast.error('Please select a file to upload.');
+      return;
+    }
+    const trimmedTitle = docTitle.trim();
+    if (!trimmedTitle) {
+      toast.error('Please enter a document display title.');
       return;
     }
 

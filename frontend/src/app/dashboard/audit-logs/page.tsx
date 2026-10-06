@@ -141,7 +141,7 @@ const SEEDED_AUDIT_LOGS: AuditLogItem[] = [
     role: "Accountant",
     action: "Fee Structure Deleted",
     module: "Finance",
-    details: "Removed deprecated 2024 transport bus surcharge slab #4",
+    details: "Removed deprecated 2024 annual registration slab #4",
     ip: "192.168.1.115",
     timestamp: "2026-09-24T17:20:00.000Z",
     targetId: "FEE-STR-2404",

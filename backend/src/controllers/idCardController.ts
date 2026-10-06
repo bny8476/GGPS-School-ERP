@@ -12,6 +12,7 @@ import SystemSettings from '../models/Settings';
 import AuditLog from '../models/AuditLog';
 import { generateNextCardNumber } from '../services/sequenceService';
 import { emitToRole, emitToUser, broadcastEvent } from '../socket';
+import { escapeRegex } from '../utils/sanitizers';
 
 // In-memory tracker for real-time bulk generation progress
 const activeBulkJobs = new Map<
@@ -118,7 +119,7 @@ export const getIdCards = async (req: Request, res: Response) => {
 
     // Search by card number or student name if provided
     if (search) {
-      const searchRegex = new RegExp(String(search).trim(), 'i');
+      const searchRegex = new RegExp(escapeRegex(String(search).trim()), 'i');
       const matchingStudents = await Student.find({
         $or: [
           { firstName: searchRegex },
@@ -300,7 +301,6 @@ export const createIdCard = async (req: Request, res: Response) => {
         showEmergencyContact: fields.showEmergencyContact !== false,
         showQRCode: fields.showQRCode !== false,
         showBarcode: fields.showBarcode !== false,
-        busRoute: fields.busRoute || '',
         house: fields.house || '',
         notes: fields.notes || '',
       },

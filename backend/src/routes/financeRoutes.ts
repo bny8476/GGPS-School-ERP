@@ -16,7 +16,7 @@ import {
 import { protect, authorize } from '../middleware/auth';
 
 import { validate } from '../middleware/validate';
-import { createFeeSchema, createExpenseSchema } from '../validators/financeValidator';
+import { createFeeSchema, createExpenseSchema, recordPaymentSchema } from '../validators/financeValidator';
 
 const router = express.Router();
 

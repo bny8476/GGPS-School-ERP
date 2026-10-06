@@ -685,8 +685,8 @@ export default function MyChildrenPage() {
           {/* Corner 3D Illustration */}
           <div className="absolute -bottom-2 -right-1 w-24 h-24 sm:w-28 sm:h-28 pointer-events-none select-none mix-blend-multiply dark:mix-blend-normal opacity-95">
             <AppImage
-              src="/decor-school-bus-corner.jpg"
-              alt="Need Help School Bus"
+              src="/decor-chat-bubbles.jpg"
+              alt="Need Help Support"
               fill
               sizes="112px"
               className="object-contain object-bottom-right"

@@ -11,6 +11,7 @@ import {
 import { useLanguage } from '@/context/LanguageContext';
 import TeacherWorkspace from '@/components/teacher/TeacherWorkspace';
 import AdminExecutiveDashboard from '@/components/admin/AdminExecutiveDashboard';
+import { authFetch } from '@/lib/apiClient';
 
 export default function DashboardOverview() {
   const { t } = useLanguage();
@@ -23,16 +24,15 @@ export default function DashboardOverview() {
   const fetchStats = async () => {
     try {
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      if (!token) {
+        setIsLoading(false);
+        return;
+      }
       const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 3500);
 
-      const res = await fetch(`${apiBase}/api/v1/dashboard/stats`, {
-        headers: {
-          'Authorization': `Bearer ${token || ''}`,
-          'Content-Type': 'application/json'
-        },
-        credentials: 'include',
+      const res = await authFetch(`${apiBase}/api/v1/dashboard/stats`, {
         signal: controller.signal,
       });
       clearTimeout(timeoutId);

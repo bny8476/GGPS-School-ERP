@@ -7,6 +7,8 @@ import User from '../models/User';
 import Fee from '../models/Fee';
 import Event from '../models/Event';
 
+import { escapeRegex } from '../utils/sanitizers';
+
 export const globalSearch = async (req: Request, res: Response) => {
   try {
     const q = String(req.query.q || '').trim();
@@ -14,7 +16,7 @@ export const globalSearch = async (req: Request, res: Response) => {
       return res.json({ success: true, data: [] });
     }
 
-    const regex = new RegExp(q, 'i');
+    const regex = new RegExp(escapeRegex(q), 'i');
     const results: any[] = [];
 
     // 1. Search Students

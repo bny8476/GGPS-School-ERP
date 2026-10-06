@@ -7,6 +7,8 @@ import AppImage from '@/components/ui/AppImage';
 import { motion, useScroll, useTransform, useInView, useReducedMotion, AnimatePresence, type Variants } from 'framer-motion';
 import ModernAcademicExcellence from '@/components/ModernAcademicExcellence';
 import CtaBanner from '@/components/CtaBanner';
+import HeroFloatingNotificationCards from '@/components/ui/HeroFloatingNotificationCards';
+import HeroSparkles from '@/components/effects/HeroSparkles';
 import { useLanguage } from '@/context/LanguageContext';
 import {
   ArrowRight,
@@ -142,6 +144,19 @@ export default function Home() {
     return () => clearInterval(timer);
   }, []);
 
+  // Handle direct navigation to #features or hash changes
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.location.hash === "#features") {
+      const timer = setTimeout(() => {
+        const el = document.getElementById("features");
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth" });
+        }
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
   const testimonials = [
     {
       quote: "GGPS School has made our school operations so much easier. The platform is intuitive, reliable and excellent support team!",
@@ -182,15 +197,87 @@ export default function Home() {
     }
   ];
 
-  const marqueeItems = [
-    "⚡ Biometric Attendance Sync",
-    "📄 1-Click Report Card Generator",
-    "📱 Parent Mobile Diary App",
-    "💳 Paperless Instant Fee Collection",
-    "🤖 AI Examination Paper Creator",
-    "🔒 Bank-Grade Role Security",
-    "🚀 99.9% Uptime Guarantee",
-    "💬 Real-Time WhatsApp Alerts"
+  const marqueeFeatures = [
+    {
+      icon: "⚡",
+      badge: "LIVE SYNC",
+      badgeColor: "bg-emerald-500/20 text-emerald-300 border-emerald-400/40",
+      title: "Biometric Attendance",
+      titleColor: "text-white font-extrabold",
+      highlight: "Instant Parent Notification",
+      highlightColor: "text-[#38BDF8] font-medium italic",
+      sparkleColor: "text-emerald-400"
+    },
+    {
+      icon: "📄",
+      badge: "1-CLICK",
+      badgeColor: "bg-sky-500/20 text-sky-200 border-sky-400/40",
+      title: "Report Card Generator",
+      titleColor: "text-white font-bold",
+      highlight: "CBSE & State Board Ready",
+      highlightColor: "text-[#FDE047] font-semibold",
+      sparkleColor: "text-sky-400"
+    },
+    {
+      icon: "💳",
+      badge: "ZERO PAPER",
+      badgeColor: "bg-[#FF690C]/25 text-[#FFB088] border-[#FF690C]/40",
+      title: "Paperless Fee Collection",
+      titleColor: "text-white font-black tracking-tight",
+      highlight: "UPI, Cards & Auto-Receipts",
+      highlightColor: "text-emerald-300 font-semibold italic",
+      sparkleColor: "text-[#FF690C]"
+    },
+    {
+      icon: "🤖",
+      badge: "AI ENGINE",
+      badgeColor: "bg-purple-500/25 text-purple-200 border-purple-400/40",
+      title: "AI Exam Paper Creator",
+      titleColor: "text-white font-bold",
+      highlight: "Rubric-Aligned Blueprints",
+      highlightColor: "text-purple-300 font-medium italic",
+      sparkleColor: "text-purple-400"
+    },
+    {
+      icon: "🔒",
+      badge: "BANK GRADE",
+      badgeColor: "bg-blue-500/25 text-blue-200 border-blue-400/40",
+      title: "Role Security & RBAC",
+      titleColor: "text-white font-extrabold",
+      highlight: "256-Bit AES Encryption",
+      highlightColor: "text-sky-300 font-semibold",
+      sparkleColor: "text-blue-400"
+    },
+    {
+      icon: "📱",
+      badge: "PWA APP",
+      badgeColor: "bg-pink-500/20 text-pink-200 border-pink-400/40",
+      title: "Parent Mobile Diary",
+      titleColor: "text-white font-bold",
+      highlight: "Homework, Fees & Digital Diary",
+      highlightColor: "text-[#FEF08A] font-medium",
+      sparkleColor: "text-pink-400"
+    },
+    {
+      icon: "🚀",
+      badge: "SLA 99.9%",
+      badgeColor: "bg-amber-500/25 text-amber-200 border-amber-400/40",
+      title: "High-Availability Cloud",
+      titleColor: "text-white font-black",
+      highlight: "Zero Downtime Guarantee",
+      highlightColor: "text-[#FFB703] font-bold italic",
+      sparkleColor: "text-amber-400"
+    },
+    {
+      icon: "💬",
+      badge: "DIRECT",
+      badgeColor: "bg-teal-500/25 text-teal-200 border-teal-400/40",
+      title: "WhatsApp & SMS Alerts",
+      titleColor: "text-white font-bold",
+      highlight: "Automated Dispatch in Real-Time",
+      highlightColor: "text-teal-300 font-semibold italic",
+      sparkleColor: "text-teal-400"
+    }
   ];
 
   return (
@@ -229,9 +316,13 @@ export default function Home() {
       />
 
       {/* ========================================== */}
-      {/* 1. HERO SECTION WITH PHOTO COLLAGE & DOODLES */}
+      {/* 1. HERO SECTION WITH UPWARD PARTICLES & ARTWORK */}
       {/* ========================================== */}
-      <section className="relative w-full max-w-7xl xl:max-w-[1440px] 2xl:max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 pt-4 sm:pt-6 lg:pt-8 pb-8 lg:pb-12 lg:min-h-[calc(100vh-5rem)] flex flex-col justify-center">
+      <div className="relative w-full overflow-hidden">
+        {/* Upward-Flowing Digital Sparkles & Atmospheric Particles (Bottom -> Top) */}
+        <HeroSparkles density="medium" showOrbitalArc={true} />
+
+        <section className="relative z-10 w-full max-w-7xl xl:max-w-[1440px] 2xl:max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 pt-4 sm:pt-6 lg:pt-8 pb-8 lg:pb-12 lg:min-h-[calc(100vh-5rem)] flex flex-col justify-center">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-6 xl:gap-8 items-center my-auto">
 
           {/* LEFT COLUMN: Hero Copy & CTAs */}
@@ -376,7 +467,7 @@ export default function Home() {
             }
             className="lg:col-span-7 xl:col-span-7 relative flex items-center justify-center lg:justify-end mt-6 lg:mt-0 select-none z-10"
           >
-            <div className="relative w-full lg:w-[112%] xl:w-[118%] 2xl:w-[124%] lg:-translate-x-1 xl:-translate-x-3 flex items-center justify-center">
+            <div className="relative w-full flex items-center justify-center">
 
               {/* Soft Atmospheric Ambient Backing Glow (Enlarged) */}
               <motion.div
@@ -392,51 +483,76 @@ export default function Home() {
                 className="absolute -inset-10 sm:-inset-16 lg:-inset-24 bg-gradient-to-tr from-[#0050CB]/20 via-sky-300/25 to-indigo-200/20 dark:from-blue-600/25 dark:via-sky-400/20 dark:to-indigo-500/20 rounded-full blur-3xl pointer-events-none -z-10"
               />
 
-              {/* Main Hero Artwork — scaled up, large, prominent & seamlessly integrated */}
-              <div className="relative w-full hero-seamless-mask scale-100 sm:scale-[1.03] lg:scale-[1.10] xl:scale-[1.16] 2xl:scale-[1.20] origin-center lg:origin-right transition-transform duration-300">
-                {/* Light Theme Hero Banner */}
+              {/* Main Hero Artwork — 100% Transparent Cutout seamlessly integrated */}
+              <div className="relative w-full flex items-center justify-center origin-center transition-transform duration-300">
                 <AppImage
-                  src="/hero-banner-seamless.png"
-                  alt="GGPS School Modern Management Platform"
-                  width={1376}
-                  height={768}
+                  src="/home.png"
+                  alt="GGPS School Student"
+                  width={1832}
+                  height={858}
                   priority
+                  unoptimized
                   sizes="(max-width: 768px) 100vw, (max-width: 1280px) 65vw, 60vw"
-                  className="w-full h-auto object-contain select-none pointer-events-none block dark:hidden"
-                />
-
-                {/* Dark Theme Hero Banner */}
-                <AppImage
-                  src="/hero-banner-dark-seamless.png"
-                  alt="GGPS School Modern Management Platform"
-                  width={1376}
-                  height={768}
-                  priority
-                  sizes="(max-width: 768px) 100vw, (max-width: 1280px) 65vw, 60vw"
-                  className="w-full h-auto object-contain select-none pointer-events-none hidden dark:block"
+                  className="w-full h-auto object-contain select-none pointer-events-none drop-shadow-[0_20px_40px_rgba(0,80,203,0.15)] dark:drop-shadow-[0_25px_50px_rgba(0,10,32,0.85)]"
                 />
               </div>
+
+              {/* 3D FLOATING NOTIFICATION CARDS (Futuristic Glassmorphism, 3D Perspective & Slow Elegant Floating) */}
+              <HeroFloatingNotificationCards />
 
             </div>
           </motion.div>
 
         </div>
       </section>
+      </div>
 
       {/* ========================================== */}
       {/* INFINITE ANIMATED TICKER MARQUEE RIBBON */}
       {/* ========================================== */}
-      <div className="w-full bg-[#0050CB] text-white py-3.5 overflow-hidden select-none shadow-md border-y border-blue-400/30">
+      <div className="relative w-full bg-gradient-to-r from-[#003487] via-[#0050CB] to-[#002B73] dark:from-[#000c28] dark:via-[#001444] dark:to-[#000a20] text-white py-3 sm:py-3.5 overflow-hidden select-none shadow-lg border-y border-blue-400/40 dark:border-blue-500/30">
+        {/* Soft edge blur masks for continuous flow */}
+        <div className="absolute inset-y-0 left-0 w-12 sm:w-20 bg-gradient-to-r from-[#003487] dark:from-[#000c28] to-transparent z-10 pointer-events-none" />
+        <div className="absolute inset-y-0 right-0 w-12 sm:w-20 bg-gradient-to-l from-[#002B73] dark:from-[#000a20] to-transparent z-10 pointer-events-none" />
+
         <motion.div
           animate={{ x: ['0%', '-50%'] }}
-          transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-          className="flex whitespace-nowrap gap-12 font-bold text-sm tracking-wide"
+          transition={{ duration: 32, repeat: Infinity, ease: "linear" }}
+          className="flex whitespace-nowrap gap-5 sm:gap-6 items-center"
         >
-          {[...marqueeItems, ...marqueeItems].map((item, idx) => (
-            <span key={idx} className="inline-flex items-center gap-2">
-              <span>{item}</span>
-              <span className="w-2 h-2 rounded-full bg-blue-300 opacity-60 ml-4" />
-            </span>
+          {[...marqueeFeatures, ...marqueeFeatures].map((item, idx) => (
+            <div key={idx} className="inline-flex items-center gap-3 shrink-0">
+              {/* Glassmorphic Capsule */}
+              <div className="group inline-flex items-center gap-2.5 px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-full bg-white/[0.09] hover:bg-white/[0.18] border border-white/[0.15] backdrop-blur-md transition-all duration-200 shadow-xs">
+                {/* Icon */}
+                <span className="text-sm sm:text-base leading-none select-none drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)]">
+                  {item.icon}
+                </span>
+
+                {/* Badge Tag */}
+                <span className={`text-[9.5px] sm:text-[10px] font-mono font-bold tracking-wider uppercase px-2 py-0.5 rounded-full border ${item.badgeColor} shadow-2xs`}>
+                  {item.badge}
+                </span>
+
+                {/* Main Title */}
+                <span className={`text-xs sm:text-[13.5px] tracking-tight ${item.titleColor}`}>
+                  {item.title}
+                </span>
+
+                {/* Separator pipe */}
+                <span className="text-white/30 text-xs font-light select-none">|</span>
+
+                {/* Highlighted Accent Text */}
+                <span className={`text-[11px] sm:text-xs tracking-normal ${item.highlightColor}`}>
+                  {item.highlight}
+                </span>
+              </div>
+
+              {/* Glowing diamond sparkle separator */}
+              <span className={`text-[10px] sm:text-xs ${item.sparkleColor} opacity-80 drop-shadow-[0_0_8px_currentColor] select-none mx-1 sm:mx-1.5`}>
+                ✦
+              </span>
+            </div>
           ))}
         </motion.div>
       </div>
@@ -774,7 +890,15 @@ export default function Home() {
 
             <a
               href="#features"
-              className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-full bg-[#000E28] hover:bg-[#001438] text-white font-bold text-base shadow-md transition-all duration-300 hover:scale-105"
+              onClick={(e) => {
+                e.preventDefault();
+                const el = document.getElementById('features');
+                if (el) {
+                  el.scrollIntoView({ behavior: 'smooth' });
+                  window.history.pushState(null, '', '#features');
+                }
+              }}
+              className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-full bg-[#000E28] hover:bg-[#001438] text-white font-bold text-base shadow-md transition-all duration-300 hover:scale-105 cursor-pointer"
             >
               <span>Explore Features</span>
               <ArrowRight className="w-4 h-4" />
@@ -868,7 +992,7 @@ export default function Home() {
       {/* ========================================== */}
       {/* 4. "DESIGNED FOR MODERN ACADEMIC EXCELLENCE" SECTION (Exact Design) */}
       {/* ========================================== */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
+      <section id="features" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14 scroll-mt-24">
 
         {/* Sky-Blue / Cloud Rounded Banner Container matching Reference */}
         <div className="relative bg-gradient-to-r from-[#EBF3FE] via-[#F2F7FE] to-[#EAF3FE] dark:from-[#001438] dark:via-[#001742] dark:to-[#001233] rounded-[44px] sm:rounded-[56px] p-6 sm:p-10 lg:p-12 border border-blue-200/60 dark:border-blue-900/40 shadow-[0_15px_40px_rgba(0,80,203,0.06)] dark:shadow-[0_15px_40px_rgba(0,0,0,0.4)] overflow-hidden">
@@ -1653,130 +1777,88 @@ export default function Home() {
       </section>
 
       {/* ========================================== */}
-      {/* 7. BOTTOM CTA BANNER */}
+      {/* 7. BOTTOM CTA BANNER (Exact Reference Design) */}
       {/* ========================================== */}
-      {/* ========================================== */}
-      {/* 7. BOTTOM CTA BANNER (Coded Component Redesign) */}
-      {/* ========================================== */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14 mb-10">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 mb-8">
         <motion.div
-          custom={0}
-          variants={springZoomIn}
-          initial="hidden"
-          whileInView="visible"
+          initial={{ opacity: 0, y: prefersReduced ? 0 : 25 }}
+          whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          whileHover={{ scale: 1.008 }}
-          transition={{ duration: 0.3 }}
-          className="relative bg-gradient-to-r from-[#0047B6] via-[#004EB8] to-[#120D4E] text-white rounded-[32px] sm:rounded-[42px] lg:rounded-[50px] p-6 sm:p-8 lg:p-10 min-h-[220px] sm:min-h-[240px] lg:min-h-[250px] flex items-center overflow-hidden shadow-[0_20px_60px_rgba(0,71,182,0.3)] border-2 border-white/20 dark:border-blue-900/40"
+          transition={{ duration: 0.5 }}
+          className="relative w-full rounded-[28px] sm:rounded-[36px] lg:rounded-[44px] overflow-hidden shadow-[0_20px_60px_rgba(0,80,203,0.18)] dark:shadow-[0_20px_60px_rgba(0,0,0,0.6)] border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#000a1f] group"
         >
-          {/* Left Visual Artwork: Close-Up School Campus & Students */}
-          <div
-            className="absolute left-0 top-0 bottom-0 w-[36%] md:w-[32%] lg:w-[28%] max-w-[360px] hidden md:block overflow-hidden pointer-events-none select-none z-0"
-            style={{
-              maskImage: "linear-gradient(to right, rgba(0,0,0,1) 62%, rgba(0,0,0,0) 100%)",
-              WebkitMaskImage: "linear-gradient(to right, rgba(0,0,0,1) 62%, rgba(0,0,0,0) 100%)"
-            }}
-          >
+          {/* Exact Banner Graphic */}
+          <div className="relative w-full aspect-[1024/341]">
             <AppImage
-              src="/cta-students-school.jpg"
-              alt="GGPS School Students"
+              src="/ggps-bottom-cta-banner.png"
+              alt="Join GGPS School Today - A Brighter Future Awaits"
               fill
               priority
-              sizes="(max-width: 768px) 0px, 28vw"
-              className="object-cover object-bottom"
+              sizes="(max-width: 1280px) 100vw, 1280px"
+              className="object-cover w-full h-full select-none"
             />
-            {/* Soft blue gradient blend overlay */}
-            <div className="absolute inset-y-0 right-0 w-24 bg-gradient-to-r from-transparent to-[#0047B6]/80 pointer-events-none" />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#0047B6]/25 via-transparent to-transparent pointer-events-none" />
-          </div>
 
-          {/* Doodled Flying Airplane + "A Brighter Future Awaits" */}
-          <div className="absolute top-2.5 sm:top-3 lg:top-4 left-[18%] md:left-[20%] lg:left-[22%] xl:left-[22%] hidden md:flex items-center gap-2 pointer-events-none select-none z-10">
-            <svg width="56" height="32" viewBox="0 0 76 42" fill="none" className="shrink-0 drop-shadow">
-              <path
-                d="M5 34 C 15 38, 26 28, 24 18 C 22 8, 11 12, 17 21 C 23 29, 39 23, 52 10"
-                stroke="#93C5FD"
-                strokeWidth="1.8"
-                strokeDasharray="3.5 3.5"
-                strokeLinecap="round"
-              />
-              <g transform="translate(50, 2) rotate(-18)">
-                <polygon points="0,15 22,0 14,22 7,16" fill="#BFDBFE" />
-                <polygon points="0,15 22,0 8,14" fill="#FFFFFF" />
-                <polyline points="0,15 22,0 14,22 7,16 0,15" stroke="#FFFFFF" strokeWidth="0.8" />
-              </g>
-            </svg>
-            <span
-              style={{ fontFamily: "'Caveat', cursive, sans-serif" }}
-              className="text-white text-sm sm:text-base lg:text-lg font-bold tracking-tight rotate-[-4deg] whitespace-nowrap drop-shadow leading-tight"
+            {/* Interactive Clickable Hotspots overlaying the exact buttons */}
+            {/* 1. Apply for Admission Button Hotspot */}
+            <Link
+              href="/admissions"
+              className="absolute left-[45.8%] top-[64.5%] w-[18.2%] h-[13.5%] rounded-full cursor-pointer z-20 focus:outline-none focus:ring-2 focus:ring-white/80 transition-all hover:scale-105 active:scale-95 group/btn"
+              aria-label="Apply for Admission"
+              title="Apply for Admission"
             >
-              A Brighter<br />Future Awaits
-            </span>
-          </div>
+              <span className="sr-only">Apply for Admission</span>
+              <span className="absolute inset-0 rounded-full bg-white/0 hover:bg-white/20 transition-colors" />
+            </Link>
 
-          {/* Center Main Content (Positioned with clear breathing room from doodle) */}
-          <div className="relative z-10 w-full md:w-auto md:ml-[43%] lg:ml-[44%] xl:ml-[44%] max-w-xl flex flex-col justify-center">
-            {/* Tagline Pill */}
-            <div className="self-start inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full border border-sky-300/40 bg-sky-400/15 text-sky-200 text-[11px] font-extrabold tracking-wider uppercase mb-2 select-none backdrop-blur-sm">
-              <span>&lt; READY TO GET STARTED? &gt;</span>
-            </div>
-
-            {/* Main Headline */}
-            <h2 className="text-2xl sm:text-3xl lg:text-[34px] xl:text-[36px] font-black text-white tracking-tight leading-[1.15] mb-2 lg:whitespace-nowrap">
-              Join GGPS School Today
-            </h2>
-
-            {/* Subtitle */}
-            <p className="text-blue-100/90 text-xs sm:text-sm lg:text-[14px] leading-relaxed mb-4 font-normal max-w-lg">
-              Give your school the tools it needs to grow, succeed and make a lasting impact.
-            </p>
-
-            {/* Action Buttons */}
-            <div className="flex flex-wrap items-center gap-3 sm:gap-3.5">
-              {/* Primary Button */}
-              <Link
-                href="/admissions"
-                className="group relative inline-flex items-center justify-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 rounded-full bg-white hover:bg-blue-50 text-[#0050CB] font-extrabold text-xs sm:text-sm shadow-[0_4px_18px_rgba(0,0,0,0.18)] transition-all duration-300 hover:scale-[1.04] active:scale-95"
-              >
-                <span>Apply for Admission</span>
-                <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
-              </Link>
-
-              {/* Secondary Button */}
-              <Link
-                href="/login"
-                className="inline-flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 sm:py-3 rounded-full bg-[#002D7A]/50 hover:bg-[#002D7A]/80 border border-white/40 hover:border-white/70 text-white font-bold text-xs sm:text-sm transition-all duration-300 hover:scale-[1.04] active:scale-95 backdrop-blur-sm shadow-sm"
-              >
-                <div className="w-4 h-4 rounded-full border-[1.5px] border-white/90 flex items-center justify-center text-[8px]">
-                  <div className="w-1.5 h-1.5 rounded-full bg-white" />
-                </div>
-                <span>Admin Sign In</span>
-              </Link>
-            </div>
-          </div>
-
-          {/* Right Side Looping Trail + "Education Builds Tomorrow ♡" */}
-          <div className="absolute right-4 sm:right-6 lg:right-8 bottom-3 sm:bottom-4 hidden lg:flex items-center gap-2.5 pointer-events-none select-none z-10">
-            {/* Looping dotted trajectory */}
-            <div className="relative">
-              <svg width="90" height="42" viewBox="0 0 110 52" fill="none" className="text-sky-300/80">
-                <path
-                  d="M5 38 C 25 44, 52 48, 66 30 C 76 17, 62 8, 54 18 C 45 29, 66 42, 102 20"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeDasharray="3.5 3.5"
-                  strokeLinecap="round"
-                />
-                {/* Yellow star / sparkle */}
-                <polygon points="96,15 97.5,18.5 101,18.5 98,20.5 99,24 96,21.5 93,24 94,20.5 91,18.5 94.5,18.5" fill="#FDE047" />
-              </svg>
-            </div>
-            <span
-              style={{ fontFamily: "'Caveat', cursive, sans-serif" }}
-              className="text-white text-lg sm:text-xl lg:text-[24px] font-bold leading-tight tracking-tight rotate-[6deg] whitespace-nowrap drop-shadow"
+            {/* 2. Admin Sign In Button Hotspot */}
+            <Link
+              href="/login"
+              className="absolute left-[64.8%] top-[64.5%] w-[13.8%] h-[13.5%] rounded-full cursor-pointer z-20 focus:outline-none focus:ring-2 focus:ring-white/80 transition-all hover:scale-105 active:scale-95 group/btn"
+              aria-label="Admin Sign In"
+              title="Admin Sign In"
             >
-              Education<br />Builds<br />Tomorrow ♡
-            </span>
+              <span className="sr-only">Admin Sign In</span>
+              <span className="absolute inset-0 rounded-full bg-white/0 hover:bg-white/20 transition-colors" />
+            </Link>
+
+            {/* 3. Top-Left GGPS School Logo Hotspot */}
+            <Link
+              href="/"
+              className="absolute left-[5.5%] top-[4%] w-[19%] h-[19%] rounded-xl cursor-pointer z-20 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              aria-label="GGPS School Home"
+            >
+              <span className="sr-only">GGPS School Home</span>
+            </Link>
+
+            {/* 4. Top-Right Badges Hotspot (Learn, Grow, Achieve) -> scrolls to #features */}
+            <a
+              href="#features"
+              onClick={(e) => {
+                e.preventDefault();
+                document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="absolute right-[5%] top-[4.5%] w-[24%] h-[13%] rounded-full cursor-pointer z-20"
+              aria-label="Learn, Grow, Achieve Features"
+            >
+              <span className="sr-only">Explore Features</span>
+            </a>
+          </div>
+
+          {/* Mobile-friendly accessible button fallback bar on extra small screens */}
+          <div className="sm:hidden p-4 bg-[#0047B6] dark:bg-[#001438] flex flex-col gap-2.5 border-t border-white/10">
+            <Link
+              href="/admissions"
+              className="w-full py-3 rounded-full bg-white text-[#0050CB] font-extrabold text-sm text-center shadow-md flex items-center justify-center gap-2"
+            >
+              <span>Apply for Admission</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+            <Link
+              href="/login"
+              className="w-full py-2.5 rounded-full bg-white/15 border border-white/40 text-white font-bold text-xs text-center flex items-center justify-center gap-1.5"
+            >
+              <span>Admin Sign In</span>
+            </Link>
           </div>
         </motion.div>
       </section>

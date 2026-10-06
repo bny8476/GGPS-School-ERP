@@ -80,7 +80,6 @@ import {
   ExternalLink,
   MessageCircle,
   Printer,
-  Bus,
   AlertTriangle,
   HeartPulse,
   ShieldAlert,
@@ -89,6 +88,17 @@ import {
   Minimize2
 } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
+import {
+  NAME_REGEX,
+  EMAIL_REGEX,
+  TEN_DIGIT_PHONE_REGEX,
+  preventNonAlphaKey,
+  preventNonNumericKey,
+  sanitizeNameInput,
+  sanitizePhoneInput,
+  handleNamePaste,
+  handlePhonePaste,
+} from '@/lib/validationUtils';
 import { useTheme } from '@/context/ThemeContext';
 import NotificationDrawer from '@/components/ui/NotificationDrawer';
 import AnimatedNumber from '@/components/ui/AnimatedNumber';
@@ -561,7 +571,7 @@ const initialTeacherLeaves: TeacherLeaveItem[] = [
 export interface SchoolDutyItem {
   id: string;
   dutyName: string;
-  category: 'Campus Supervision' | 'Assembly & Gate' | 'Cafeteria & Recess' | 'Bus Dispersal';
+  category: 'Campus Supervision' | 'Assembly & Gate' | 'Cafeteria & Recess' | 'Gate Dismissal';
   venue: string;
   time: string;
   daysSchedule: string;
@@ -641,9 +651,9 @@ const initialSchoolDuties: SchoolDutyItem[] = [
   },
   {
     id: 'duty-03',
-    dutyName: 'Afternoon Bus Dispersal & Boarding Monitor',
-    category: 'Bus Dispersal',
-    venue: 'Bus Bay Routes 04, 07 & 11 (Kindergarten)',
+    dutyName: 'Afternoon Gate Dismissal & Parent Handover',
+    category: 'Gate Dismissal',
+    venue: 'Main Gate & Early Years Reception Area',
     time: '02:45 PM - 03:15 PM',
     daysSchedule: 'Tuesdays & Fridays',
     partnerName: 'Amit Pathak',
@@ -651,7 +661,7 @@ const initialSchoolDuties: SchoolDutyItem[] = [
     partnerPhone: '+91 97654 32109',
     status: 'Upcoming',
     priority: 'Standard',
-    guidelines: 'Verify student ID tags and bus route cards before escorting children into the designated yellow school buses.',
+    guidelines: 'Verify authorized parent / guardian pickup ID badges before handing over children at the exit gates.',
   },
 ];
 
@@ -881,7 +891,7 @@ const initialParentThreads: ParentMessageThread[] = [
     phone: '+91 98765 12345',
     avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
     unreadCount: 1,
-    lastMessage: 'Good morning Ma’am, will the school bus drop off Ananya at the regular stop today?',
+    lastMessage: 'Good morning Ma’am, will Ananya need her art kit for the activity class today?',
     lastMessageTime: 'Today, 08:05 AM',
     lastSender: 'Parent',
     ptmSlot: 'Saturday, 10:00 AM - 10:15 AM',
@@ -894,7 +904,7 @@ const initialParentThreads: ParentMessageThread[] = [
     ptmConfirmedAt: 'Today, 08:10 AM',
     messages: [
       { id: 'm-1', sender: 'Teacher', text: 'Hello Mrs. Patel, please remember to send Ananya’s family photo collage by Thursday.', timestamp: 'Tuesday, 02:00 PM' },
-      { id: 'm-2', sender: 'Parent', text: 'Good morning Ma’am, will the school bus drop off Ananya at the regular stop today?', timestamp: 'Today, 08:05 AM' },
+      { id: 'm-2', sender: 'Parent', text: 'Good morning Ma’am, will Ananya need her art kit for the activity class today?', timestamp: 'Today, 08:05 AM' },
     ],
   },
   {
@@ -2809,6 +2819,26 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
+    const first = teacherProfile.firstName?.trim();
+    const last = teacherProfile.lastName?.trim();
+    if (!first) {
+      toast.error('Please enter your first name.');
+      return;
+    }
+    if (!NAME_REGEX.test(first)) {
+      toast.error('First name can only contain letters, spaces, hyphens, apostrophes, and periods.');
+      return;
+    }
+    if (last && !NAME_REGEX.test(last)) {
+      toast.error('Last name can only contain letters, spaces, hyphens, apostrophes, and periods.');
+      return;
+    }
+    const cleanedPhone = teacherProfile.phoneNumber ? sanitizePhoneInput(teacherProfile.phoneNumber) : '';
+    if (cleanedPhone && !TEN_DIGIT_PHONE_REGEX.test(cleanedPhone)) {
+      toast.error('Phone number must be a valid 10-digit number.');
+      return;
+    }
+
     setIsSavingProfile(true);
     try {
       const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
@@ -2817,9 +2847,9 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
         credentials: 'include',
         headers: getAuthHeaders(),
         body: JSON.stringify({
-          firstName: teacherProfile.firstName,
-          lastName: teacherProfile.lastName,
-          phoneNumber: teacherProfile.phoneNumber,
+          firstName: first,
+          lastName: last,
+          phoneNumber: cleanedPhone,
           qualification: teacherProfile.qualification,
           experienceYears: teacherProfile.experienceYears,
           designation: teacherProfile.designation,
@@ -2844,12 +2874,16 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      toast.error('New password and confirm password do not match');
+    if (!passwordForm.currentPassword) {
+      toast.error('Please enter your current password');
       return;
     }
-    if (passwordForm.newPassword.length < 6) {
-      toast.error('Password must be at least 6 characters long');
+    if (!passwordForm.newPassword || passwordForm.newPassword.length < 8) {
+      toast.error('New password must be at least 8 characters long');
+      return;
+    }
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      toast.error('New password and confirm password do not match');
       return;
     }
 
@@ -2882,8 +2916,13 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
 
   const handleSendForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!forgotEmail) {
+    const trimmedEmail = forgotEmail?.trim().toLowerCase();
+    if (!trimmedEmail) {
       toast.error('Please enter your registered email address');
+      return;
+    }
+    if (!EMAIL_REGEX.test(trimmedEmail)) {
+      toast.error('Please enter a valid email address');
       return;
     }
 
@@ -2954,19 +2993,31 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
   const handleSaveStudent = (e: React.FormEvent) => {
     e.preventDefault();
     if (!editFormData) return;
-    if (!editFormData.name.trim() || !editFormData.rollNo.trim()) {
-      toast.error('Roll number and Name are required');
+    const trimmedName = editFormData.name?.trim();
+    if (!trimmedName || !NAME_REGEX.test(trimmedName)) {
+      toast.error('Child name must only contain letters, spaces, hyphens, apostrophes, and periods.');
       return;
+    }
+    if (!editFormData.rollNo?.trim()) {
+      toast.error('Roll number is required.');
+      return;
+    }
+    if (editFormData.phone) {
+      const cleanedPhone = sanitizePhoneInput(editFormData.phone);
+      if (cleanedPhone && !TEN_DIGIT_PHONE_REGEX.test(cleanedPhone)) {
+        toast.error('Parent contact phone must be a valid 10-digit number.');
+        return;
+      }
     }
 
     setStudents((prev) =>
-      prev.map((s) => (s.id === editFormData.id ? { ...editFormData } : s))
+      prev.map((s) => (s.id === editFormData.id ? { ...editFormData, name: trimmedName } : s))
     );
     if (selectedStudent?.id === editFormData.id) {
-      setSelectedStudent({ ...editFormData });
+      setSelectedStudent({ ...editFormData, name: trimmedName });
     }
     setIsEditStudentModalOpen(false);
-    toast.success(`Updated details for "${editFormData.name}" (Roll #${editFormData.rollNo}) successfully!`);
+    toast.success(`Updated details for "${trimmedName}" (Roll #${editFormData.rollNo}) successfully!`);
     setEditFormData(null);
   };
 
@@ -6373,7 +6424,7 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
                   subtitle="Active weekly campus shifts"
                   icon={ShieldCheck}
                   color="blue"
-                  trend={{ text: "Gate, Recess & Buses", positive: true }}
+                  trend={{ text: "Gate, Recess & Grounds", positive: true }}
                   progressBar={{ percentage: 100, label: "All Posts Covered" }}
                 />
                 <StatCard
@@ -8169,7 +8220,9 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
                             type="text"
                             required
                             value={teacherProfile.firstName}
-                            onChange={(e) => setTeacherProfile({ ...teacherProfile, firstName: e.target.value })}
+                            onKeyDown={preventNonAlphaKey}
+                            onPaste={(e) => handleNamePaste(e, (clean) => setTeacherProfile((prev) => ({ ...prev, firstName: clean })))}
+                            onChange={(e) => setTeacherProfile({ ...teacherProfile, firstName: sanitizeNameInput(e.target.value) })}
                             className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent text-slate-800 dark:text-white"
                           />
                         </div>
@@ -8180,7 +8233,9 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
                             type="text"
                             required
                             value={teacherProfile.lastName}
-                            onChange={(e) => setTeacherProfile({ ...teacherProfile, lastName: e.target.value })}
+                            onKeyDown={preventNonAlphaKey}
+                            onPaste={(e) => handleNamePaste(e, (clean) => setTeacherProfile((prev) => ({ ...prev, lastName: clean })))}
+                            onChange={(e) => setTeacherProfile({ ...teacherProfile, lastName: sanitizeNameInput(e.target.value) })}
                             className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent text-slate-800 dark:text-white"
                           />
                         </div>
@@ -8207,14 +8262,17 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
                         <div>
                           <label className="font-bold text-slate-600 dark:text-slate-300 block mb-1 flex items-center gap-1.5">
                             <Phone className="w-3.5 h-3.5 text-emerald-600" />
-                            Mobile Phone Number (with Country Code)
+                            Mobile Phone Number (10 digits)
                           </label>
                           <input
                             type="tel"
+                            maxLength={10}
                             required
                             value={teacherProfile.phoneNumber}
-                            onChange={(e) => setTeacherProfile({ ...teacherProfile, phoneNumber: e.target.value })}
-                            placeholder="+91 98765 43210"
+                            onKeyDown={preventNonNumericKey}
+                            onPaste={(e) => handlePhonePaste(e, (clean) => setTeacherProfile((prev) => ({ ...prev, phoneNumber: clean })))}
+                            onChange={(e) => setTeacherProfile({ ...teacherProfile, phoneNumber: sanitizePhoneInput(e.target.value) })}
+                            placeholder="10-digit mobile number"
                             className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent text-slate-800 dark:text-white"
                           />
                           <p className="text-[10px] text-slate-400 mt-1">Used for emergency broadcasts and 2FA authentication.</p>
@@ -8537,8 +8595,8 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
 
                         {/* Password Checklist */}
                         <div className="flex items-center gap-4 mt-2 text-[10px]">
-                          <span className={`flex items-center gap-1 font-bold ${passwordForm.newPassword.length >= 6 ? 'text-emerald-600' : 'text-slate-400'}`}>
-                            {passwordForm.newPassword.length >= 6 ? '✓' : '○'} At least 6 characters
+                          <span className={`flex items-center gap-1 font-bold ${passwordForm.newPassword.length >= 8 ? 'text-emerald-600' : 'text-slate-400'}`}>
+                            {passwordForm.newPassword.length >= 8 ? '✓' : '○'} At least 8 characters
                           </span>
                           <span className={`flex items-center gap-1 font-bold ${/\d/.test(passwordForm.newPassword) ? 'text-emerald-600' : 'text-slate-400'}`}>
                             {/\d/.test(passwordForm.newPassword) ? '✓' : '○'} Contains number
@@ -8766,7 +8824,9 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
                         type="text"
                         required
                         value={editFormData.name}
-                        onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+                        onKeyDown={preventNonAlphaKey}
+                        onPaste={(e) => handleNamePaste(e, (clean) => setEditFormData((prev) => prev ? ({ ...prev, name: clean }) : null))}
+                        onChange={(e) => setEditFormData({ ...editFormData, name: sanitizeNameInput(e.target.value) })}
                         placeholder="e.g. Aarav Sharma"
                         className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-white font-bold focus:ring-2 focus:ring-[#0050CB]/20"
                       />
@@ -8916,11 +8976,14 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
                         Contact Phone *
                       </label>
                       <input
-                        type="text"
+                        type="tel"
+                        maxLength={10}
                         required
                         value={editFormData.phone || ''}
-                        onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
-                        placeholder="e.g. +91 98765 43210"
+                        onKeyDown={preventNonNumericKey}
+                        onPaste={(e) => handlePhonePaste(e, (clean) => setEditFormData((prev) => prev ? ({ ...prev, phone: clean }) : null))}
+                        onChange={(e) => setEditFormData({ ...editFormData, phone: sanitizePhoneInput(e.target.value) })}
+                        placeholder="10-digit mobile number"
                         className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-white"
                       />
                     </div>

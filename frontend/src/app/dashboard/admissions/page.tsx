@@ -3,21 +3,55 @@
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { 
-  GraduationCap, Plus, Download, Kanban, Table as TableIcon, 
-  Sparkles, CheckCircle2, Calendar, Phone, Mail, Clock, 
-  ArrowRight, Filter, ChevronRight, UserPlus, FileText, Check, AlertCircle, Eye, ShieldCheck,
-  UploadCloud, X, RefreshCw
+  GraduationCap, 
+  Plus, 
+  Download, 
+  Kanban, 
+  Table as TableIcon, 
+  Sparkles, 
+  CheckCircle2, 
+  Calendar, 
+  Phone, 
+  Mail, 
+  Clock, 
+  ArrowRight, 
+  Filter, 
+  ChevronRight, 
+  FileText, 
+  Check, 
+  AlertCircle, 
+  Eye, 
+  ShieldCheck,
+  CreditCard,
+  Search,
+  X,
+  RefreshCw,
+  SlidersHorizontal,
+  ChevronLeft,
+  ChevronsLeft,
+  ChevronsRight
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import AdminStatCard from '@/components/admin/AdminStatCard';
-import AdmissionKanban, { AdmissionApplication } from '@/components/admin/AdmissionKanban';
-import AdminDataTable, { Column } from '@/components/admin/AdminDataTable';
-import AddStudentModal from '@/components/admin/AddStudentModal';
+import AdmissionKanban, { AdmissionApplication, getApplicationStage, KANBAN_STAGES } from '@/components/admin/AdmissionKanban';
 import AdminEnquiriesManager from '@/components/admin/AdminEnquiriesManager';
-import { downloadFile } from '@/lib/fileDownload';
-import FilePreviewModal from '@/components/common/FilePreviewModal';
-import FileUploadModal from '@/components/common/FileUploadModal';
+import NewEnquiryModal from '@/components/admin/NewEnquiryModal';
+import NewApplicationModal from '@/components/admin/NewApplicationModal';
+import DocumentVerificationModal from '@/components/admin/DocumentVerificationModal';
+import FeePaymentModal from '@/components/admin/FeePaymentModal';
+import ConfirmAdmissionModal from '@/components/admin/ConfirmAdmissionModal';
+import ViewApplicationModal from '@/components/admin/ViewApplicationModal';
+import { getSocket } from '@/lib/socket';
+
+type ActiveModal = 
+  | null 
+  | 'new-enquiry' 
+  | 'new-application' 
+  | 'document-verification' 
+  | 'fee-payment' 
+  | 'confirm-admission' 
+  | 'view-application';
 
 function AdmissionsContent() {
   const searchParams = useSearchParams();
@@ -28,25 +62,22 @@ function AdmissionsContent() {
   const [applications, setApplications] = useState<AdmissionApplication[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'kanban' | 'table'>('kanban');
-  const [isAddApplicantOpen, setIsAddApplicantOpen] = useState(false);
-  const [selectedApplicantDocs, setSelectedApplicantDocs] = useState<AdmissionApplication | null>(null);
-  const [previewFile, setPreviewFile] = useState<any>(null);
-  const [uploadModalOpen, setUploadModalOpen] = useState(false);
-  const [activeUploadDocType, setActiveUploadDocType] = useState<string>('Birth Certificate');
-  const [docStatuses, setDocStatuses] = useState<Record<string, Record<string, 'Verified' | 'Pending' | 'Rejected' | 'Replacement Required'>>>({
-    app_5: {
-      birthCertificate: 'Verified',
-      transferCertificate: 'Verified',
-      addressProof: 'Verified',
-      photos: 'Verified',
-    },
-    app_1: {
-      birthCertificate: 'Verified',
-      transferCertificate: 'Pending',
-      addressProof: 'Replacement Required',
-      photos: 'Verified',
-    },
-  });
+
+  // Explicit Modal State Management (No ambiguous setOpen)
+  const [activeModal, setActiveModal] = useState<ActiveModal>(null);
+  const [selectedApplication, setSelectedApplication] = useState<AdmissionApplication | null>(null);
+
+  // Filters & Search for Application Forms tab
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedClass, setSelectedClass] = useState('ALL');
+  const [selectedStage, setSelectedStage] = useState('ALL');
+  const [selectedStatus, setSelectedStatus] = useState('ALL');
+  const [selectedPaymentStatus, setSelectedPaymentStatus] = useState('ALL');
+  const [selectedAcademicYear, setSelectedAcademicYear] = useState('ALL');
+
+  // Pagination for Application Forms table
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   useEffect(() => {
     if (tabParam) {
@@ -81,10 +112,13 @@ function AdmissionsContent() {
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
       const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
       const res = await fetch(`${apiBase}/api/admissions`, {
-        headers: { 'Authorization': `Bearer ${token || ''}` }
+        headers: { 
+          'Authorization': `Bearer ${token || ''}`,
+          'Content-Type': 'application/json'
+        }
       }).catch(() => null);
 
-      let loaded: any[] = [];
+      let loaded: AdmissionApplication[] = [];
       if (res && res.ok) {
         const raw = await res.json();
         loaded = Array.isArray(raw) ? raw : (raw.data || []);
@@ -93,7 +127,7 @@ function AdmissionsContent() {
       setApplications(loaded || []);
     } catch (error) {
       console.error('Failed to fetch admissions', error);
-      toast.error('Failed to load admissions');
+      toast.error('Failed to load admissions pipeline');
     } finally {
       setIsLoading(false);
     }
@@ -101,160 +135,249 @@ function AdmissionsContent() {
 
   useEffect(() => {
     fetchApplications();
+
+    // Realtime Socket updates
+    const socket = getSocket();
+    if (socket) {
+      const handleAdmissionNew = () => {
+        fetchApplications();
+      };
+      const handleAdmissionUpdated = () => {
+        fetchApplications();
+      };
+      socket.on('admission:new', handleAdmissionNew);
+      socket.on('admission:enquiry:converted', handleAdmissionNew);
+      socket.on('admission:status-updated', handleAdmissionUpdated);
+
+      return () => {
+        socket.off('admission:new', handleAdmissionNew);
+        socket.off('admission:enquiry:converted', handleAdmissionNew);
+        socket.off('admission:status-updated', handleAdmissionUpdated);
+      };
+    }
   }, []);
 
-  const updateStatus = async (id: string, status: string) => {
+  // Stage change handler
+  const updateStage = async (id: string, stage: string) => {
     try {
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
       const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
-      await fetch(`${apiBase}/api/admissions/${id}`, {
+      
+      let status = stage;
+      if (stage === 'Confirmed') status = 'Admission Confirmed';
+      else if (stage === 'Approved') status = 'Approved';
+      else if (stage === 'Fee Pending') status = 'Fee Pending';
+      else if (stage === 'Documents') status = 'Documents Pending';
+      else if (stage === 'Assessment') status = 'Assessment Pending';
+      else if (stage === 'Interview') status = 'Interview Scheduled';
+      else if (stage === 'Review') status = 'Under Review';
+      else if (stage === 'Application') status = 'Submitted';
+      else if (stage === 'Enquiry') status = 'New Inquiry';
+
+      const res = await fetch(`${apiBase}/api/admissions/${id}`, {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token || ''}` 
         },
-        body: JSON.stringify({ status })
-      }).catch(() => null);
+        body: JSON.stringify({ stage, status })
+      });
 
-      toast.success(`Applicant advanced to "${status}"`);
-      setApplications(prev => prev.map(a => a._id === id ? { ...a, status } : a));
+      if (!res.ok) {
+        throw new Error('Failed to update stage');
+      }
+
+      toast.success(`Application advanced to "${stage}"`);
+      setApplications(prev => prev.map(a => a._id === id ? { ...a, stage, status } : a));
     } catch (error) {
       console.error(error);
-      toast.error('Network error updating status');
+      toast.error('Network error updating pipeline stage');
     }
   };
 
+  // Metrics Row Calculation
   const metrics = useMemo(() => {
     return {
       total: applications.length,
-      newInquiry: applications.filter(a => a.status === 'New Inquiry').length,
-      demoScheduled: applications.filter(a => a.status === 'Demo Class Scheduled').length,
-      interested: applications.filter(a => a.status === 'Interested').length,
-      confirmed: applications.filter(a => a.status === 'Admission Confirmed').length,
+      applicationsInReview: applications.filter(a => {
+        const stage = getApplicationStage(a);
+        return stage === 'Documents' || stage === 'Assessment' || stage === 'Interview' || stage === 'Review';
+      }).length,
+      approvedOffers: applications.filter(a => {
+        const stage = getApplicationStage(a);
+        return stage === 'Approved' || stage === 'Fee Pending';
+      }).length,
+      confirmed: applications.filter(a => {
+        const stage = getApplicationStage(a);
+        return stage === 'Confirmed' || a.status === 'Admission Confirmed';
+      }).length,
     };
   }, [applications]);
 
-  const handleExport = async () => {
-    await downloadFile(
-      '/api/v1/reports/export/admissions?format=csv',
-      `GGPS-Admissions-Pipeline-${new Date().toISOString().split('T')[0]}.csv`
-    );
+  // Filtered Applications for Application Forms Tab & Export
+  const filteredApplications = useMemo(() => {
+    return applications.filter((app) => {
+      // 1. Search query
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase().trim();
+        const childName = `${app.childFirstName} ${app.childLastName}`.toLowerCase();
+        const parentName = (app.parentName || '').toLowerCase();
+        const appNo = (app.applicationNumber || '').toLowerCase();
+        const phone = (app.contactNumber || app.parentPhone || '').toLowerCase();
+        const email = (app.email || app.parentEmail || '').toLowerCase();
+        if (
+          !childName.includes(q) &&
+          !parentName.includes(q) &&
+          !appNo.includes(q) &&
+          !phone.includes(q) &&
+          !email.includes(q)
+        ) {
+          return false;
+        }
+      }
+
+      // 2. Class filter
+      if (selectedClass !== 'ALL' && app.gradeAppliedFor !== selectedClass) {
+        return false;
+      }
+
+      // 3. Stage filter
+      if (selectedStage !== 'ALL') {
+        const stage = getApplicationStage(app);
+        if (stage !== selectedStage) return false;
+      }
+
+      // 4. Status filter
+      if (selectedStatus !== 'ALL' && app.status !== selectedStatus) {
+        return false;
+      }
+
+      // 5. Payment status filter
+      if (selectedPaymentStatus !== 'ALL') {
+        const feeStatus = app.feeStatus || 'Pending';
+        if (feeStatus !== selectedPaymentStatus) return false;
+      }
+
+      // 6. Academic year filter
+      if (selectedAcademicYear !== 'ALL' && app.academicYear !== selectedAcademicYear) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [
+    applications,
+    searchQuery,
+    selectedClass,
+    selectedStage,
+    selectedStatus,
+    selectedPaymentStatus,
+    selectedAcademicYear,
+  ]);
+
+  // Paginated applications for Table View
+  const paginatedApplications = useMemo(() => {
+    const startIndex = (currentPage - 1) * pageSize;
+    return filteredApplications.slice(startIndex, startIndex + pageSize);
+  }, [filteredApplications, currentPage, pageSize]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredApplications.length / pageSize));
+
+  // Export CSV respecting filters
+  const handleExportCSV = () => {
+    if (filteredApplications.length === 0) {
+      toast.error('No applications to export');
+      return;
+    }
+
+    const headers = [
+      'Application Number',
+      'Child First Name',
+      'Child Last Name',
+      'Class Applied',
+      'Academic Year',
+      'Parent Name',
+      'Phone Number',
+      'Email',
+      'Pipeline Stage',
+      'Application Status',
+      'Document Status',
+      'Fee Status',
+      'Fee Amount',
+      'Fee Paid',
+      'Balance Due',
+      'Created Date'
+    ];
+
+    const rows = filteredApplications.map(app => {
+      const allDocsVerified = app.documents && app.documents.length > 0 && app.documents.every(d => d.status === 'Verified');
+      const feeAmount = app.feeAmount || 25000;
+      const feePaid = app.feePaid || 0;
+      const balance = Math.max(0, feeAmount - feePaid);
+
+      return [
+        `"${app.applicationNumber || 'APP-2026'}"`,
+        `"${app.childFirstName}"`,
+        `"${app.childLastName !== '-' ? app.childLastName : ''}"`,
+        `"${app.gradeAppliedFor || 'LKG'}"`,
+        `"${app.academicYear || '2026–2027'}"`,
+        `"${app.parentName || ''}"`,
+        `"${app.contactNumber || app.parentPhone || ''}"`,
+        `"${app.email || app.parentEmail || ''}"`,
+        `"${getApplicationStage(app)}"`,
+        `"${app.status || 'New'}"`,
+        `"${allDocsVerified ? 'Verified' : 'Pending'}"`,
+        `"${app.feeStatus || 'Pending'}"`,
+        feeAmount,
+        feePaid,
+        balance,
+        `"${app.createdAt ? new Date(app.createdAt).toLocaleDateString('en-GB') : ''}"`
+      ].join(',');
+    });
+
+    const csvContent = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `GGPS-Admissions-${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast.success(`Exported ${filteredApplications.length} admission applications to CSV`);
   };
 
-  const columns: Column<AdmissionApplication>[] = [
-    {
-      header: 'Applicant Child',
-      accessorKey: 'childFirstName',
-      sortable: true,
-      cell: (row: AdmissionApplication) => (
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-linear-to-br from-[#0050CB] to-[#002772] text-white flex items-center justify-center font-black text-xs shadow-xs shrink-0">
-            {row.childFirstName?.[0] || 'A'}
-          </div>
-          <div>
-            <span className="font-bold text-[#000E28] dark:text-white block">
-              {row.childFirstName} {row.childLastName}
-            </span>
-            <span className="text-[11px] text-slate-500">
-              Inquiry: {row.createdAt ? new Date(row.createdAt).toLocaleDateString('en-GB') : 'Recent'}
-            </span>
-          </div>
-        </div>
-      )
-    },
-    {
-      header: 'Grade Applied',
-      accessorKey: 'gradeAppliedFor',
-      sortable: true,
-      cell: (row: AdmissionApplication) => (
-        <span className="px-2.5 py-1 rounded-lg bg-[#E5EEFF] dark:bg-[#0050CB]/25 text-[#0050CB] dark:text-[#38BDF8] font-bold text-xs">
-          Class {row.gradeAppliedFor || 'Pre-KG'}
-        </span>
-      )
-    },
-    {
-      header: 'Parent Contact',
-      cell: (row: AdmissionApplication) => (
-        <div className="text-xs">
-          <span className="font-bold text-[#000E28] dark:text-white block">{row.parentName}</span>
-          <a href={`tel:${row.parentPhone}`} className="text-slate-500 hover:text-[#0050CB] inline-flex items-center gap-1 mt-0.5">
-            <Phone className="w-3 h-3 text-[#FF690C]" />
-            <span>{row.parentPhone || '+91 98000 00000'}</span>
-          </a>
-        </div>
-      )
-    },
-    {
-      header: 'Pipeline Stage',
-      accessorKey: 'status',
-      sortable: true,
-      cell: (row: AdmissionApplication) => {
-        const stageColors: Record<string, string> = {
-          'New': 'bg-blue-50 text-blue-700 border-blue-200',
-          'New Inquiry': 'bg-blue-50 text-blue-700 border-blue-200',
-          'Follow-up Pending': 'bg-indigo-50 text-indigo-700 border-indigo-200',
-          'Demo Class Scheduled': 'bg-amber-50 text-amber-700 border-amber-200',
-          'Interested': 'bg-purple-50 text-purple-700 border-purple-200',
-          'Admission Confirmed': 'bg-emerald-50 text-emerald-700 border-emerald-200',
-        };
-        return (
-          <span className={`px-2.5 py-1 rounded-full text-xs font-bold border ${stageColors[row.status] || 'bg-slate-100 text-slate-600'}`}>
-            {row.status}
-          </span>
-        );
-      }
-    },
-    {
-      header: 'Advance Pipeline',
-      className: 'text-right',
-      cell: (row: AdmissionApplication) => (
-        <div className="flex items-center justify-end gap-1.5">
-          {(row.status === 'New Inquiry' || row.status === 'New') && (
-            <button
-              onClick={() => updateStatus(row._id, 'Follow-up Pending')}
-              className="px-3 py-1 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs transition-colors cursor-pointer"
-            >
-              Follow-up →
-            </button>
-          )}
-          {row.status === 'Follow-up Pending' && (
-            <button
-              onClick={() => updateStatus(row._id, 'Demo Class Scheduled')}
-              className="px-3 py-1 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold text-xs transition-colors cursor-pointer"
-            >
-              Schedule Demo →
-            </button>
-          )}
-          {row.status === 'Demo Class Scheduled' && (
-            <button
-              onClick={() => updateStatus(row._id, 'Interested')}
-              className="px-3 py-1 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold text-xs transition-colors cursor-pointer"
-            >
-              Mark Interested →
-            </button>
-          )}
-          {row.status === 'Interested' && (
-            <button
-              onClick={() => updateStatus(row._id, 'Admission Confirmed')}
-              className="px-3 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-all shadow-xs cursor-pointer"
-            >
-              Confirm Admission ✓
-            </button>
-          )}
-          {row.status === 'Admission Confirmed' && (
-            <span className="text-emerald-600 font-bold text-xs flex items-center gap-1">
-              <CheckCircle2 className="w-3.5 h-3.5" /> Enrolled
-            </span>
-          )}
-        </div>
-      )
-    }
-  ];
+  // Quick Action Modal Openers
+  const openViewApplication = (app: AdmissionApplication) => {
+    setSelectedApplication(app);
+    setActiveModal('view-application');
+  };
+
+  const openVerifyDocs = (app: AdmissionApplication) => {
+    setSelectedApplication(app);
+    setActiveModal('document-verification');
+  };
+
+  const openRecordFee = (app: AdmissionApplication) => {
+    setSelectedApplication(app);
+    setActiveModal('fee-payment');
+  };
+
+  const openConfirmAdmission = (app: AdmissionApplication) => {
+    setSelectedApplication(app);
+    setActiveModal('confirm-admission');
+  };
+
+  const closeAllModals = () => {
+    setActiveModal(null);
+    setSelectedApplication(null);
+  };
 
   return (
     <div className="space-y-7">
       
-      {/* 1. Header with Breadcrumb & Actions */}
+      {/* 1. Header with Breadcrumb & Direct Action Buttons */}
       <AdminPageHeader
         title="Admissions & Applicant CRM"
         subtitle="Track prospective admissions, campus tours, entrance evaluations, and confirmed enrollments."
@@ -267,18 +390,28 @@ function AdmissionsContent() {
         actions={
           <div className="flex items-center gap-2">
             <button
-              onClick={handleExport}
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#001438] hover:bg-slate-50 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all shadow-xs"
+              type="button"
+              onClick={handleExportCSV}
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#001438] hover:bg-slate-50 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all shadow-xs cursor-pointer"
             >
               <Download className="w-4 h-4 text-slate-400" />
               <span>Export CSV</span>
             </button>
             <button
-              onClick={() => setIsAddApplicantOpen(true)}
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#0050CB] hover:bg-[#0041A8] text-white text-xs font-bold transition-all shadow-xs shadow-[#0050CB]/25"
+              type="button"
+              onClick={() => setActiveModal('new-enquiry')}
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-white dark:bg-[#001438] hover:bg-slate-50 border border-[#0050CB]/30 text-[#0050CB] dark:text-[#38BDF8] text-xs font-bold transition-all shadow-xs cursor-pointer"
+            >
+              <Phone className="w-4 h-4 text-[#FF690C]" />
+              <span>+ New Enquiry</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveModal('new-application')}
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#0050CB] hover:bg-[#0041A8] text-white text-xs font-bold transition-all shadow-xs shadow-[#0050CB]/25 cursor-pointer"
             >
               <Plus className="w-4 h-4" />
-              <span>+ New Inquiry</span>
+              <span>+ New Application</span>
             </button>
           </div>
         }
@@ -289,33 +422,33 @@ function AdmissionsContent() {
         <AdminStatCard
           label="Total Pipeline"
           value={metrics.total}
-          supportingText="Inquiries logged for 2026-27"
+          supportingText="Active applications in intake"
           icon={GraduationCap}
           variant="blue"
-          trend={{ value: "+14.2%", isPositive: true, period: "vs last term" }}
+          trend={{ value: "+14.2%", isPositive: true, period: "vs last intake" }}
         />
         <AdminStatCard
-          label="Campus Tours & Demos"
-          value={metrics.demoScheduled}
-          supportingText="Interviews scheduled this week"
+          label="In Assessment & Review"
+          value={metrics.applicationsInReview}
+          supportingText="Document verification & interviews"
           icon={Calendar}
           variant="orange"
           progress={65}
         />
         <AdminStatCard
-          label="High Interest / Qualified"
-          value={metrics.interested}
-          supportingText="Ready for final offer letters"
+          label="Offers Issued / Fee Pending"
+          value={metrics.approvedOffers}
+          supportingText="Offer letter sent, seat fee awaiting"
           icon={Sparkles}
           variant="indigo"
         />
         <AdminStatCard
-          label="Confirmed Admissions"
+          label="Confirmed & Enrolled"
           value={metrics.confirmed}
-          supportingText="Seat fees collected & admitted"
+          supportingText="Student records created & enrolled"
           icon={CheckCircle2}
           variant="emerald"
-          trend={{ value: "+8.5%", isPositive: true, period: "68% conversion" }}
+          trend={{ value: "+8.5%", isPositive: true, period: "Conversion" }}
         />
       </div>
 
@@ -348,385 +481,776 @@ function AdmissionsContent() {
         })}
       </div>
 
-      {/* TAB CONTENT */}
-
-      {/* 1. PIPELINE TAB */}
+      {/* ========================================================
+          TAB 1: PIPELINE COMMAND (KANBAN)
+      ======================================================== */}
       {activeTab === 'pipeline' && (
         <div className="space-y-4">
-          <div className="bg-white/95 dark:bg-[#001438]/95 backdrop-blur-md rounded-2xl p-4 border border-slate-200/80 dark:border-slate-800/80 shadow-xs flex items-center justify-between">
+          <div className="bg-white/95 dark:bg-[#001438]/95 backdrop-blur-md rounded-2xl p-4 border border-slate-200/80 dark:border-slate-800/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h3 className="font-black text-sm text-[#000E28] dark:text-white">
-                Applicant Lifecycle Funnel
+              <h3 className="font-black text-sm text-[#000E28] dark:text-white flex items-center gap-2">
+                <span>9-Stage Admissions Lifecycle Funnel</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#E5EEFF] dark:bg-[#0050CB]/20 text-[#0050CB] font-mono">
+                  {applications.length} Candidates
+                </span>
               </h3>
               <p className="text-xs text-slate-500 mt-0.5">
-                Advance cards across stages or toggle to table mode for batch operations
+                Advance candidates from initial Enquiry through Verification, Assessment, Fee Payment, and final Confirmation.
               </p>
             </div>
 
-            <div className="flex items-center gap-1 p-1 rounded-xl bg-slate-100 dark:bg-[#000E28] border border-slate-200/60 dark:border-slate-800/80">
+            <div className="flex items-center gap-2">
               <button
-                onClick={() => setViewMode('kanban')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  viewMode === 'kanban'
-                    ? 'bg-white dark:bg-[#001438] text-[#0050CB] dark:text-[#38BDF8] shadow-xs'
-                    : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
-                }`}
+                type="button"
+                onClick={fetchApplications}
+                className="p-2 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-50 transition-colors cursor-pointer"
+                title="Refresh Pipeline"
               >
-                <Kanban className="w-3.5 h-3.5" />
-                <span>Kanban Board</span>
+                <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin text-[#0050CB]' : ''}`} />
               </button>
-              <button
-                onClick={() => setViewMode('table')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  viewMode === 'table'
-                    ? 'bg-white dark:bg-[#001438] text-[#0050CB] dark:text-[#38BDF8] shadow-xs'
-                    : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
-                }`}
-              >
-                <TableIcon className="w-3.5 h-3.5" />
-                <span>Table View</span>
-              </button>
+              <div className="flex items-center gap-1 p-1 rounded-xl bg-slate-100 dark:bg-[#000E28] border border-slate-200/60 dark:border-slate-800/80">
+                <button
+                  type="button"
+                  onClick={() => setViewMode('kanban')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    viewMode === 'kanban'
+                      ? 'bg-white dark:bg-[#001438] text-[#0050CB] dark:text-[#38BDF8] shadow-xs'
+                      : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                  }`}
+                >
+                  <Kanban className="w-3.5 h-3.5" />
+                  <span>Kanban</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMode('table')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    viewMode === 'table'
+                      ? 'bg-white dark:bg-[#001438] text-[#0050CB] dark:text-[#38BDF8] shadow-xs'
+                      : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                  }`}
+                >
+                  <TableIcon className="w-3.5 h-3.5" />
+                  <span>Table</span>
+                </button>
+              </div>
             </div>
           </div>
 
           {viewMode === 'kanban' ? (
             <AdmissionKanban
               applications={applications}
-              onStatusChange={updateStatus}
+              onStageChange={updateStage}
+              onSelectApplication={openViewApplication}
+              onVerifyDocs={openVerifyDocs}
+              onRecordFee={openRecordFee}
+              onConfirmAdmission={openConfirmAdmission}
             />
           ) : (
-            <AdminDataTable<AdmissionApplication>
-              data={applications}
-              columns={columns}
-              keyExtractor={(item) => item._id}
-              searchPlaceholder="Search applicant child, parent name, or contact number..."
-              isLoading={isLoading}
-            />
+            /* Table view of pipeline */
+            <div className="bg-white dark:bg-[#07152F] rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-xs">
+              <div className="overflow-x-auto custom-scrollbar">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-50 dark:bg-[#001438] border-b border-slate-200 dark:border-slate-800 text-slate-500 font-bold uppercase tracking-wider text-[11px]">
+                    <tr>
+                      <th className="p-3.5">Application No</th>
+                      <th className="p-3.5">Applicant Child</th>
+                      <th className="p-3.5">Parent / Contact</th>
+                      <th className="p-3.5">Class</th>
+                      <th className="p-3.5">Stage</th>
+                      <th className="p-3.5">Document Status</th>
+                      <th className="p-3.5">Fee Status</th>
+                      <th className="p-3.5 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                    {applications.map((app) => {
+                      const stage = getApplicationStage(app);
+                      return (
+                        <tr key={app._id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
+                          <td className="p-3.5 font-mono font-bold text-[#0050CB]">
+                            {app.applicationNumber || 'APP-2026'}
+                          </td>
+                          <td className="p-3.5">
+                            <span className="font-bold text-[#000E28] dark:text-white block">
+                              {app.childFirstName} {app.childLastName !== '-' ? app.childLastName : ''}
+                            </span>
+                            <span className="text-[11px] text-slate-400">
+                              {app.gender || 'Other'} • {app.academicYear || '2026–2027'}
+                            </span>
+                          </td>
+                          <td className="p-3.5">
+                            <span className="font-bold text-slate-800 dark:text-slate-200 block">{app.parentName}</span>
+                            <span className="text-[11px] font-mono text-slate-500">{app.contactNumber || app.parentPhone || 'N/A'}</span>
+                          </td>
+                          <td className="p-3.5">
+                            <span className="px-2.5 py-1 rounded-lg bg-[#E5EEFF] dark:bg-[#0050CB]/20 text-[#0050CB] font-bold">
+                              Class {app.gradeAppliedFor || 'LKG'}
+                            </span>
+                          </td>
+                          <td className="p-3.5">
+                            <span className="font-bold text-slate-800 dark:text-slate-200">
+                              {stage}
+                            </span>
+                          </td>
+                          <td className="p-3.5">
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                              app.documents?.every(d => d.status === 'Verified')
+                                ? 'bg-emerald-50 text-emerald-700'
+                                : 'bg-amber-50 text-amber-700'
+                            }`}>
+                              {app.documents?.every(d => d.status === 'Verified') ? '✓ Verified' : 'In Review'}
+                            </span>
+                          </td>
+                          <td className="p-3.5">
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                              app.feeStatus === 'Paid' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'
+                            }`}>
+                              {app.feeStatus || 'Pending'}
+                            </span>
+                          </td>
+                          <td className="p-3.5 text-right">
+                            <div className="flex items-center justify-end gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => openViewApplication(app)}
+                                className="p-1.5 rounded-lg border border-slate-200 text-slate-500 hover:text-[#0050CB] hover:bg-slate-50"
+                                title="View Details"
+                              >
+                                <Eye className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => openVerifyDocs(app)}
+                                className="p-1.5 rounded-lg border border-cyan-200 text-cyan-700 hover:bg-cyan-50"
+                                title="Verify Documents"
+                              >
+                                <ShieldCheck className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => openRecordFee(app)}
+                                className="p-1.5 rounded-lg border border-rose-200 text-rose-700 hover:bg-rose-50"
+                                title="Record Fee"
+                              >
+                                <CreditCard className="w-3.5 h-3.5" />
+                              </button>
+                              {app.status !== 'Admission Confirmed' && (
+                                <button
+                                  type="button"
+                                  onClick={() => openConfirmAdmission(app)}
+                                  className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs"
+                                >
+                                  Enroll ✓
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           )}
         </div>
       )}
 
-      {/* 2. ENQUIRIES TAB */}
+      {/* ========================================================
+          TAB 2: NEW ENQUIRIES (ADMIN ENQUIRIES MANAGER)
+      ======================================================== */}
       {activeTab === 'inquiries' && (
         <div className="space-y-4">
           <AdminEnquiriesManager />
         </div>
       )}
 
-      {/* 3. APPLICATION FORMS TAB */}
+      {/* ========================================================
+          TAB 3: APPLICATION FORMS TAB (ACTUAL ADMISSION APPS)
+      ======================================================== */}
       {activeTab === 'applications' && (
         <div className="space-y-4">
-          <div className="p-4 bg-white dark:bg-[#07152F] rounded-2xl border border-slate-200 dark:border-slate-800">
-            <h3 className="font-bold text-sm text-slate-800 dark:text-slate-100">Formal Admission Applications</h3>
-            <p className="text-xs text-slate-500">Submitted application packages undergoing entrance assessment and academic review.</p>
+          {/* Filters & Search Control Bar */}
+          <div className="p-4 bg-white dark:bg-[#07152F] rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3 shadow-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="relative flex-1 max-w-md">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  placeholder="Search application number, applicant child, parent name, or contact..."
+                  className="w-full h-9 pl-9 pr-3 rounded-xl bg-slate-50 dark:bg-[#001438] border border-slate-200 dark:border-slate-700 text-xs text-[#000E28] dark:text-white"
+                />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setActiveModal('new-application')}
+                  className="px-4 py-2 rounded-xl bg-[#0050CB] hover:bg-[#0041A8] text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>+ New Application</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Filter Dropdowns Row */}
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-2 border-t border-slate-100 dark:border-slate-800 text-xs">
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                  Class Filter
+                </label>
+                <select
+                  value={selectedClass}
+                  onChange={(e) => {
+                    setSelectedClass(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="w-full h-8 px-2 rounded-lg bg-slate-50 dark:bg-[#001438] border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-800 dark:text-slate-200"
+                >
+                  <option value="ALL">All Classes</option>
+                  {['Pre-KG', 'LKG', 'UKG', 'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10', 'Class 11', 'Class 12'].map(c => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                  Pipeline Stage
+                </label>
+                <select
+                  value={selectedStage}
+                  onChange={(e) => {
+                    setSelectedStage(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="w-full h-8 px-2 rounded-lg bg-slate-50 dark:bg-[#001438] border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-800 dark:text-slate-200"
+                >
+                  <option value="ALL">All Stages</option>
+                  {KANBAN_STAGES.map(s => (
+                    <option key={s.id} value={s.id}>{s.title}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                  Application Status
+                </label>
+                <select
+                  value={selectedStatus}
+                  onChange={(e) => {
+                    setSelectedStatus(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="w-full h-8 px-2 rounded-lg bg-slate-50 dark:bg-[#001438] border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-800 dark:text-slate-200"
+                >
+                  <option value="ALL">All Statuses</option>
+                  {['Submitted', 'Under Review', 'Documents Pending', 'Assessment Pending', 'Interview Scheduled', 'Approved', 'Fee Pending', 'Admission Confirmed'].map(st => (
+                    <option key={st} value={st}>{st}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                  Payment Status
+                </label>
+                <select
+                  value={selectedPaymentStatus}
+                  onChange={(e) => {
+                    setSelectedPaymentStatus(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="w-full h-8 px-2 rounded-lg bg-slate-50 dark:bg-[#001438] border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-800 dark:text-slate-200"
+                >
+                  <option value="ALL">All Payment Statuses</option>
+                  <option value="Pending">Pending Due</option>
+                  <option value="Partial">Partial Deposit</option>
+                  <option value="Paid">Fully Paid</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                  Academic Year
+                </label>
+                <select
+                  value={selectedAcademicYear}
+                  onChange={(e) => {
+                    setSelectedAcademicYear(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="w-full h-8 px-2 rounded-lg bg-slate-50 dark:bg-[#001438] border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-800 dark:text-slate-200"
+                >
+                  <option value="ALL">All Sessions</option>
+                  <option value="2026–2027">2026–2027</option>
+                  <option value="2025–2026">2025–2026</option>
+                </select>
+              </div>
+            </div>
           </div>
-          <AdminDataTable<AdmissionApplication>
-            data={applications.filter(a => a.status === 'Demo Class Scheduled' || a.status === 'Interested')}
-            columns={columns}
-            keyExtractor={(item) => item._id}
-            searchPlaceholder="Search application submissions..."
-            isLoading={isLoading}
-          />
-        </div>
-      )}
 
-      {/* 4. DOCUMENT VERIFICATION TAB */}
-      {activeTab === 'documents' && (
-        <div className="space-y-4 bg-white dark:bg-[#07152F] p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
-          <div>
-            <h3 className="text-sm font-black text-[#000E28] dark:text-slate-100">
-              Admission Document Verification Desk
-            </h3>
-            <p className="text-xs text-slate-500">
-              Verify statutory certificates, address proofs, and photos before final enrollment approval.
-            </p>
-          </div>
+          {/* Table Container */}
+          <div className="bg-white dark:bg-[#07152F] rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-xs">
+            <div className="overflow-x-auto custom-scrollbar">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-50 dark:bg-[#001438] border-b border-slate-200 dark:border-slate-800 text-slate-500 font-bold uppercase tracking-wider text-[11px]">
+                  <tr>
+                    <th className="p-3.5">Application Number</th>
+                    <th className="p-3.5">Applicant Child</th>
+                    <th className="p-3.5">Parent / Guardian</th>
+                    <th className="p-3.5">Class Applied</th>
+                    <th className="p-3.5">Academic Year</th>
+                    <th className="p-3.5">Application Date</th>
+                    <th className="p-3.5">Application Status</th>
+                    <th className="p-3.5">Document Status</th>
+                    <th className="p-3.5">Payment Status</th>
+                    <th className="p-3.5">Pipeline Stage</th>
+                    <th className="p-3.5 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                  {isLoading ? (
+                    <tr>
+                      <td colSpan={11} className="py-12 text-center text-slate-400">
+                        <div className="flex items-center justify-center gap-2">
+                          <div className="w-4 h-4 border-2 border-[#0050CB] border-t-transparent rounded-full animate-spin" />
+                          <span>Loading application forms...</span>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : filteredApplications.length === 0 ? (
+                    <tr>
+                      <td colSpan={11} className="py-12 text-center text-slate-400">
+                        <div className="space-y-1">
+                          <p className="font-bold text-slate-600 dark:text-slate-300">No applications match your criteria</p>
+                          <p className="text-[11px] text-slate-400">Try adjusting your search terms or filters</p>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    paginatedApplications.map((app) => {
+                      const stage = getApplicationStage(app);
+                      const allDocsVerified = app.documents && app.documents.length > 0 && app.documents.every(d => d.status === 'Verified');
 
-          <div className="divide-y divide-slate-100 dark:divide-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
-            {applications.map((app) => {
-              const currentStatuses = docStatuses[app._id] || {
-                birthCertificate: 'Pending',
-                transferCertificate: 'Pending',
-                addressProof: 'Pending',
-                photos: 'Pending',
-              };
+                      return (
+                        <tr key={app._id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
+                          {/* 1. Application Number */}
+                          <td className="p-3.5 font-mono font-bold text-[#0050CB]">
+                            {app.applicationNumber || 'APP-2026'}
+                          </td>
 
-              const allVerified = Object.values(currentStatuses).every((s) => s === 'Verified');
-              const anyRejected = Object.values(currentStatuses).some((s) => s === 'Rejected' || s === 'Replacement Required');
+                          {/* 2. Applicant Child */}
+                          <td className="p-3.5">
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-8 h-8 rounded-xl bg-linear-to-br from-[#0050CB] to-[#002772] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs">
+                                {app.childFirstName?.[0] || 'C'}
+                              </div>
+                              <div>
+                                <span className="font-bold text-[#000E28] dark:text-white block">
+                                  {app.childFirstName} {app.childLastName !== '-' ? app.childLastName : ''}
+                                </span>
+                                <span className="text-[10px] text-slate-400">
+                                  {app.gender || 'Other'} • {app.dateOfBirth ? new Date(app.dateOfBirth).toLocaleDateString('en-GB') : 'DOB N/A'}
+                                </span>
+                              </div>
+                            </div>
+                          </td>
 
-              return (
-                <div key={app._id} className="p-4 hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-xs text-[#000E28] dark:text-slate-100">
-                        {app.childFirstName} {app.childLastName}
-                      </span>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#E5EEFF] text-[#0050CB]">
-                        Class {app.gradeAppliedFor || 'LKG'}
-                      </span>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                        allVerified
-                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                          : anyRejected
-                          ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                          : 'bg-slate-100 text-slate-600'
-                      }`}>
-                        {allVerified ? 'All Documents Verified' : anyRejected ? 'Action Required' : 'Verification In-Progress'}
-                      </span>
-                    </div>
-                    <span className="text-[11px] text-slate-400">Parent: {app.parentName} ({app.parentPhone || '+91 98000 00000'})</span>
-                  </div>
+                          {/* 3. Parent/Guardian */}
+                          <td className="p-3.5">
+                            <span className="font-bold text-slate-800 dark:text-slate-200 block">{app.parentName}</span>
+                            <span className="text-[11px] font-mono text-slate-500">{app.contactNumber || app.parentPhone || 'N/A'}</span>
+                          </td>
 
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <button
-                      type="button"
-                      onClick={() => setSelectedApplicantDocs(app)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-[#0050CB] hover:bg-blue-700 text-white shadow-xs cursor-pointer transition-colors"
-                    >
-                      <Eye className="w-3.5 h-3.5" />
-                      <span>Inspect & Verify Documents</span>
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
+                          {/* 4. Class Applied */}
+                          <td className="p-3.5">
+                            <span className="px-2.5 py-1 rounded-lg bg-[#E5EEFF] dark:bg-[#0050CB]/20 text-[#0050CB] font-bold">
+                              Class {app.gradeAppliedFor || 'LKG'}
+                            </span>
+                          </td>
 
-      {/* 5. CONFIRMED & FEE PAYMENT TAB */}
-      {activeTab === 'confirmed' && (
-        <div className="space-y-4 bg-white dark:bg-[#07152F] p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
-          <div>
-            <h3 className="text-sm font-black text-slate-800 dark:text-slate-100">
-              Admission Confirmation & Seat Fee Status
-            </h3>
-            <p className="text-xs text-slate-500">
-              View confirmed admissions, generated admission numbers, and tuition seat deposit records.
-            </p>
-          </div>
+                          {/* 5. Academic Year */}
+                          <td className="p-3.5 font-mono text-slate-600 dark:text-slate-300">
+                            {app.academicYear || '2026–2027'}
+                          </td>
 
-          <div className="divide-y divide-slate-100 dark:divide-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
-            {applications.filter(a => a.status === 'Admission Confirmed').map((app) => (
-              <div key={app._id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-xs shrink-0">
-                    <CheckCircle2 className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-xs text-slate-800 dark:text-slate-100">
-                      {app.childFirstName} {app.childLastName}
-                    </h4>
-                    <p className="text-[11px] text-slate-400">
-                      Class: {app.gradeAppliedFor || 'Pre-KG'} • Parent: {app.parentName}
-                    </p>
-                  </div>
-                </div>
+                          {/* 6. Application Date */}
+                          <td className="p-3.5 text-slate-500 text-[11px]">
+                            {app.createdAt ? new Date(app.createdAt).toLocaleDateString('en-GB') : 'Recent'}
+                          </td>
 
-                <div className="flex items-center gap-3">
-                  <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200">
-                    Admission Fee Paid (₹25,000)
+                          {/* 7. Application Status */}
+                          <td className="p-3.5">
+                            <span className="px-2.5 py-1 rounded-full text-[10px] font-bold border bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300">
+                              {app.status || 'Submitted'}
+                            </span>
+                          </td>
+
+                          {/* 8. Document Status */}
+                          <td className="p-3.5">
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                              allDocsVerified
+                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                : 'bg-amber-50 text-amber-700 border border-amber-200'
+                            }`}>
+                              {allDocsVerified ? '✓ Verified' : 'Pending / Review'}
+                            </span>
+                          </td>
+
+                          {/* 9. Payment Status */}
+                          <td className="p-3.5">
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                              app.feeStatus === 'Paid'
+                                ? 'bg-emerald-50 text-emerald-700'
+                                : 'bg-rose-50 text-rose-700'
+                            }`}>
+                              {app.feeStatus || 'Pending'}
+                            </span>
+                          </td>
+
+                          {/* 10. Pipeline Stage */}
+                          <td className="p-3.5">
+                            <span className="font-bold text-slate-800 dark:text-slate-200">
+                              {stage}
+                            </span>
+                          </td>
+
+                          {/* 11. Actions */}
+                          <td className="p-3.5 text-right">
+                            <div className="flex items-center justify-end gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => openViewApplication(app)}
+                                className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-[#0050CB] hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer"
+                                title="View Application 360°"
+                              >
+                                <Eye className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => openVerifyDocs(app)}
+                                className="p-1.5 rounded-lg border border-cyan-200 dark:border-cyan-800 text-cyan-700 hover:bg-cyan-50 dark:hover:bg-cyan-950/40 cursor-pointer"
+                                title="Verify Documents"
+                              >
+                                <ShieldCheck className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => openRecordFee(app)}
+                                className="p-1.5 rounded-lg border border-rose-200 dark:border-rose-800 text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer"
+                                title="Record Fee Payment"
+                              >
+                                <CreditCard className="w-3.5 h-3.5" />
+                              </button>
+                              {app.status !== 'Admission Confirmed' ? (
+                                <button
+                                  type="button"
+                                  onClick={() => openConfirmAdmission(app)}
+                                  className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-colors cursor-pointer"
+                                  title="Confirm Admission"
+                                >
+                                  Confirm
+                                </button>
+                              ) : (
+                                <span className="text-emerald-600 font-bold text-xs flex items-center gap-1">
+                                  <CheckCircle2 className="w-3.5 h-3.5" /> Enrolled
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination Row */}
+            {filteredApplications.length > 0 && (
+              <div className="p-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500">
+                <span>
+                  Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, filteredApplications.length)} of {filteredApplications.length} applications
+                </span>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-800 text-slate-600 disabled:opacity-40 cursor-pointer"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <span className="font-bold text-slate-700 dark:text-slate-300">
+                    Page {currentPage} of {totalPages}
                   </span>
                   <button
                     type="button"
-                    onClick={() => toast.success(`Admission receipt sent to ${app.parentEmail || 'parent email'}`)}
-                    className="px-3 py-1.5 bg-[#0050CB] hover:bg-[#003E9E] text-white rounded-xl text-xs font-bold shadow-xs cursor-pointer"
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-800 text-slate-600 disabled:opacity-40 cursor-pointer"
                   >
-                    Email Receipt
+                    <ChevronRight className="w-4 h-4" />
                   </button>
                 </div>
               </div>
-            ))}
+            )}
           </div>
         </div>
       )}
 
-      {/* 5. Add Applicant Modal */}
-      <AddStudentModal
-        isOpen={isAddApplicantOpen}
-        onClose={() => setIsAddApplicantOpen(false)}
+      {/* ========================================================
+          TAB 4: DOCUMENT VERIFICATION TAB
+      ======================================================== */}
+      {activeTab === 'documents' && (
+        <div className="space-y-4 bg-white dark:bg-[#07152F] p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-black text-[#000E28] dark:text-slate-100 flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-[#0050CB]" />
+                <span>Admission Document Verification Desk</span>
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Verify statutory birth certificates, parent Aadhaar/ID, and transfer certificates before issuing admission offers.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={fetchApplications}
+              className="p-2 rounded-xl border border-slate-200 text-slate-500 hover:text-slate-800"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          <div className="divide-y divide-slate-100 dark:divide-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
+            {applications.length === 0 ? (
+              <div className="p-8 text-center text-xs text-slate-400">
+                No admission applications found for document verification.
+              </div>
+            ) : (
+              applications.map((app) => {
+                const docs = app.documents || [];
+                const allVerified = docs.length > 0 && docs.every((d) => d.status === 'Verified');
+                const hasRejected = docs.some((d) => d.status === 'Rejected');
+
+                return (
+                  <div key={app._id} className="p-4 hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-xs text-[#000E28] dark:text-slate-100">
+                          {app.childFirstName} {app.childLastName !== '-' ? app.childLastName : ''}
+                        </span>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#E5EEFF] dark:bg-[#0050CB]/20 text-[#0050CB]">
+                          Class {app.gradeAppliedFor || 'LKG'}
+                        </span>
+                        <span className="text-[10px] font-mono text-slate-400">
+                          {app.applicationNumber || 'APP-2026'}
+                        </span>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                          allVerified
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                            : hasRejected
+                            ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                            : 'bg-amber-50 text-amber-700 border border-amber-200'
+                        }`}>
+                          {allVerified ? '✓ All Verified' : hasRejected ? 'Requires Correction' : 'Verification In-Progress'}
+                        </span>
+                      </div>
+                      <span className="text-[11px] text-slate-400">
+                        Parent: {app.parentName} ({app.contactNumber || app.parentPhone || 'Phone N/A'})
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={() => openVerifyDocs(app)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-[#0050CB] hover:bg-blue-700 text-white shadow-xs cursor-pointer transition-colors"
+                      >
+                        <ShieldCheck className="w-3.5 h-3.5" />
+                        <span>Inspect & Verify Documents</span>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================
+          TAB 5: CONFIRMED & FEE PAYMENT TAB
+      ======================================================== */}
+      {activeTab === 'confirmed' && (
+        <div className="space-y-4 bg-white dark:bg-[#07152F] p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                <CreditCard className="w-4 h-4 text-[#0050CB]" />
+                <span>Admission Fee Payment & Seat Confirmation Desk</span>
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Collect seat deposit fees, track balances, and generate final student enrollments.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={fetchApplications}
+              className="p-2 rounded-xl border border-slate-200 text-slate-500 hover:text-slate-800"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          <div className="divide-y divide-slate-100 dark:divide-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
+            {applications.length === 0 ? (
+              <div className="p-8 text-center text-xs text-slate-400">
+                No candidates currently at the fee payment desk.
+              </div>
+            ) : (
+              applications.map((app) => {
+                const totalFee = app.feeAmount || 25000;
+                const paid = app.feePaid || 0;
+                const balance = Math.max(0, totalFee - paid);
+                const isPaid = app.feeStatus === 'Paid';
+
+                return (
+                  <div key={app._id} className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 ${
+                        isPaid ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'
+                      }`}>
+                        {isPaid ? <CheckCircle2 className="w-5 h-5" /> : <CreditCard className="w-5 h-5" />}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-bold text-xs text-slate-800 dark:text-slate-100">
+                            {app.childFirstName} {app.childLastName !== '-' ? app.childLastName : ''}
+                          </h4>
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-100 text-slate-600">
+                            {app.applicationNumber || 'APP-2026'}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-400">
+                          Class {app.gradeAppliedFor || 'LKG'} • Parent: {app.parentName} ({app.contactNumber || app.parentPhone || 'Phone N/A'})
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <div className="text-right text-xs">
+                        <span className="text-slate-400 block text-[10px]">Fee Breakdown</span>
+                        <span className="font-bold text-slate-800 dark:text-slate-200 font-mono">
+                          Paid: ₹{paid.toLocaleString('en-IN')} / ₹{totalFee.toLocaleString('en-IN')}
+                        </span>
+                      </div>
+
+                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                        isPaid
+                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                          : 'bg-rose-50 text-rose-700 border border-rose-200'
+                      }`}>
+                        {isPaid ? 'Paid in Full' : `Due: ₹${balance.toLocaleString('en-IN')}`}
+                      </span>
+
+                      <button
+                        type="button"
+                        onClick={() => openRecordFee(app)}
+                        className="px-3 py-1.5 bg-[#0050CB] hover:bg-[#003E9E] text-white rounded-xl text-xs font-bold shadow-xs cursor-pointer"
+                      >
+                        Record Payment
+                      </button>
+
+                      {app.status !== 'Admission Confirmed' && (
+                        <button
+                          type="button"
+                          onClick={() => openConfirmAdmission(app)}
+                          className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs cursor-pointer"
+                        >
+                          Confirm & Enroll
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================
+          EXPLICIT MODAL DIALOGS
+      ======================================================== */}
+
+      {/* 1. Dedicated New Admission Enquiry Modal */}
+      <NewEnquiryModal
+        isOpen={activeModal === 'new-enquiry'}
+        onClose={closeAllModals}
         onSuccess={() => {
           fetchApplications();
         }}
       />
 
-      {/* 6. Document Inspection & Verification Modal */}
-      {selectedApplicantDocs && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-2xl w-full p-6 space-y-6 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
-              <div>
-                <h3 className="font-extrabold text-base text-[#000E28] dark:text-white flex items-center gap-2">
-                  <ShieldCheck className="w-5 h-5 text-[#0050CB]" />
-                  Document Verification: {selectedApplicantDocs.childFirstName} {selectedApplicantDocs.childLastName}
-                </h3>
-                <p className="text-xs text-slate-500">
-                  Grade: Class {selectedApplicantDocs.gradeAppliedFor || 'LKG'} • App No: {selectedApplicantDocs.applicationNumber || selectedApplicantDocs._id}
-                </p>
-              </div>
-              <button
-                onClick={() => setSelectedApplicantDocs(null)}
-                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="space-y-3">
-              {[
-                { key: 'birthCertificate', name: 'Birth Certificate', ext: 'PDF' },
-                { key: 'transferCertificate', name: 'Transfer Certificate (TC)', ext: 'PDF' },
-                { key: 'addressProof', name: 'Parent Address / Aadhaar Proof', ext: 'JPG' },
-                { key: 'photos', name: 'Passport Size Student Photo', ext: 'PNG' },
-              ].map((doc) => {
-                const appId = selectedApplicantDocs._id;
-                const status = docStatuses[appId]?.[doc.key] || 'Pending';
-
-                const updateDocStatus = (newStatus: 'Verified' | 'Rejected' | 'Replacement Required') => {
-                  setDocStatuses((prev) => ({
-                    ...prev,
-                    [appId]: {
-                      ...(prev[appId] || {}),
-                      [doc.key]: newStatus,
-                    },
-                  }));
-                  toast.success(`${doc.name} marked as "${newStatus}"`);
-                };
-
-                return (
-                  <div key={doc.key} className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2.5">
-                        <FileText className="w-5 h-5 text-[#0050CB]" />
-                        <div>
-                          <h4 className="font-bold text-xs text-[#000E28] dark:text-white">{doc.name}</h4>
-                          <span className="text-[10px] text-slate-400 font-mono">Format: {doc.ext} • Verified Storage Key</span>
-                        </div>
-                      </div>
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                        status === 'Verified'
-                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                          : status === 'Rejected'
-                          ? 'bg-rose-50 text-rose-700 border border-rose-200'
-                          : status === 'Replacement Required'
-                          ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                          : 'bg-slate-100 text-slate-600'
-                      }`}>
-                        {status}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-200/60 dark:border-slate-700/60 flex-wrap">
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setPreviewFile({
-                              _id: `${appId}_${doc.key}`,
-                              originalName: `${doc.name}.${doc.ext.toLowerCase()}`,
-                              mimeType: doc.ext === 'PDF' ? 'application/pdf' : 'image/jpeg',
-                              size: 1048576,
-                              url: `/api/v1/files/${appId}_${doc.key}/preview`,
-                            });
-                          }}
-                          className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-[#0050CB] text-slate-700 dark:text-slate-300 cursor-pointer"
-                        >
-                          <Eye className="w-3.5 h-3.5 text-[#0050CB]" /> Preview
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            downloadFile(`/api/v1/files/${appId}_${doc.key}/download`, `GGPS-Admission-${selectedApplicantDocs.childFirstName}-${doc.key}.${doc.ext.toLowerCase()}`);
-                          }}
-                          className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-[#0050CB] text-slate-700 dark:text-slate-300 cursor-pointer"
-                        >
-                          <Download className="w-3.5 h-3.5 text-[#0050CB]" /> Download
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setActiveUploadDocType(doc.name);
-                            setUploadModalOpen(true);
-                          }}
-                          className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-[#FF690C] text-slate-700 dark:text-slate-300 cursor-pointer"
-                        >
-                          <UploadCloud className="w-3.5 h-3.5 text-[#FF690C]" /> Replace
-                        </button>
-                      </div>
-
-                      <div className="flex items-center gap-1">
-                        <button
-                          type="button"
-                          onClick={() => updateDocStatus('Verified')}
-                          className="px-2 py-1 text-[11px] font-bold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer"
-                        >
-                          Verify
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => updateDocStatus('Replacement Required')}
-                          className="px-2 py-1 text-[11px] font-bold rounded-lg bg-amber-500 hover:bg-amber-600 text-white cursor-pointer"
-                        >
-                          Require Replace
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => updateDocStatus('Rejected')}
-                          className="px-2 py-1 text-[11px] font-bold rounded-lg bg-rose-600 hover:bg-rose-700 text-white cursor-pointer"
-                        >
-                          Reject
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-100 dark:border-slate-800">
-              <button
-                type="button"
-                onClick={() => setSelectedApplicantDocs(null)}
-                className="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl hover:bg-slate-200 cursor-pointer"
-              >
-                Close Desk
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Universal File Preview Modal */}
-      {previewFile && (
-        <FilePreviewModal
-          isOpen={Boolean(previewFile)}
-          onClose={() => setPreviewFile(null)}
-          file={previewFile}
-          onDownload={() => {
-            downloadFile(previewFile._id || previewFile.url, previewFile.originalName);
-          }}
-        />
-      )}
-
-      {/* Universal File Upload Modal */}
-      <FileUploadModal
-        isOpen={uploadModalOpen}
-        onClose={() => setUploadModalOpen(false)}
-        category="admissions"
-        entityType="Admission"
-        entityId={selectedApplicantDocs?._id}
-        onUploadComplete={() => {
-          toast.success(`${activeUploadDocType} uploaded and attached to admission application!`);
-          if (selectedApplicantDocs) {
-            setDocStatuses((prev) => ({
-              ...prev,
-              [selectedApplicantDocs._id]: {
-                ...(prev[selectedApplicantDocs._id] || {}),
-                [activeUploadDocType.toLowerCase().replace(/[^a-z]/g, '')]: 'Pending',
-              },
-            }));
-          }
+      {/* 2. Dedicated New Formal Admission Application Modal */}
+      <NewApplicationModal
+        isOpen={activeModal === 'new-application'}
+        onClose={closeAllModals}
+        onSuccess={() => {
+          fetchApplications();
         }}
+      />
+
+      {/* 3. Document Verification Desk Modal */}
+      <DocumentVerificationModal
+        isOpen={activeModal === 'document-verification'}
+        application={selectedApplication}
+        onClose={closeAllModals}
+        onSuccess={() => {
+          fetchApplications();
+        }}
+      />
+
+      {/* 4. Fee Payment Modal */}
+      <FeePaymentModal
+        isOpen={activeModal === 'fee-payment'}
+        application={selectedApplication}
+        onClose={closeAllModals}
+        onSuccess={() => {
+          fetchApplications();
+        }}
+      />
+
+      {/* 5. Final Admission Confirmation & Student Enrollment Modal */}
+      <ConfirmAdmissionModal
+        isOpen={activeModal === 'confirm-admission'}
+        application={selectedApplication}
+        onClose={closeAllModals}
+        onSuccess={() => {
+          fetchApplications();
+        }}
+      />
+
+      {/* 6. 360° View Application Modal */}
+      <ViewApplicationModal
+        isOpen={activeModal === 'view-application'}
+        application={selectedApplication}
+        onClose={closeAllModals}
+        onVerifyDocs={openVerifyDocs}
+        onRecordFee={openRecordFee}
+        onConfirmAdmission={openConfirmAdmission}
       />
 
     </div>

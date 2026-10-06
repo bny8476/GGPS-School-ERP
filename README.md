@@ -6,7 +6,7 @@
 
 ## 🌟 Overview
 
-**GGPS School ERP** is a unified digital platform built for administration, principals, teachers, parents, guardians, accountants, HR, librarians, and transport managers. 
+**GGPS School ERP** is a unified digital platform built for administration, principals, teachers, parents, guardians, accountants, HR, and librarians. 
 
 Built with Next.js 16 (App Router) on the frontend and Express 5 + Mongoose on the backend, it features dynamic role-based workspaces, data-level authorization, real-time messaging, comprehensive academic tracking, and financial workflows.
 
@@ -14,13 +14,13 @@ Built with Next.js 16 (App Router) on the frontend and Express 5 + Mongoose on t
 
 ## 🚀 Key Features & Modules
 
-- 👨‍🎓 **Student 360° Profile & Academic History:** Academic, attendance, fee ledger, exam results, medical history, transport, and activity timeline.
+- 👨‍🎓 **Student 360° Profile & Academic History:** Academic, attendance, fee ledger, exam results, medical history, and activity timeline.
 - 🏫 **Academic Management & Conflict-Free Timetable:** Classrooms, sections, subjects, syllabus progress, and routine conflict detection.
 - 💳 **Fee Collection & Automated Receipts:** Multiple payment methods (Cash, Card, UPI, Gateway), discounts, late fees, and computer-generated PDF receipts.
 - 📊 **Multi-Role Dashboards:** Dynamic views tailored for Admin, Teacher, and Parent roles.
 - 🔒 **Enterprise RBAC & Security:** JWT authentication, fail-fast env validation, role-based data filtering, and central audit logging (`AuditLog`).
 - 💬 **Communication Suite:** Real-time Socket.IO chat, announcements, events calendar, and notification center.
-- 📚 **Operations & HR:** Library book cataloging, hostel room occupancy, transport vehicle routing, staff payroll lifecycle, and support tickets.
+- 📚 **Operations & HR:** Library book cataloging, hostel room occupancy, staff payroll lifecycle, health checks, and support tickets.
 
 ---
 

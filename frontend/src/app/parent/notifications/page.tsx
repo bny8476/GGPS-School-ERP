@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { 
   Bell, Check, ChevronRight, Wallet, BookOpen, 
-  Calendar, Bus, Paperclip, UserCheck, Star, Sparkles
+  Calendar, Paperclip, UserCheck, Star, Sparkles
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { formatHeaderDate } from "@/lib/date";
@@ -13,7 +13,7 @@ import ParentEmptyChildState from "@/components/parent/ParentEmptyChildState";
 
 interface NotificationItem {
   id: string;
-  category: "Fees" | "Homework" | "Attendance" | "Events" | "Transport" | "Teacher";
+  category: "Fees" | "Homework" | "Attendance" | "Events" | "Teacher";
   title: string;
   message: string;
   time: string;
@@ -68,7 +68,7 @@ export default function NotificationsPage() {
       id: "n-3",
       category: "Attendance",
       title: "Morning Campus Check-In Confirmed",
-      message: `${childName} checked into campus Gate 2 at 08:24 AM via RFID transport reader.`,
+      message: `${childName} checked into campus Gate 2 at 08:24 AM via biometric reader.`,
       time: "Today, 08:26 AM",
       isRead: false,
       accentColor: "#0D9488",
@@ -76,7 +76,7 @@ export default function NotificationsPage() {
       badgeText: "text-[#0D9488] dark:text-teal-300",
       iconBg: "bg-[#E5F9F7] dark:bg-teal-900/30",
       iconColor: "text-[#0D9488]",
-      icon: Bus,
+      icon: UserCheck,
     },
     {
       id: "n-4",
@@ -94,9 +94,9 @@ export default function NotificationsPage() {
     },
     {
       id: "n-5",
-      category: "Transport",
-      title: "Route 04 Transit Advisory",
-      message: "Bus 08 departed morning depot on schedule. Estimated arrival at your designated stop is 07:50 AM.",
+      category: "Teacher",
+      title: "Classroom Activity Update",
+      message: "Ms. Ananya shared pictures from today's hands-on sensory exploration class.",
       time: "Yesterday",
       isRead: false,
       accentColor: "#0284C7",
@@ -104,18 +104,17 @@ export default function NotificationsPage() {
       badgeText: "text-[#0284C7] dark:text-sky-300",
       iconBg: "bg-[#E5F7FD] dark:bg-sky-900/30",
       iconColor: "text-[#0284C7]",
-      icon: Bus,
+      icon: UserCheck,
     },
   ]);
 
   const categories = [
-    { label: "All", count: 15 },
+    { label: "All", count: 14 },
     { label: "Fees", count: 2 },
     { label: "Homework", count: 3 },
     { label: "Attendance", count: 2 },
     { label: "Events", count: 2 },
-    { label: "Transport", count: 1 },
-    { label: "Teacher", count: 1 },
+    { label: "Teacher", count: 2 },
   ];
 
   const filteredNotifications = activeFilter === "All"
@@ -164,7 +163,7 @@ export default function NotificationsPage() {
           </h1>
 
           <p className="text-xs sm:text-[13px] text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
-            Stay connected with attendance, learning, fees, transport and school updates in real time.
+            Stay connected with attendance, learning, fees, activities and school updates in real time.
           </p>
         </div>
 

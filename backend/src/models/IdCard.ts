@@ -8,7 +8,6 @@ export interface IIdCardFields {
   showEmergencyContact: boolean;
   showQRCode: boolean;
   showBarcode: boolean;
-  busRoute?: string;
   house?: string;
   notes?: string;
 }
@@ -116,7 +115,6 @@ const IdCardSchema: Schema = new Schema(
       showEmergencyContact: { type: Boolean, default: true },
       showQRCode: { type: Boolean, default: true },
       showBarcode: { type: Boolean, default: true },
-      busRoute: { type: String, trim: true },
       house: { type: String, trim: true },
       notes: { type: String, trim: true },
     },

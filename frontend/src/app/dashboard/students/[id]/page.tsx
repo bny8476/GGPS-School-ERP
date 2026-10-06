@@ -61,8 +61,6 @@ export default function Student360Profile({ params }: { params: Promise<{ id: st
             medicalNotes: 'Mild pollen allergy during seasonal change. No dietary restrictions.',
             status: 'Active',
             enrollmentDate: '2026-03-15',
-            busRoute: 'Route 4 (Sector 14 - Green Park)',
-            busStop: 'Green Park Block C Gate',
             emergencyContact: '+91 98765 43210',
             parentId: {
               fatherName: 'Rajesh Sharma',
@@ -449,7 +447,7 @@ export default function Student360Profile({ params }: { params: Promise<{ id: st
                 </div>
                 <div className="flex justify-between py-2">
                   <span className="text-slate-500 font-semibold">Residential Address</span>
-                  <span className="font-bold text-slate-700 dark:text-slate-200 text-right max-w-xs">{parentInfo.address || 'Campus Bus Stop Area'}</span>
+                  <span className="font-bold text-slate-700 dark:text-slate-200 text-right max-w-xs">{parentInfo.address || 'Campus Area / Registered Address'}</span>
                 </div>
               </div>
             ) : (

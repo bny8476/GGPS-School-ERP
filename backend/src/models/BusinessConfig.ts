@@ -7,7 +7,6 @@ export interface IBusinessConfig extends Document {
   passingMarksPercentage: number; // e.g. 40%
   feeReminderDays: number[]; // e.g. [7, 3, 1]
   libraryFinePerDay: number; // e.g. 2.00
-  transportCapacityBuffer: number;
   leaveLimitPerYear: number;
   promotionMinGpa: number;
   rules: Record<string, any>;
@@ -23,7 +22,6 @@ const BusinessConfigSchema: Schema = new Schema(
     passingMarksPercentage: { type: Number, default: 40 },
     feeReminderDays: { type: [Number], default: [7, 3, 1] },
     libraryFinePerDay: { type: Number, default: 2.0 },
-    transportCapacityBuffer: { type: Number, default: 0 },
     leaveLimitPerYear: { type: Number, default: 12 },
     promotionMinGpa: { type: Number, default: 2.0 },
     rules: { type: Schema.Types.Mixed, default: {} }

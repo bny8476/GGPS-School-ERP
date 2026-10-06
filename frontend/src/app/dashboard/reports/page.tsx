@@ -977,7 +977,7 @@ function ReportsContent() {
               const rawAttendanceRecords = [
                 { id: 'GGPS-2026-001', name: 'Aarav Sharma', type: 'Student', cohort: 'Pre-KG A', checkInTime: '08:12 AM', method: 'RFID Tap', status: 'Present', contact: '+91 98765 43210', guardian: 'Ramesh Sharma', smsStatus: 'Delivered' },
                 { id: 'GGPS-2026-002', name: 'Diya Patel', type: 'Student', cohort: 'LKG A', checkInTime: '08:18 AM', method: 'RFID Tap', status: 'Present', contact: '+91 98223 11223', guardian: 'Kunal Patel', smsStatus: 'Delivered' },
-                { id: 'GGPS-2026-003', name: 'Vihaan Verma', type: 'Student', cohort: 'UKG A', checkInTime: '08:22 AM', method: 'Bus GPS Sync', status: 'Present', contact: '+91 98456 77889', guardian: 'Sanjay Verma', smsStatus: 'Delivered' },
+                { id: 'GGPS-2026-003', name: 'Vihaan Verma', type: 'Student', cohort: 'UKG A', checkInTime: '08:22 AM', method: 'Gate Sensor', status: 'Present', contact: '+91 98456 77889', guardian: 'Sanjay Verma', smsStatus: 'Delivered' },
                 { id: 'GGPS-2026-004', name: 'Ananya Rao', type: 'Student', cohort: 'LKG B', checkInTime: '08:25 AM', method: 'RFID Tap', status: 'Present', contact: '+91 97112 33445', guardian: 'Venkatesh Rao', smsStatus: 'Delivered' },
                 { id: 'GGPS-2026-005', name: 'Ishaan Gupta', type: 'Student', cohort: 'UKG B', checkInTime: '08:42 AM', method: 'Manual Log', status: 'Late', contact: '+91 99887 66554', guardian: 'Deepak Gupta', smsStatus: 'Late Arrival SMS Sent' },
                 { id: 'GGPS-2026-006', name: 'Kavya Nair', type: 'Student', cohort: 'Pre-KG A', checkInTime: '08:15 AM', method: 'RFID Tap', status: 'Present', contact: '+91 98332 11990', guardian: 'Pradeep Nair', smsStatus: 'Delivered' },
@@ -1530,13 +1530,13 @@ function ReportsContent() {
                 { id: 'INV-2026-102', studentName: 'Diya Patel', admissionNumber: 'GGPS-2026-002', cohort: 'LKG A', feeType: 'Composite Tuition', term: 'Term 2', dueDate: '2026-09-15', totalAmount: 32000, amountPaid: 32000, status: 'Settled', contact: '+91 98223 11223', guardian: 'Kunal Patel' },
                 { id: 'INV-2026-103', studentName: 'Vihaan Verma', admissionNumber: 'GGPS-2026-003', cohort: 'UKG A', feeType: 'Composite Tuition & Annual Fest', term: 'Term 2', dueDate: '2026-09-15', totalAmount: 34000, amountPaid: 34000, status: 'Settled', contact: '+91 98456 77889', guardian: 'Sanjay Verma' },
                 { id: 'INV-2026-104', studentName: 'Ananya Rao', admissionNumber: 'GGPS-2026-004', cohort: 'LKG B', feeType: 'Composite Tuition', term: 'Term 2', dueDate: '2026-09-15', totalAmount: 32000, amountPaid: 16000, status: 'Partial', contact: '+91 97112 33445', guardian: 'Venkatesh Rao' },
-                { id: 'INV-2026-105', studentName: 'Ishaan Gupta', admissionNumber: 'GGPS-2026-005', cohort: 'UKG B', feeType: 'Composite Tuition & Transport', term: 'Term 2', dueDate: '2026-09-10', totalAmount: 42000, amountPaid: 0, status: 'Overdue', contact: '+91 99887 66554', guardian: 'Deepak Gupta' },
+                { id: 'INV-2026-105', studentName: 'Ishaan Gupta', admissionNumber: 'GGPS-2026-005', cohort: 'UKG B', feeType: 'Composite Tuition & Arts', term: 'Term 2', dueDate: '2026-09-10', totalAmount: 42000, amountPaid: 0, status: 'Overdue', contact: '+91 99887 66554', guardian: 'Deepak Gupta' },
                 { id: 'INV-2026-106', studentName: 'Kavya Nair', admissionNumber: 'GGPS-2026-006', cohort: 'Pre-KG A', feeType: 'Composite Tuition & Activity Kit', term: 'Term 2', dueDate: '2026-09-15', totalAmount: 28500, amountPaid: 28500, status: 'Settled', contact: '+91 98332 11990', guardian: 'Pradeep Nair' },
                 { id: 'INV-2026-107', studentName: 'Rohan Mehta', admissionNumber: 'GGPS-2026-007', cohort: 'Pre-KG B', feeType: 'Composite Tuition', term: 'Term 2', dueDate: '2026-09-05', totalAmount: 28500, amountPaid: 0, status: 'Overdue', contact: '+91 98110 99887', guardian: 'Amit Mehta' },
                 { id: 'INV-2026-108', studentName: 'Sanya Malhotra', admissionNumber: 'GGPS-2026-008', cohort: 'LKG A', feeType: 'Composite Tuition', term: 'Term 2', dueDate: '2026-09-15', totalAmount: 32000, amountPaid: 32000, status: 'Settled', contact: '+91 98199 88776', guardian: 'Gaurav Malhotra' },
                 { id: 'INV-2026-109', studentName: 'Kabir Deshmukh', admissionNumber: 'GGPS-2026-009', cohort: 'UKG B', feeType: 'Composite Tuition & Daycare', term: 'Term 2', dueDate: '2026-09-10', totalAmount: 45000, amountPaid: 15000, status: 'Overdue', contact: '+91 98334 45566', guardian: 'Rajesh Deshmukh' },
                 { id: 'INV-2026-110', studentName: 'Advika Joshi', admissionNumber: 'GGPS-2026-010', cohort: 'UKG A', feeType: 'Composite Tuition', term: 'Term 2', dueDate: '2026-09-15', totalAmount: 34000, amountPaid: 34000, status: 'Settled', contact: '+91 97665 44332', guardian: 'Mahesh Joshi' },
-                { id: 'INV-2026-111', studentName: 'Alok Nath', admissionNumber: 'GGPS-2026-011', cohort: 'LKG A', feeType: 'Composite Tuition & Transport', term: 'Term 2', dueDate: '2026-09-05', totalAmount: 39000, amountPaid: 0, status: 'Overdue', contact: '+91 99221 44556', guardian: 'S. K. Nath' },
+                { id: 'INV-2026-111', studentName: 'Alok Nath', admissionNumber: 'GGPS-2026-011', cohort: 'LKG A', feeType: 'Composite Tuition & Sports', term: 'Term 2', dueDate: '2026-09-05', totalAmount: 39000, amountPaid: 0, status: 'Overdue', contact: '+91 99221 44556', guardian: 'S. K. Nath' },
               ];
 
               // Filtering records
@@ -1570,7 +1570,7 @@ function ReportsContent() {
                 { head: 'Composite Tuition Fee', share: 74, amount: 3489100 },
                 { head: 'Activity & Learning Kits', share: 14, amount: 660100 },
                 { head: 'Daycare & Extended Care', share: 8, amount: 377200 },
-                { head: 'Transportation Service', share: 4, amount: 188600 },
+                { head: 'Physical Education & Sports', share: 4, amount: 188600 },
               ];
 
               const handleBroadcastDuesReminders = async () => {
@@ -1889,7 +1889,7 @@ function ReportsContent() {
                         <option value="All">All Categories</option>
                         <option value="Tuition">Composite Tuition</option>
                         <option value="Learning Kit">Activity / Kit</option>
-                        <option value="Transport">Transport</option>
+                        <option value="Sports">Sports & Arts</option>
                         <option value="Daycare">Daycare</option>
                       </select>
 

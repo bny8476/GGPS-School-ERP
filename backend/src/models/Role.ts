@@ -23,7 +23,6 @@ const RoleSchema: Schema = new Schema(
         'Accountant',
         'Receptionist',
         'HR',
-        'Transport',
         'Librarian',
         'Staff',
       ],

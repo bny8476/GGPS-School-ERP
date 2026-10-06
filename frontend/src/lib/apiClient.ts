@@ -32,22 +32,37 @@ async function attemptTokenRefresh(): Promise<boolean> {
   refreshPromise = (async () => {
     try {
       const baseUrl = getApiBaseUrl();
-      // Try /api/auth/refresh first, then fallback to /api/v1/auth/refresh
-      let res = await fetch(`${baseUrl}/api/auth/refresh`, {
+      const localRefreshToken = typeof window !== "undefined" ? localStorage.getItem("refreshToken") : null;
+      const body = localRefreshToken ? JSON.stringify({ refreshToken: localRefreshToken }) : JSON.stringify({});
+
+      // Try /api/v1/auth/refresh first, then fallback to /api/auth/refresh
+      let res = await fetch(`${baseUrl}/api/v1/auth/refresh`, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
+        body,
       });
 
       if (!res.ok) {
-        res = await fetch(`${baseUrl}/api/v1/auth/refresh`, {
+        res = await fetch(`${baseUrl}/api/auth/refresh`, {
           method: "POST",
           credentials: "include",
           headers: { "Content-Type": "application/json" },
+          body,
         });
       }
 
-      return res.ok;
+      if (res.ok) {
+        const data = await res.json().catch(() => null);
+        if (data && typeof window !== "undefined") {
+          const newToken = data.token || data.accessToken || data.data?.token || data.data?.accessToken;
+          const newRefreshToken = data.refreshToken || data.data?.refreshToken;
+          if (newToken) localStorage.setItem("token", newToken);
+          if (newRefreshToken) localStorage.setItem("refreshToken", newRefreshToken);
+        }
+        return true;
+      }
+      return false;
     } catch {
       return false;
     } finally {
@@ -118,8 +133,9 @@ class ApiClient {
       const refreshed = await attemptTokenRefresh();
       if (refreshed) {
         try {
-          // Retry original request once with fresh httpOnly cookie
-          response = await fetch(url, init);
+          // Retry original request once with fresh token and cookie
+          const retryHeaders = this.getHeaders(customHeaders);
+          response = await fetch(url, { ...init, headers: retryHeaders });
         } catch {
           // Fall through to error handler
         }
@@ -130,6 +146,7 @@ class ApiClient {
       if (typeof window !== "undefined") {
         localStorage.removeItem("user_profile");
         localStorage.removeItem("token");
+        localStorage.removeItem("refreshToken");
         localStorage.removeItem("user");
         if (!window.location.pathname.startsWith("/login")) {
           window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`;
@@ -187,14 +204,28 @@ export const apiClient = new ApiClient();
 export default apiClient;
 
 export async function authFetch(input: string, init: RequestInit = {}): Promise<Response> {
-  const run = (stripAuth: boolean) => {
+  const buildHeaders = () => {
     const headers = new Headers(init.headers);
-    if (stripAuth) headers.delete("Authorization"); // stale Bearer must not override the refreshed cookie
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("token");
+      if (token && !headers.has("Authorization")) {
+        headers.set("Authorization", `Bearer ${token}`);
+      }
+    }
+    return headers;
+  };
+
+  const run = () => {
+    const headers = buildHeaders();
     return fetch(input, { ...init, headers, credentials: "include" });
   };
-  let res = await run(false);
+
+  let res = await run();
   if (res.status === 401 && !input.includes("/auth/login") && !input.includes("/auth/refresh")) {
-    if (await attemptTokenRefresh()) res = await run(true);
+    const refreshed = await attemptTokenRefresh();
+    if (refreshed) {
+      res = await run();
+    }
   }
   return res;
 }

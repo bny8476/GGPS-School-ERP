@@ -1,18 +1,25 @@
 import { z } from 'zod';
+import {
+  firstNameValidator,
+  lastNameValidator,
+  emailValidator,
+  passwordValidator,
+} from './commonValidators';
 
 export const registerSchema = z.object({
   body: z.object({
-    firstName: z.string().trim().min(1, 'First name is required'),
-    lastName: z.string().trim().min(1, 'Last name is required'),
-    email: z.string().trim().toLowerCase().email('Invalid email address'),
-    password: z.string().min(6, 'Password must be at least 6 characters long'),
-    roleName: z.string().optional(),
+    firstName: firstNameValidator,
+    lastName: lastNameValidator,
+    email: emailValidator,
+    password: passwordValidator,
+    roleName: z.string().trim().optional(),
+    phoneNumber: z.string().trim().optional(),
   }),
 });
 
 export const loginSchema = z.object({
   body: z.object({
-    email: z.string().trim().toLowerCase().email('Invalid email address'),
+    email: emailValidator,
     password: z.string().min(1, 'Password is required'),
   }),
 });
@@ -20,28 +27,27 @@ export const loginSchema = z.object({
 export const changePasswordSchema = z.object({
   body: z.object({
     currentPassword: z.string().min(1, 'Current password is required'),
-    newPassword: z.string().min(6, 'New password must be at least 6 characters long'),
+    newPassword: passwordValidator,
   }),
 });
 
 export const forgotPasswordSchema = z.object({
   body: z.object({
-    email: z.string().trim().toLowerCase().email('Valid registered email address is required'),
+    email: emailValidator,
   }),
 });
 
 export const verifyResetCodeSchema = z.object({
   body: z.object({
-    email: z.string().trim().toLowerCase().email('Valid registered email address is required'),
-    code: z.string().min(4, 'Reset code is required'),
+    email: emailValidator,
+    code: z.string().trim().min(4, 'Reset code must be at least 4 digits').max(10),
   }),
 });
 
 export const resetPasswordSchema = z.object({
   body: z.object({
-    email: z.string().trim().toLowerCase().email('Valid registered email address is required'),
-    code: z.string().min(4, 'Reset code is required'),
-    newPassword: z.string().min(6, 'New password must be at least 6 characters long'),
+    email: emailValidator,
+    code: z.string().trim().min(4, 'Reset code is required'),
+    newPassword: passwordValidator,
   }),
 });
-

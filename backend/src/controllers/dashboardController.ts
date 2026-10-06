@@ -190,7 +190,7 @@ export const getDashboardStats = async (req: Request, res: Response): Promise<vo
     // ==========================================
     // Look up staff roles by name to get their ObjectIds
     const staffRoles = await Role.find({
-      name: { $in: ['Teacher', 'Staff', 'Accountant', 'Admin', 'Principal', 'HR', 'Receptionist', 'SuperAdmin', 'Transport', 'Librarian'] },
+      name: { $in: ['Teacher', 'Staff', 'Accountant', 'Admin', 'Principal', 'HR', 'Receptionist', 'SuperAdmin', 'Librarian'] },
     }).select('_id');
     const staffRoleIds = staffRoles.map((r) => r._id);
 

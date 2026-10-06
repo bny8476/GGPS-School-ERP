@@ -14,7 +14,7 @@ export interface IFee extends Document {
   studentId: mongoose.Types.ObjectId;
   grade?: string;
   classId?: mongoose.Types.ObjectId;
-  feeType: 'Admission' | 'Tuition' | 'Transport' | 'Activity' | 'Day Care' | 'Examination' | 'Other';
+  feeType: 'Admission' | 'Tuition' | 'Activity' | 'Day Care' | 'Examination' | 'Other';
   title?: string;
   invoiceNumber?: string;
   totalAmount: number;
@@ -34,13 +34,13 @@ export interface IFee extends Document {
 
 const FeePaymentRecordSchema = new Schema(
   {
-    receiptNumber: { type: String, required: true },
-    amount: { type: Number, required: true },
-    paymentMethod: { type: String, default: 'Online / UPI' },
-    transactionId: { type: String },
+    receiptNumber: { type: String, required: [true, 'Receipt number is required'], trim: true },
+    amount: { type: Number, required: [true, 'Payment amount is required'], min: [0.01, 'Payment amount must be greater than zero'] },
+    paymentMethod: { type: String, default: 'Online / UPI', trim: true },
+    transactionId: { type: String, trim: true },
     paidAt: { type: Date, default: Date.now },
     paidBy: { type: Schema.Types.ObjectId, ref: 'User' },
-    note: { type: String, trim: true },
+    note: { type: String, trim: true, maxlength: 300 },
   },
   { _id: false }
 );
@@ -64,7 +64,7 @@ const FeeSchema: Schema = new Schema(
     },
     feeType: {
       type: String,
-      enum: ['Admission', 'Tuition', 'Transport', 'Activity', 'Day Care', 'Examination', 'Other'],
+      enum: ['Admission', 'Tuition', 'Activity', 'Day Care', 'Examination', 'Other'],
       default: 'Tuition',
       required: true,
     },

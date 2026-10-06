@@ -1,5 +1,4 @@
 import { Request, Response } from 'express';
-import Transport from '../models/Transport';
 import HealthLog from '../models/HealthLog';
 import Student from '../models/Student';
 import Parent from '../models/Parent';
@@ -32,80 +31,6 @@ const getParentWhatsAppNumber = async (studentId: string): Promise<string | null
   } catch (error) {
     console.error('Error fetching parent number:', error);
     return null;
-  }
-};
-
-// @desc    Get all transport logs
-// @route   GET /api/operations/transport
-export const getTransportLogs = async (req: Request, res: Response) => {
-  try {
-    const logs = await Transport.find()
-      .sort({ date: -1 })
-      .populate('studentId', 'firstName lastName')
-      .populate('loggedBy', 'firstName lastName');
-    res.status(200).json(logs);
-  } catch (error) {
-    res.status(500).json({ message: 'Server Error', error });
-  }
-};
-
-// @desc    Log a transport/pickup event
-// @route   POST /api/operations/transport
-export const createTransportLog = async (req: Request, res: Response) => {
-  try {
-    const loggedBy = req.user?.id;
-    if (!loggedBy) return res.status(401).json({ message: 'User not authenticated' });
-    const log = await Transport.create({ ...req.body, loggedBy });
-    
-    // Emit notification via Socket
-    const io = getIO();
-    io.emit('notification', {
-      title: 'Pickup Update',
-      message: `A transport event was logged for student ${log.studentId} (${log.status})`,
-      type: 'transport',
-      timestamp: new Date()
-    });
-
-    // Send WhatsApp Notification
-    const parentNumber = await getParentWhatsAppNumber(log.studentId.toString());
-    if (parentNumber) {
-      const student = await Student.findById(log.studentId);
-      const msg = `🚌 *GGPS School Update*\n${student?.firstName} has been marked as ${log.status} at ${new Date(log.pickupTime || new Date()).toLocaleTimeString()}.\nRoute: ${log.routeNumber || 'N/A'}`;
-      await sendWhatsAppMessage(parentNumber, msg);
-    }
-
-    res.status(201).json(log);
-  } catch (error) {
-    res.status(400).json({ message: 'Invalid data', error });
-  }
-};
-
-export const updateTransportLog = async (req: Request, res: Response) => {
-  try {
-    const { routeNumber, pickupTime, dropOffTime, authorizedPerson, status, date } = req.body;
-    const allowedUpdates: Record<string, any> = {};
-    if (routeNumber !== undefined) allowedUpdates.routeNumber = routeNumber;
-    if (pickupTime !== undefined) allowedUpdates.pickupTime = pickupTime;
-    if (dropOffTime !== undefined) allowedUpdates.dropOffTime = dropOffTime;
-    if (authorizedPerson !== undefined) allowedUpdates.authorizedPerson = authorizedPerson;
-    if (status !== undefined) allowedUpdates.status = status;
-    if (date !== undefined) allowedUpdates.date = date;
-
-    const log = await Transport.findByIdAndUpdate(req.params.id, allowedUpdates, { new: true, runValidators: true });
-    if (!log) return res.status(404).json({ message: 'Log not found' });
-    res.json(log);
-  } catch (error) {
-    res.status(400).json({ message: 'Invalid data', error });
-  }
-};
-
-export const deleteTransportLog = async (req: Request, res: Response) => {
-  try {
-    const log = await Transport.findByIdAndDelete(req.params.id);
-    if (!log) return res.status(404).json({ message: 'Log not found' });
-    res.json({ message: 'Log removed' });
-  } catch (error) {
-    res.status(500).json({ message: 'Server Error', error });
   }
 };
 

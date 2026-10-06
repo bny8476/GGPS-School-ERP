@@ -15,13 +15,23 @@ export const validate = (schema: ZodSchema) => {
       next();
     } catch (error) {
       if (error instanceof ZodError) {
-        const errorMessages = error.issues
-          .map((issue) => `${issue.path.join('.')}: ${issue.message}`)
-          .join(', ');
+        const fieldErrors = error.issues.map((issue) => {
+          // Strip technical scope prefixes like 'body.', 'query.', 'params.'
+          const pathSegments = issue.path.filter((p) => p !== 'body' && p !== 'query' && p !== 'params');
+          const field = pathSegments.join('.');
+          return {
+            field: field || 'general',
+            message: issue.message,
+          };
+        });
+
+        // Compose user-friendly summary without technical jargon
+        const summaryMessage = fieldErrors.map((f) => f.message).join('. ');
+
         res.status(400).json({
           success: false,
-          message: `Validation Error: ${errorMessages}`,
-          errors: error.issues,
+          message: `Validation Error: ${summaryMessage || 'Please review and correct the invalid form fields.'}`,
+          errors: fieldErrors,
         });
         return;
       }
@@ -29,3 +39,5 @@ export const validate = (schema: ZodSchema) => {
     }
   };
 };
+
+export default validate;

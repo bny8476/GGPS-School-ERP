@@ -37,6 +37,17 @@ import toast from "react-hot-toast";
 import { apiClient } from "@/lib/apiClient";
 import { getSocket } from "@/lib/socket";
 import { useLanguage } from "@/context/LanguageContext";
+import {
+  NAME_REGEX,
+  EMAIL_REGEX,
+  TEN_DIGIT_PHONE_REGEX,
+  preventNonAlphaKey,
+  preventNonNumericKey,
+  sanitizeNameInput,
+  sanitizePhoneInput,
+  handleNamePaste,
+  handlePhonePaste,
+} from "@/lib/validationUtils";
 
 export interface EnquiryItem {
   _id: string;
@@ -1412,7 +1423,7 @@ export default function AdminEnquiriesManager() {
                   rows={3}
                   value={followUpNotes}
                   onChange={(e) => setFollowUpNotes(e.target.value)}
-                  placeholder="e.g. Call parent regarding nursery timings and transport availability..."
+                  placeholder="e.g. Call parent regarding nursery timings and curriculum details..."
                   className="w-full p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs resize-none"
                 />
               </div>
@@ -1527,26 +1538,71 @@ function StaffNewEnquiryModal({
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [childName, setChildName] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
+  const [gender, setGender] = useState<"Male" | "Female" | "Other">("Male");
   const [classApplied, setClassApplied] = useState("LKG");
   const [academicYear, setAcademicYear] = useState("2026–2027");
   const [source, setSource] = useState("Referral");
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!parentName.trim() || !phone.trim() || !childName.trim()) {
-      toast.error("Parent name, phone, and child name are required");
+    const newErrors: Record<string, string> = {};
+
+    const pName = parentName.trim();
+    if (!pName) {
+      newErrors.parentName = "Parent name is required";
+    } else if (!NAME_REGEX.test(pName)) {
+      newErrors.parentName = "Name can contain only letters, spaces, hyphens, apostrophes, and periods";
+    } else if (pName.length < 2) {
+      newErrors.parentName = "Name must be at least 2 characters";
+    }
+
+    const cName = childName.trim();
+    if (!cName) {
+      newErrors.childName = "Child name is required";
+    } else if (!NAME_REGEX.test(cName)) {
+      newErrors.childName = "Name can contain only letters, spaces, hyphens, apostrophes, and periods";
+    } else if (cName.length < 2) {
+      newErrors.childName = "Name must be at least 2 characters";
+    }
+
+    const ph = phone.trim();
+    if (!ph) {
+      newErrors.phone = "Phone number is required";
+    } else if (!TEN_DIGIT_PHONE_REGEX.test(ph)) {
+      newErrors.phone = "Please enter a valid 10-digit mobile number";
+    }
+
+    const em = email.trim();
+    if (em && !EMAIL_REGEX.test(em)) {
+      newErrors.email = "Please enter a valid email address";
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      toast.error(Object.values(newErrors)[0]);
       return;
     }
 
+    setErrors({});
     setIsSubmitting(true);
     try {
+      const nameParts = cName.split(/\s+/);
+      const childFirstName = nameParts[0] || cName;
+      const childLastName = nameParts.slice(1).join(" ") || nameParts[0] || "Student";
+
       await apiClient.post("/api/v1/admissions/enquiries", {
-        parentName: parentName.trim(),
-        phone: phone.trim(),
-        email: email.trim().toLowerCase() || `enquiry_${Date.now()}@ggps.edu`,
-        childName: childName.trim(),
+        parentName: pName,
+        phone: ph,
+        email: em.toLowerCase() || `enquiry_${Date.now()}@ggps.edu`,
+        childName: cName,
+        childFirstName,
+        childLastName,
+        dateOfBirth: dateOfBirth || undefined,
+        gender,
         classApplied,
         academicYear,
         source,
@@ -1564,72 +1620,136 @@ function StaffNewEnquiryModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-      <div className="bg-white dark:bg-[#000E28] rounded-2xl border border-slate-200 dark:border-slate-800 p-6 max-w-lg w-full space-y-4 shadow-2xl text-xs">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
+      <div className="bg-white dark:bg-[#000E28] rounded-2xl border border-slate-200 dark:border-slate-800 p-6 max-w-lg w-full space-y-4 shadow-2xl text-xs my-8 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
           <h3 className="text-sm font-bold text-[#000E28] dark:text-white">
             Log New Admission Enquiry
           </h3>
-          <button type="button" onClick={onClose}>
-            <X className="w-4 h-4 text-slate-400" />
+          <button type="button" onClick={onClose} className="p-1 rounded-md text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+            <X className="w-4 h-4" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-3">
+        <form onSubmit={handleSubmit} className="space-y-3" noValidate>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
-                Parent / Guardian Name *
+              <label htmlFor="modalParentName" className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Parent / Guardian Name <span className="text-[#FF690C]">*</span>
               </label>
               <input
+                id="modalParentName"
                 type="text"
-                required
                 value={parentName}
-                onChange={(e) => setParentName(e.target.value)}
+                onKeyDown={preventNonAlphaKey}
+                onChange={(e) => {
+                  setParentName(sanitizeNameInput(e.target.value));
+                  if (errors.parentName) setErrors((p) => { const n = { ...p }; delete n.parentName; return n; });
+                }}
+                onPaste={(e) => handleNamePaste(e, (v) => setParentName(v))}
                 placeholder="Rahul Kumar"
-                className="w-full h-9 px-3 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700"
+                className={`w-full h-9 px-3 rounded-lg bg-slate-50 dark:bg-slate-900 border text-xs text-[#000E28] dark:text-white transition-all ${
+                  errors.parentName ? "border-rose-400 focus:ring-1 focus:ring-rose-500/20" : "border-slate-200 dark:border-slate-700"
+                }`}
               />
+              {errors.parentName && <p className="text-[11px] text-rose-500 font-semibold mt-0.5">{errors.parentName}</p>}
             </div>
             <div>
-              <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
-                Phone Number *
+              <label htmlFor="modalPhone" className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Phone Number <span className="text-[#FF690C]">*</span>
               </label>
               <input
+                id="modalPhone"
                 type="tel"
-                required
+                maxLength={10}
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="+91 98400 XXXXX"
-                className="w-full h-9 px-3 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700"
+                onKeyDown={preventNonNumericKey}
+                onChange={(e) => {
+                  setPhone(sanitizePhoneInput(e.target.value));
+                  if (errors.phone) setErrors((p) => { const n = { ...p }; delete n.phone; return n; });
+                }}
+                onPaste={(e) => handlePhonePaste(e, (v) => setPhone(v))}
+                placeholder="9840123456"
+                className={`w-full h-9 px-3 rounded-lg bg-slate-50 dark:bg-slate-900 border text-xs text-[#000E28] dark:text-white transition-all ${
+                  errors.phone ? "border-rose-400 focus:ring-1 focus:ring-rose-500/20" : "border-slate-200 dark:border-slate-700"
+                }`}
               />
+              {errors.phone && <p className="text-[11px] text-rose-500 font-semibold mt-0.5">{errors.phone}</p>}
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+              <label htmlFor="modalEmail" className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
                 Email Address
               </label>
               <input
+                id="modalEmail"
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (errors.email) setErrors((p) => { const n = { ...p }; delete n.email; return n; });
+                }}
                 placeholder="parent@example.com"
-                className="w-full h-9 px-3 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700"
+                className={`w-full h-9 px-3 rounded-lg bg-slate-50 dark:bg-slate-900 border text-xs text-[#000E28] dark:text-white transition-all ${
+                  errors.email ? "border-rose-400 focus:ring-1 focus:ring-rose-500/20" : "border-slate-200 dark:border-slate-700"
+                }`}
+              />
+              {errors.email && <p className="text-[11px] text-rose-500 font-semibold mt-0.5">{errors.email}</p>}
+            </div>
+            <div>
+              <label htmlFor="modalChildName" className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Child Name <span className="text-[#FF690C]">*</span>
+              </label>
+              <input
+                id="modalChildName"
+                type="text"
+                value={childName}
+                onKeyDown={preventNonAlphaKey}
+                onChange={(e) => {
+                  setChildName(sanitizeNameInput(e.target.value));
+                  if (errors.childName) setErrors((p) => { const n = { ...p }; delete n.childName; return n; });
+                }}
+                onPaste={(e) => handleNamePaste(e, (v) => setChildName(v))}
+                placeholder="Arun Kumar or S. Arun"
+                className={`w-full h-9 px-3 rounded-lg bg-slate-50 dark:bg-slate-900 border text-xs text-[#000E28] dark:text-white transition-all ${
+                  errors.childName ? "border-rose-400 focus:ring-1 focus:ring-rose-500/20" : "border-slate-200 dark:border-slate-700"
+                }`}
+              />
+              <p className="text-[10px] text-slate-400 mt-0.5">Supports full name or initials with dots (e.g. S. Arun, Arun K.)</p>
+              {errors.childName && <p className="text-[11px] text-rose-500 font-semibold mt-0.5">{errors.childName}</p>}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label htmlFor="modalDOB" className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Date of Birth
+              </label>
+              <input
+                id="modalDOB"
+                type="date"
+                max={new Date().toISOString().split("T")[0]}
+                value={dateOfBirth}
+                onChange={(e) => setDateOfBirth(e.target.value)}
+                className="w-full h-9 px-3 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-[#000E28] dark:text-white"
               />
             </div>
             <div>
-              <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
-                Child Name *
+              <label htmlFor="modalGender" className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Gender
               </label>
-              <input
-                type="text"
-                required
-                value={childName}
-                onChange={(e) => setChildName(e.target.value)}
-                placeholder="Arun Kumar"
-                className="w-full h-9 px-3 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700"
-              />
+              <select
+                id="modalGender"
+                value={gender}
+                onChange={(e) => setGender(e.target.value as "Male" | "Female" | "Other")}
+                className="w-full h-9 px-2 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-[#000E28] dark:text-white"
+              >
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </select>
             </div>
           </div>
 
@@ -1639,11 +1759,23 @@ function StaffNewEnquiryModal({
               <select
                 value={classApplied}
                 onChange={(e) => setClassApplied(e.target.value)}
-                className="w-full h-9 px-2 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700"
+                className="w-full h-9 px-2 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-[#000E28] dark:text-white"
               >
                 <option value="PreKG">PreKG</option>
                 <option value="LKG">LKG</option>
                 <option value="UKG">UKG</option>
+                <option value="Class 1">Class 1</option>
+                <option value="Class 2">Class 2</option>
+                <option value="Class 3">Class 3</option>
+                <option value="Class 4">Class 4</option>
+                <option value="Class 5">Class 5</option>
+                <option value="Class 6">Class 6</option>
+                <option value="Class 7">Class 7</option>
+                <option value="Class 8">Class 8</option>
+                <option value="Class 9">Class 9</option>
+                <option value="Class 10">Class 10</option>
+                <option value="Class 11">Class 11</option>
+                <option value="Class 12">Class 12</option>
               </select>
             </div>
             <div>
@@ -1651,7 +1783,7 @@ function StaffNewEnquiryModal({
               <select
                 value={academicYear}
                 onChange={(e) => setAcademicYear(e.target.value)}
-                className="w-full h-9 px-2 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700"
+                className="w-full h-9 px-2 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-[#000E28] dark:text-white"
               >
                 <option value="2026–2027">2026–2027</option>
                 <option value="2025–2026">2025–2026</option>
@@ -1662,12 +1794,13 @@ function StaffNewEnquiryModal({
               <select
                 value={source}
                 onChange={(e) => setSource(e.target.value)}
-                className="w-full h-9 px-2 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700"
+                className="w-full h-9 px-2 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-[#000E28] dark:text-white"
               >
                 <option value="Referral">Referral</option>
                 <option value="Website">Website</option>
                 <option value="Home Page">Home Page</option>
-                <option value="Other">Walk-in</option>
+                <option value="Walk-in">Walk-in</option>
+                <option value="Other">Other</option>
               </select>
             </div>
           </div>
@@ -1679,7 +1812,7 @@ function StaffNewEnquiryModal({
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               placeholder="Notes on parent inquiry..."
-              className="w-full p-2.5 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 resize-none"
+              className="w-full p-2.5 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-[#000E28] dark:text-white resize-none"
             />
           </div>
 
@@ -1687,14 +1820,14 @@ function StaffNewEnquiryModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl text-slate-500 font-bold"
+              className="px-4 py-2 rounded-xl text-slate-500 font-bold hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-5 py-2 rounded-xl bg-[#0050CB] hover:bg-[#0041A8] text-white font-bold transition-colors cursor-pointer"
+              className="px-5 py-2 rounded-xl bg-[#0050CB] hover:bg-[#0041A8] text-white font-bold transition-colors cursor-pointer disabled:opacity-50"
             >
               {isSubmitting ? "Saving..." : "Save Enquiry"}
             </button>

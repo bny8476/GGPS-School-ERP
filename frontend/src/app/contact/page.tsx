@@ -22,13 +22,22 @@ import {
 import toast from "react-hot-toast";
 import { getApiBaseUrl } from "@/lib/utils";
 import { useLanguage } from "@/context/LanguageContext";
+import { createNameSchema, emailSchema, phoneSchema } from "@/schemas";
+import {
+  preventNonAlphaKey,
+  preventNonNumericKey,
+  sanitizeNameInput,
+  sanitizePhoneInput,
+  handleNamePaste,
+  handlePhonePaste,
+} from "@/lib/validationUtils";
 
 const contactSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
-  email: z.string().email("Enter a valid email address"),
-  phone: z.string().min(10, "Enter a valid phone number (at least 10 digits)"),
-  subject: z.string().min(3, "Subject is required"),
-  message: z.string().min(10, "Message must be at least 10 characters"),
+  name: createNameSchema("Your Full Name", 2, 80),
+  email: emailSchema,
+  phone: phoneSchema,
+  subject: z.string().trim().min(3, "Subject must be at least 3 characters").max(120, "Subject cannot exceed 120 characters"),
+  message: z.string().trim().min(10, "Message must be at least 10 characters").max(1000, "Message cannot exceed 1000 characters"),
 });
 
 type ContactFormData = z.infer<typeof contactSchema>;
@@ -41,10 +50,12 @@ export default function ContactPage() {
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
     reset,
   } = useForm<ContactFormData>({
     resolver: zodResolver(contactSchema),
+    mode: "onChange",
     defaultValues: {
       name: "",
       email: "",
@@ -230,71 +241,103 @@ export default function ContactPage() {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                        Your Full Name *
+                      <label htmlFor="name" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                        Your Full Name <span className="text-[#FF690C]">*</span>
                       </label>
                       <input
+                        id="name"
                         type="text"
                         placeholder="e.g. Meera Raman"
                         {...register("name")}
-                        className="w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm text-[#000E28] dark:text-white focus:outline-none focus:border-[#0050CB]"
+                        onKeyDown={preventNonAlphaKey}
+                        onChange={(e) => setValue("name", sanitizeNameInput(e.target.value), { shouldValidate: true })}
+                        onPaste={(e) => handleNamePaste(e, (v) => setValue("name", v, { shouldValidate: true }))}
+                        className={`w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-900 border text-xs sm:text-sm text-[#000E28] dark:text-white placeholder:text-slate-400 focus:outline-none transition-all ${
+                          errors.name
+                            ? "border-rose-400 focus:ring-2 focus:ring-rose-500/15"
+                            : "border-slate-200 dark:border-slate-700 focus:border-[#0050CB] focus:ring-2 focus:ring-[#0050CB]/15"
+                        }`}
                       />
-                      {errors.name && <p className="text-[11px] text-rose-500 mt-1">{errors.name.message}</p>}
+                      {errors.name && <p className="text-[11px] text-rose-500 font-semibold mt-1">{errors.name.message}</p>}
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                        Phone Number *
+                      <label htmlFor="phone" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                        Phone Number <span className="text-[#FF690C]">*</span>
                       </label>
                       <input
+                        id="phone"
                         type="tel"
-                        placeholder="+91 98400 XXXXX"
+                        placeholder="9840123456"
+                        maxLength={10}
                         {...register("phone")}
-                        className="w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm text-[#000E28] dark:text-white focus:outline-none focus:border-[#0050CB]"
+                        onKeyDown={preventNonNumericKey}
+                        onChange={(e) => setValue("phone", sanitizePhoneInput(e.target.value), { shouldValidate: true })}
+                        onPaste={(e) => handlePhonePaste(e, (v) => setValue("phone", v, { shouldValidate: true }))}
+                        className={`w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-900 border text-xs sm:text-sm text-[#000E28] dark:text-white placeholder:text-slate-400 focus:outline-none transition-all ${
+                          errors.phone
+                            ? "border-rose-400 focus:ring-2 focus:ring-rose-500/15"
+                            : "border-slate-200 dark:border-slate-700 focus:border-[#0050CB] focus:ring-2 focus:ring-[#0050CB]/15"
+                        }`}
                       />
-                      {errors.phone && <p className="text-[11px] text-rose-500 mt-1">{errors.phone.message}</p>}
+                      {errors.phone && <p className="text-[11px] text-rose-500 font-semibold mt-1">{errors.phone.message}</p>}
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                        Email Address *
+                      <label htmlFor="email" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                        Email Address <span className="text-[#FF690C]">*</span>
                       </label>
                       <input
+                        id="email"
                         type="email"
                         placeholder="meera@example.com"
                         {...register("email")}
-                        className="w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm text-[#000E28] dark:text-white focus:outline-none focus:border-[#0050CB]"
+                        className={`w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-900 border text-xs sm:text-sm text-[#000E28] dark:text-white placeholder:text-slate-400 focus:outline-none transition-all ${
+                          errors.email
+                            ? "border-rose-400 focus:ring-2 focus:ring-rose-500/15"
+                            : "border-slate-200 dark:border-slate-700 focus:border-[#0050CB] focus:ring-2 focus:ring-[#0050CB]/15"
+                        }`}
                       />
-                      {errors.email && <p className="text-[11px] text-rose-500 mt-1">{errors.email.message}</p>}
+                      {errors.email && <p className="text-[11px] text-rose-500 font-semibold mt-1">{errors.email.message}</p>}
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                        Subject *
+                      <label htmlFor="subject" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                        Subject <span className="text-[#FF690C]">*</span>
                       </label>
                       <input
+                        id="subject"
                         type="text"
-                        placeholder="e.g. Campus Visit / Transport Inquiry"
+                        placeholder="e.g. Campus Visit / Curriculum Inquiry"
                         {...register("subject")}
-                        className="w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm text-[#000E28] dark:text-white focus:outline-none focus:border-[#0050CB]"
+                        className={`w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-900 border text-xs sm:text-sm text-[#000E28] dark:text-white placeholder:text-slate-400 focus:outline-none transition-all ${
+                          errors.subject
+                            ? "border-rose-400 focus:ring-2 focus:ring-rose-500/15"
+                            : "border-slate-200 dark:border-slate-700 focus:border-[#0050CB] focus:ring-2 focus:ring-[#0050CB]/15"
+                        }`}
                       />
-                      {errors.subject && <p className="text-[11px] text-rose-500 mt-1">{errors.subject.message}</p>}
+                      {errors.subject && <p className="text-[11px] text-rose-500 font-semibold mt-1">{errors.subject.message}</p>}
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                      Message *
+                    <label htmlFor="message" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      Message <span className="text-[#FF690C]">*</span>
                     </label>
                     <textarea
+                      id="message"
                       rows={4}
                       placeholder="Please write your questions or comments here..."
                       {...register("message")}
-                      className="w-full p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm text-[#000E28] dark:text-white focus:outline-none focus:border-[#0050CB] resize-none"
+                      className={`w-full p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900 border text-xs sm:text-sm text-[#000E28] dark:text-white placeholder:text-slate-400 focus:outline-none transition-all resize-none ${
+                        errors.message
+                          ? "border-rose-400 focus:ring-2 focus:ring-rose-500/15"
+                          : "border-slate-200 dark:border-slate-700 focus:border-[#0050CB] focus:ring-2 focus:ring-[#0050CB]/15"
+                      }`}
                     />
-                    {errors.message && <p className="text-[11px] text-rose-500 mt-1">{errors.message.message}</p>}
+                    {errors.message && <p className="text-[11px] text-rose-500 font-semibold mt-1">{errors.message.message}</p>}
                   </div>
 
                   <button
