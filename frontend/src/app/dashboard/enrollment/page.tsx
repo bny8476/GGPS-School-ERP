@@ -94,6 +94,10 @@ export default function EnrollmentPage() {
 
   // Assign Student Modal State
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+  const [reassignTarget, setReassignTarget] = useState<{
+    student?: any;
+    enrollment?: any;
+  } | null>(null);
   const [assignForm, setAssignForm] = useState({
     studentId: '',
     classId: '',
@@ -250,6 +254,11 @@ export default function EnrollmentPage() {
     return cls?.sections || [];
   }, [assignForm.classId, classes]);
 
+  const currentSelectedStudent = useMemo(() => {
+    if (reassignTarget?.student) return reassignTarget.student;
+    return students.find((s) => s._id === assignForm.studentId) || null;
+  }, [reassignTarget, students, assignForm.studentId]);
+
   // Handle Assign Student Submit
   const handleAssignSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -274,6 +283,7 @@ export default function EnrollmentPage() {
 
       toast.success(result.message || 'Student enrolled successfully');
       setIsAssignModalOpen(false);
+      setReassignTarget(null);
       setAssignForm({ studentId: '', classId: '', sectionId: '', rollNumber: '', remarks: '' });
       fetchData();
     } catch (err: any) {
@@ -379,6 +389,7 @@ export default function EnrollmentPage() {
             <button
               type="button"
               onClick={() => {
+                setReassignTarget(null);
                 setAssignForm({
                   studentId: '',
                   classId: '',
@@ -620,11 +631,15 @@ export default function EnrollmentPage() {
                             <button
                               type="button"
                               onClick={() => {
+                                setReassignTarget({
+                                  student,
+                                  enrollment: record,
+                                });
                                 setAssignForm({
-                                  studentId: student?._id,
+                                  studentId: student?._id || (typeof student === 'string' ? student : ''),
                                   classId: record.classId?._id || '',
                                   sectionId: record.sectionId?._id || '',
-                                  rollNumber: record.rollNumber || '',
+                                  rollNumber: record.rollNumber || student?.rollNumber || '',
                                   remarks: '',
                                 });
                                 setIsAssignModalOpen(true);
@@ -953,44 +968,86 @@ export default function EnrollmentPage() {
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
               <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
                 <Layers className="w-4 h-4 text-[#0050CB]" />
-                <span>Class & Section Allocation</span>
+                <span>{reassignTarget ? 'Reassign Class & Section' : 'Class & Section Allocation'}</span>
               </h3>
               <button
                 type="button"
-                onClick={() => setIsAssignModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600"
+                onClick={() => {
+                  setIsAssignModalOpen(false);
+                  setReassignTarget(null);
+                }}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             <form onSubmit={handleAssignSubmit} className="space-y-4 text-xs">
-              <div>
-                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                  Select Student *
-                </label>
-                <select
-                  value={assignForm.studentId}
-                  onChange={(e) => {
-                    const chosenId = e.target.value;
-                    const existing = enrollments.find((enr) => enr.studentId?._id === chosenId);
-                    setAssignForm((prev) => ({
-                      ...prev,
-                      studentId: chosenId,
-                      rollNumber: existing?.rollNumber || '',
-                    }));
-                  }}
-                  required
-                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 font-bold outline-hidden"
-                >
-                  <option value="">Choose student...</option>
-                  {students.map((s) => (
-                    <option key={s._id} value={s._id}>
-                      {s.firstName} {s.lastName} ({s.admissionNumber})
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {reassignTarget ? (
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="font-bold text-slate-700 dark:text-slate-300 block">
+                      Student
+                    </label>
+                    <span className="text-[10px] font-bold text-[#0050CB] dark:text-[#E5EEFF] bg-[#E5EEFF] dark:bg-[#0050CB]/20 px-2 py-0.5 rounded-full border border-[#0050CB]/20">
+                      Reassigning
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl">
+                    <div className="w-9 h-9 rounded-full bg-[#E5EEFF] dark:bg-[#0050CB]/20 text-[#0050CB] dark:text-[#E5EEFF] flex items-center justify-center font-black text-xs shrink-0">
+                      {(currentSelectedStudent?.firstName?.[0] || 'S').toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-bold text-slate-800 dark:text-slate-100 text-xs truncate">
+                        {currentSelectedStudent?.firstName} {currentSelectedStudent?.lastName}
+                      </div>
+                      <div className="text-[11px] text-slate-500 dark:text-slate-400 flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
+                        <span>
+                          Adm No: <strong className="font-mono text-slate-700 dark:text-slate-300">{currentSelectedStudent?.admissionNumber || '—'}</strong>
+                        </span>
+                        {reassignTarget.enrollment?.classId?.name && (
+                          <span className="text-slate-400">
+                            • Current:{' '}
+                            <span className="font-semibold text-slate-600 dark:text-slate-300">
+                              {reassignTarget.enrollment.classId.name}
+                              {reassignTarget.enrollment.sectionId?.name
+                                ? ` (${reassignTarget.enrollment.sectionId.name})`
+                                : ''}
+                            </span>
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                    Select Student *
+                  </label>
+                  <select
+                    value={assignForm.studentId}
+                    onChange={(e) => {
+                      const chosenId = e.target.value;
+                      const existing = enrollments.find((enr) => enr.studentId?._id === chosenId);
+                      setAssignForm((prev) => ({
+                        ...prev,
+                        studentId: chosenId,
+                        rollNumber: existing?.rollNumber || '',
+                      }));
+                    }}
+                    required
+                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 font-bold outline-hidden"
+                  >
+                    <option value="">Choose student...</option>
+                    {students.map((s) => (
+                      <option key={s._id} value={s._id}>
+                        {s.firstName} {s.lastName} ({s.admissionNumber})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               <div>
                 <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
@@ -1054,7 +1111,10 @@ export default function EnrollmentPage() {
               <div className="flex justify-end gap-2 pt-2">
                 <button
                   type="button"
-                  onClick={() => setIsAssignModalOpen(false)}
+                  onClick={() => {
+                    setIsAssignModalOpen(false);
+                    setReassignTarget(null);
+                  }}
                   className="px-4 py-2 text-xs font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl cursor-pointer"
                 >
                   Cancel
@@ -1064,7 +1124,9 @@ export default function EnrollmentPage() {
                   disabled={isSubmittingAssign}
                   className="px-5 py-2 bg-[#0050CB] hover:bg-[#003E9E] disabled:bg-slate-300 text-white text-xs font-bold rounded-xl shadow-md cursor-pointer"
                 >
-                  {isSubmittingAssign ? 'Assigning...' : 'Save Allocation'}
+                  {isSubmittingAssign
+                    ? (reassignTarget ? 'Reallocating...' : 'Assigning...')
+                    : (reassignTarget ? 'Save Reallocation' : 'Save Allocation')}
                 </button>
               </div>
             </form>
