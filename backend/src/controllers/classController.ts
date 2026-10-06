@@ -8,9 +8,16 @@ import { generateRollCallRosterPDF, RollCallRosterData, RollCallRosterItem } fro
 // Get all classes
 export const getClasses = async (req: Request, res: Response): Promise<void> => {
   try {
-    const classes = await Class.find()
+    let classes = await Class.find()
       .populate('classTeacher', 'firstName lastName email')
       .sort({ createdAt: -1 });
+
+    // Deduplicate duplicate Pre-KG / PreKG naming variants
+    const hasHyphenPreKg = classes.some((c) => c.name?.replace(/\s+/g, '').toLowerCase() === 'pre-kg');
+    if (hasHyphenPreKg) {
+      classes = classes.filter((c) => c.name?.replace(/\s+/g, '').toLowerCase() !== 'prekg');
+    }
+
     res.json(classes);
   } catch (error) {
     res.status(500).json({ message: 'Server error fetching classes' });

@@ -415,111 +415,111 @@ function AcademicContent() {
 
   const [activeTab, setActiveTab] = useState<'timetable' | 'subjects' | 'years' | 'terms'>('timetable');
   
-  // Canonical Subjects matching reference image
+  // Canonical Subjects tailored specifically for Kindergarten (Pre-KG, LKG, UKG)
   const [subjects, setSubjects] = useState<any[]>([
     {
       _id: 'sub-eng',
-      name: 'English',
-      code: 'ENG001',
+      name: 'English & Phonics',
+      code: 'ENG-EYFS',
       category: 'Core',
-      classes: 'LKG - Grade 5',
-      type: 'Language',
+      classes: 'PreKG, LKG, UKG',
+      type: 'Language & Literacy',
       color: '#0050CB',
       iconBg: '#E5EEFF',
       iconType: 'letters',
       status: 'Active',
-      description: 'Foundational English reading, comprehension and communicative language arts.',
+      description: 'Jolly Phonics, letter sounds, early vocabulary building, and conversational storytelling.',
     },
     {
       _id: 'sub-math',
-      name: 'Mathematics',
-      code: 'MATH001',
+      name: 'Early Mathematics & Numeracy',
+      code: 'NUM-EYFS',
       category: 'Core',
-      classes: 'LKG - Grade 5',
-      type: 'Mathematics',
+      classes: 'PreKG, LKG, UKG',
+      type: 'Numeracy & Logic',
       color: '#9333EA',
       iconBg: '#F3E8FF',
       iconType: 'math',
       status: 'Active',
-      description: 'Numerical logic, arithmetic reasoning, geometry and mathematical problem solving.',
+      description: 'Number tracing, shape identification, basic counting 1-100, patterns, and size comparison.',
     },
     {
-      _id: 'sub-sci',
-      name: 'Science',
-      code: 'SCI001',
+      _id: 'sub-evs',
+      name: 'Environmental Studies (EVS)',
+      code: 'EVS-EYFS',
       category: 'Core',
-      classes: 'Grade 1 - Grade 5',
-      type: 'Science',
+      classes: 'PreKG, LKG, UKG',
+      type: 'World & Nature',
       color: '#0D9488',
       iconBg: '#CCFBF1',
       iconType: 'atom',
       status: 'Active',
-      description: 'Observational natural sciences, living environment, physical matter and experiments.',
-    },
-    {
-      _id: 'sub-soc',
-      name: 'Social Studies',
-      code: 'SOC001',
-      category: 'Core',
-      classes: 'Grade 1 - Grade 5',
-      type: 'Social Science',
-      color: '#EA580C',
-      iconBg: '#FFEDD5',
-      iconType: 'globe',
-      status: 'Active',
-      description: 'Historical heritage, world geography, community civics and cultural foundations.',
+      description: 'Seasons, plants, animals, senses, family, healthy food, and nature exploration.',
     },
     {
       _id: 'sub-art',
-      name: 'Art & Craft',
-      code: 'ART001',
+      name: 'Art, Craft & Sensory Play',
+      code: 'ART-EYFS',
       category: 'Elective',
-      classes: 'LKG - Grade 5',
+      classes: 'PreKG, LKG, UKG',
       type: 'Creative Arts',
       color: '#EC4899',
       iconBg: '#FCE7F3',
       iconType: 'palette',
       status: 'Active',
-      description: 'Creative visual illustration, sketch design, origami modeling and artisanal crafts.',
+      description: 'Finger painting, clay modeling, paper tearing, origami, and fine-motor sensory coordination.',
     },
     {
-      _id: 'sub-mus',
-      name: 'Music',
-      code: 'MUS001',
-      category: 'Elective',
-      classes: 'LKG - Grade 5',
-      type: 'Creative Arts',
+      _id: 'sub-rhymes',
+      name: 'Rhymes, Music & Storytelling',
+      code: 'MUS-EYFS',
+      category: 'Core',
+      classes: 'PreKG, LKG, UKG',
+      type: 'Music & Expression',
       color: '#0284C7',
       iconBg: '#E0F2FE',
       iconType: 'music',
       status: 'Active',
-      description: 'Vocal melody training, instrumental rhythm coordination and musical appreciation.',
+      description: 'Action rhymes, nursery songs, puppet theater, voice modulation, and rhythm imitation.',
     },
     {
       _id: 'sub-pe',
-      name: 'Physical Education',
-      code: 'PE001',
+      name: 'Physical & Gross Motor Skills',
+      code: 'PE-EYFS',
       category: 'Core',
-      classes: 'LKG - Grade 5',
-      type: 'Physical Education',
+      classes: 'PreKG, LKG, UKG',
+      type: 'Physical Development',
       color: '#6366F1',
       iconBg: '#EEF2FF',
       iconType: 'dumbbell',
       status: 'Active',
-      description: 'Aerobic sports fitness, gymnastics coordination, team athletics and wellness discipline.',
+      description: 'Balance beams, bean bag toss, free play, dance coordination, and basic indoor yoga.',
     },
     {
-      _id: 'sub-cs',
-      name: 'Computer Science',
-      code: 'COMP001',
+      _id: 'sub-gk',
+      name: 'General Awareness & Manners',
+      code: 'GK-EYFS',
+      category: 'Core',
+      classes: 'LKG, UKG',
+      type: 'Social & Emotional',
+      color: '#EA580C',
+      iconBg: '#FFEDD5',
+      iconType: 'globe',
+      status: 'Active',
+      description: 'Table manners, greeting elders, road safety awareness, hygiene habits, and emotional empathy.',
+    },
+    {
+      _id: 'sub-lang2',
+      name: 'Second Language (Tamil / Hindi)',
+      code: 'L2-EYFS',
       category: 'Elective',
-      classes: 'Grade 3 - Grade 5',
-      type: 'Technology',
+      classes: 'LKG, UKG',
+      type: 'Regional Language',
       color: '#EAB308',
       iconBg: '#FEF3C7',
-      iconType: 'laptop',
+      iconType: 'letters',
       status: 'Active',
-      description: 'Introductory computational thinking, software literacy and foundational algorithms.',
+      description: 'Basic regional language greetings, alphabet identification (Uyir Ezhuthukkal / Swar), and verbal rhymes.',
     },
   ]);
 
@@ -528,6 +528,8 @@ function AcademicContent() {
   const [subjectClassFilter, setSubjectClassFilter] = useState('All Classes');
   const [subjectTypeFilter, setSubjectTypeFilter] = useState('All Types');
   const [subjectStatusFilter, setSubjectStatusFilter] = useState('Active');
+  const [subjectCategoryFilter, setSubjectCategoryFilter] = useState<'All' | 'Core' | 'Elective'>('All');
+  const [showSubjectFilterPanel, setShowSubjectFilterPanel] = useState(false);
   const [subjectViewMode, setSubjectViewMode] = useState<'grid' | 'list'>('grid');
   const [selectedSubjectForDetails, setSelectedSubjectForDetails] = useState<any | null>(null);
   const [activeSubjectMenuId, setActiveSubjectMenuId] = useState<string | null>(null);
@@ -721,9 +723,10 @@ function AcademicContent() {
         sub.description?.toLowerCase().includes(q) ||
         sub.type?.toLowerCase().includes(q);
 
+      const normalizeClass = (c: string) => (c || '').toLowerCase().replace(/[\s\-_]/g, '');
       const matchesClass =
         subjectClassFilter === 'All Classes' ||
-        sub.classes?.toLowerCase().includes(subjectClassFilter.toLowerCase());
+        normalizeClass(sub.classes).includes(normalizeClass(subjectClassFilter));
 
       const matchesType =
         subjectTypeFilter === 'All Types' ||
@@ -733,9 +736,13 @@ function AcademicContent() {
         subjectStatusFilter === 'All' ||
         (subjectStatusFilter === 'Active' && (sub.status === 'Active' || !sub.status));
 
-      return matchesSearch && matchesClass && matchesType && matchesStatus;
+      const matchesCategory =
+        subjectCategoryFilter === 'All' ||
+        (sub.category || 'Core') === subjectCategoryFilter;
+
+      return matchesSearch && matchesClass && matchesType && matchesStatus && matchesCategory;
     });
-  }, [subjects, subjectSearchQuery, subjectClassFilter, subjectTypeFilter, subjectStatusFilter]);
+  }, [subjects, subjectSearchQuery, subjectClassFilter, subjectTypeFilter, subjectStatusFilter, subjectCategoryFilter]);
 
   const subjectStats = useMemo(() => {
     const total = subjects.length || 18;
@@ -800,7 +807,7 @@ function AcademicContent() {
           const enriched = subs.map((sub: any, idx: number) => ({
             ...sub,
             category: sub.category || (idx % 3 === 2 ? 'Elective' : 'Core'),
-            classes: sub.classes || 'LKG - Grade 5',
+            classes: sub.classes || 'PreKG, LKG, UKG',
             type: sub.type || 'Academic',
             color: sub.colorCode || sub.color || '#0050CB',
             code: sub.code || `SUB00${idx + 1}`,
@@ -1485,13 +1492,9 @@ function AcademicContent() {
                   className="appearance-none bg-white dark:bg-[#07152F] border border-slate-200/80 dark:border-slate-800 rounded-full px-4 py-2.5 pr-8 text-xs font-bold text-slate-700 dark:text-slate-200 outline-hidden cursor-pointer shadow-2xs hover:bg-slate-50 transition-colors"
                 >
                   <option value="All Classes">All Classes</option>
+                  <option value="PreKG">Pre-KG</option>
                   <option value="LKG">LKG</option>
                   <option value="UKG">UKG</option>
-                  <option value="Grade 1">Grade 1</option>
-                  <option value="Grade 2">Grade 2</option>
-                  <option value="Grade 3">Grade 3</option>
-                  <option value="Grade 4">Grade 4</option>
-                  <option value="Grade 5">Grade 5</option>
                 </select>
                 <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               </div>
@@ -1504,13 +1507,14 @@ function AcademicContent() {
                   className="appearance-none bg-white dark:bg-[#07152F] border border-slate-200/80 dark:border-slate-800 rounded-full px-4 py-2.5 pr-8 text-xs font-bold text-slate-700 dark:text-slate-200 outline-hidden cursor-pointer shadow-2xs hover:bg-slate-50 transition-colors"
                 >
                   <option value="All Types">All Types</option>
-                  <option value="Language">Language</option>
-                  <option value="Mathematics">Mathematics</option>
-                  <option value="Science">Science</option>
-                  <option value="Social Science">Social Science</option>
+                  <option value="Language & Literacy">Language & Literacy</option>
+                  <option value="Numeracy & Logic">Numeracy & Logic</option>
+                  <option value="World & Nature">World & Nature</option>
                   <option value="Creative Arts">Creative Arts</option>
-                  <option value="Physical Education">Physical Education</option>
-                  <option value="Technology">Technology</option>
+                  <option value="Music & Expression">Music & Expression</option>
+                  <option value="Physical Development">Physical Development</option>
+                  <option value="Social & Emotional">Social & Emotional</option>
+                  <option value="Regional Language">Regional Language</option>
                 </select>
                 <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               </div>
@@ -1532,17 +1536,18 @@ function AcademicContent() {
               {/* Filter Button */}
               <button
                 type="button"
-                onClick={() => {
-                  setSubjectClassFilter('All Classes');
-                  setSubjectTypeFilter('All Types');
-                  setSubjectStatusFilter('Active');
-                  setSubjectSearchQuery('');
-                  toast.success('Filters reset to default');
-                }}
-                className="flex items-center gap-1.5 px-4 py-2.5 rounded-full border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#07152F] hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-200 shadow-2xs transition-colors cursor-pointer"
+                onClick={() => setShowSubjectFilterPanel((prev) => !prev)}
+                className={`flex items-center gap-1.5 px-4 py-2.5 rounded-full border text-xs font-bold transition-all cursor-pointer shadow-2xs ${
+                  showSubjectFilterPanel || subjectClassFilter !== 'All Classes' || subjectTypeFilter !== 'All Types' || subjectStatusFilter !== 'Active' || subjectCategoryFilter !== 'All'
+                    ? 'bg-[#E5EEFF] dark:bg-[#0050CB]/25 border-[#0050CB] text-[#0050CB] dark:text-[#38BDF8]'
+                    : 'border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#07152F] hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200'
+                }`}
               >
-                <Filter className="w-3.5 h-3.5 text-slate-400" />
+                <Filter className={`w-3.5 h-3.5 ${showSubjectFilterPanel ? 'text-[#0050CB] dark:text-[#38BDF8]' : 'text-slate-400'}`} />
                 <span>Filter</span>
+                {(subjectClassFilter !== 'All Classes' || subjectTypeFilter !== 'All Types' || subjectStatusFilter !== 'Active' || subjectCategoryFilter !== 'All') && (
+                  <span className="w-2 h-2 rounded-full bg-[#0050CB] dark:bg-[#38BDF8] ml-0.5" />
+                )}
               </button>
 
               {/* Grid / List View Toggle */}
@@ -1574,6 +1579,134 @@ function AcademicContent() {
               </div>
             </div>
           </div>
+
+          {/* Interactive Filter Drawer / Panel */}
+          {showSubjectFilterPanel && (
+            <div className="bg-white dark:bg-[#07152F] border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5 shadow-xs animate-in fade-in slide-in-from-top-2 duration-150 space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+                <div className="flex items-center gap-2">
+                  <Filter className="w-4 h-4 text-[#0050CB]" />
+                  <h4 className="font-bold text-xs text-[#000E28] dark:text-white uppercase tracking-wider">Advanced Subject Filters</h4>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSubjectClassFilter('All Classes');
+                      setSubjectTypeFilter('All Types');
+                      setSubjectStatusFilter('Active');
+                      setSubjectCategoryFilter('All');
+                      setSubjectSearchQuery('');
+                      toast.success('All filters reset');
+                    }}
+                    className="text-xs text-[#0050CB] dark:text-[#38BDF8] font-bold hover:underline cursor-pointer"
+                  >
+                    Reset All
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowSubjectFilterPanel(false)}
+                    className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
+                {/* Class */}
+                <div>
+                  <label className="font-bold text-slate-600 dark:text-slate-300 block mb-1.5">Class / Grade Level</label>
+                  <select
+                    value={subjectClassFilter}
+                    onChange={(e) => setSubjectClassFilter(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 font-bold outline-hidden"
+                  >
+                    <option value="All Classes">All Classes (PreKG, LKG, UKG)</option>
+                    <option value="PreKG">Pre-KG</option>
+                    <option value="LKG">LKG</option>
+                    <option value="UKG">UKG</option>
+                  </select>
+                </div>
+
+                {/* Category: Core vs Elective */}
+                <div>
+                  <label className="font-bold text-slate-600 dark:text-slate-300 block mb-1.5">Curriculum Category</label>
+                  <div className="grid grid-cols-3 gap-1 p-1 bg-slate-100 dark:bg-slate-900 rounded-xl">
+                    {(['All', 'Core', 'Elective'] as const).map((cat) => (
+                      <button
+                        key={cat}
+                        type="button"
+                        onClick={() => setSubjectCategoryFilter(cat)}
+                        className={`py-1.5 rounded-lg font-bold text-[11px] transition-all cursor-pointer ${
+                          subjectCategoryFilter === cat
+                            ? 'bg-[#0050CB] text-white shadow-xs'
+                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                        }`}
+                      >
+                        {cat}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Discipline Type */}
+                <div>
+                  <label className="font-bold text-slate-600 dark:text-slate-300 block mb-1.5">Discipline Type</label>
+                  <select
+                    value={subjectTypeFilter}
+                    onChange={(e) => setSubjectTypeFilter(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 font-bold outline-hidden"
+                  >
+                    <option value="All Types">All Types</option>
+                    <option value="Language & Literacy">Language & Literacy</option>
+                    <option value="Numeracy & Logic">Numeracy & Logic</option>
+                    <option value="World & Nature">World & Nature</option>
+                    <option value="Creative Arts">Creative Arts</option>
+                    <option value="Music & Expression">Music & Expression</option>
+                    <option value="Physical Development">Physical Development</option>
+                    <option value="Social & Emotional">Social & Emotional</option>
+                    <option value="Regional Language">Regional Language</option>
+                  </select>
+                </div>
+
+                {/* Status */}
+                <div>
+                  <label className="font-bold text-slate-600 dark:text-slate-300 block mb-1.5">Curriculum Status</label>
+                  <select
+                    value={subjectStatusFilter}
+                    onChange={(e) => setSubjectStatusFilter(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 font-bold outline-hidden"
+                  >
+                    <option value="Active">Active Subjects</option>
+                    <option value="All">All Statuses</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Quick filter summary chips */}
+              <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100 dark:border-slate-800 text-[11px]">
+                <span className="font-bold text-slate-400">Quick Classes:</span>
+                {['All Classes', 'PreKG', 'LKG', 'UKG'].map((cls) => (
+                  <button
+                    key={cls}
+                    type="button"
+                    onClick={() => setSubjectClassFilter(cls)}
+                    className={`px-2.5 py-1 rounded-full font-bold transition-all cursor-pointer ${
+                      subjectClassFilter === cls
+                        ? 'bg-[#0050CB] text-white shadow-2xs'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+                    }`}
+                  >
+                    {cls === 'All Classes' ? 'All Classes' : cls === 'PreKG' ? 'Pre-KG' : cls}
+                  </button>
+                ))}
+                <span className="ml-auto font-medium text-slate-500">
+                  Showing <strong className="text-[#0050CB] dark:text-[#38BDF8]">{filteredSubjects.length}</strong> of {subjects.length} subjects
+                </span>
+              </div>
+            </div>
+          )}
 
           {/* Subjects Cards / Table */}
           {filteredSubjects.length === 0 ? (
@@ -1637,7 +1770,7 @@ function AcademicContent() {
                       <div className="mt-4 space-y-2 text-xs text-slate-500 dark:text-slate-400">
                         <div className="flex items-center gap-2">
                           <GraduationCap className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                          <span className="text-[11px] font-medium">Classes: {sub.classes || 'LKG - Grade 5'}</span>
+                          <span className="text-[11px] font-medium">Classes: {sub.classes || 'PreKG, LKG, UKG'}</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <Sparkles className="w-3.5 h-3.5 text-slate-400 shrink-0" />
@@ -1735,7 +1868,7 @@ function AcademicContent() {
                             {sub.category || 'Core'}
                           </span>
                         </td>
-                        <td className="py-3.5 px-4 text-slate-600 dark:text-slate-300 font-medium">{sub.classes || 'LKG - Grade 5'}</td>
+                        <td className="py-3.5 px-4 text-slate-600 dark:text-slate-300 font-medium">{sub.classes || 'PreKG, LKG, UKG'}</td>
                         <td className="py-3.5 px-4 text-slate-600 dark:text-slate-300 font-medium">{sub.type || 'Academic'}</td>
                         <td className="py-3.5 px-4 text-right space-x-2">
                           <button
@@ -2992,7 +3125,7 @@ function AcademicContent() {
                 <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">Eligible Classes</span>
                 <span className="font-bold text-[#000E28] dark:text-white flex items-center gap-1.5">
                   <GraduationCap className="w-3.5 h-3.5 text-[#0050CB]" />
-                  <span>{selectedSubjectForDetails.classes || 'LKG - Grade 5'}</span>
+                  <span>{selectedSubjectForDetails.classes || 'PreKG, LKG, UKG'}</span>
                 </span>
               </div>
               <div className="p-3 rounded-xl bg-blue-50/50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/40">

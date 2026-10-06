@@ -24,6 +24,9 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getCurrentAcademicYearFormatted } from '@/lib/date';
+import { toSchoolISODate } from '@/lib/date/timezone';
+import { LeaveRequestSchema } from '@/schemas';
+import FieldError from '@/components/ui/FieldError';
 
 interface LeaveItem {
   _id: string;
@@ -87,6 +90,21 @@ export default function LeavesPage() {
 
   // Modal
   const [showAddModal, setShowAddModal] = useState(false);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({});
+
+  const todayStr = useMemo(() => {
+    try {
+      return toSchoolISODate();
+    } catch {
+      const d = new Date();
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+  }, []);
+
   const [formData, setFormData] = useState({
     userId: '',
     leaveType: 'Casual',
@@ -95,6 +113,51 @@ export default function LeavesPage() {
     endDate: '',
     reason: '',
   });
+
+  const validateLeaveField = (field: string, val: string): string => {
+    if (field === 'userId' && !val.trim()) {
+      return 'Please select a faculty or staff member';
+    }
+    if (field === 'startDate') {
+      if (!val.trim()) return 'Start date is required';
+      if (val < todayStr) return 'Start date cannot be in the past';
+    }
+    if (field === 'endDate') {
+      if (!val.trim()) return 'End date is required';
+      const start = formData.startDate || todayStr;
+      if (val < start) return 'End date cannot be earlier than start date';
+    }
+    if (field === 'reason') {
+      if (!val.trim()) return 'Reason for absence is required';
+      if (val.trim().length < 3) return 'Reason must be at least 3 characters';
+      if (val.trim().length > 500) return 'Reason cannot exceed 500 characters';
+    }
+    return '';
+  };
+
+  const handleFieldChange = (field: string, val: string) => {
+    setFormData((prev) => ({ ...prev, [field]: val }));
+    if (touchedFields[field] || formErrors[field]) {
+      const err = validateLeaveField(field, val);
+      setFormErrors((prev) => {
+        const next = { ...prev };
+        if (err) next[field] = err;
+        else delete next[field];
+        return next;
+      });
+    }
+  };
+
+  const handleFieldBlur = (field: string) => {
+    setTouchedFields((prev) => ({ ...prev, [field]: true }));
+    const err = validateLeaveField(field, (formData as any)[field] || '');
+    setFormErrors((prev) => {
+      const next = { ...prev };
+      if (err) next[field] = err;
+      else delete next[field];
+      return next;
+    });
+  };
 
   // Authenticated fetch helper
   const authenticatedFetch = async (url: string, options: RequestInit = {}): Promise<Response> => {
@@ -161,8 +224,25 @@ export default function LeavesPage() {
   // Submit New Leave Request
   const handleCreateLeave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.userId || !formData.startDate || !formData.endDate || !formData.reason.trim()) {
-      toast.error('Please complete all required fields');
+    setTouchedFields({
+      userId: true,
+      startDate: true,
+      endDate: true,
+      reason: true,
+    });
+    setFormErrors({});
+
+    const result = LeaveRequestSchema.safeParse(formData);
+    if (!result.success) {
+      const fieldErrs: Record<string, string> = {};
+      for (const issue of result.error.issues) {
+        const fieldName = issue.path[0] ? String(issue.path[0]) : 'form';
+        if (!fieldErrs[fieldName]) {
+          fieldErrs[fieldName] = issue.message;
+        }
+      }
+      setFormErrors(fieldErrs);
+      toast.error('Please fix the validation errors before submitting.');
       return;
     }
 
@@ -172,12 +252,13 @@ export default function LeavesPage() {
       const res = await authenticatedFetch(`${apiBase}/api/leaves`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(result.data),
       });
 
       if (res.ok) {
         toast.success('Leave request submitted successfully!');
         setShowAddModal(false);
+        setFormErrors({});
         setFormData({
           userId: '',
           leaveType: 'Casual',
@@ -188,11 +269,11 @@ export default function LeavesPage() {
         });
         fetchData();
       } else {
-        const err = await res.json();
+        const err = await res.json().catch(() => ({}));
         toast.error(err.message || 'Failed to submit leave request');
       }
     } catch (error: any) {
-      toast.error('Error submitting leave request: ' + error.message);
+      toast.error('Error submitting leave request: ' + (error?.message || 'Network error'));
     } finally {
       setIsSaving(false);
     }
@@ -825,14 +906,19 @@ export default function LeavesPage() {
 
             <form onSubmit={handleCreateLeave} className="space-y-3.5 text-xs">
               <div>
-                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                <label htmlFor="leave-staff-select" className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
                   Staff Member <span className="text-rose-500">*</span>
                 </label>
                 <select
+                  id="leave-staff-select"
                   value={formData.userId}
-                  onChange={(e) => setFormData({ ...formData, userId: e.target.value })}
-                  required
-                  className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs outline-none focus:ring-2 focus:ring-[#0050CB]"
+                  onChange={(e) => handleFieldChange('userId', e.target.value)}
+                  onBlur={() => handleFieldBlur('userId')}
+                  aria-invalid={!!formErrors.userId}
+                  aria-describedby={formErrors.userId ? 'leave-user-error' : undefined}
+                  className={`w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border rounded-xl text-xs outline-none focus:ring-2 focus:ring-[#0050CB] ${
+                    formErrors.userId ? 'border-rose-400 bg-rose-50/30' : 'border-slate-200 dark:border-slate-700'
+                  }`}
                 >
                   <option value="">Select Faculty / Staff Member</option>
                   {staff.map((u) => {
@@ -844,6 +930,7 @@ export default function LeavesPage() {
                     );
                   })}
                 </select>
+                <FieldError error={formErrors.userId} id="leave-user-error" />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -853,7 +940,7 @@ export default function LeavesPage() {
                   </label>
                   <select
                     value={formData.leaveType}
-                    onChange={(e) => setFormData({ ...formData, leaveType: e.target.value })}
+                    onChange={(e) => handleFieldChange('leaveType', e.target.value)}
                     className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs outline-none"
                   >
                     <option value="Casual">Casual Leave</option>
@@ -871,7 +958,7 @@ export default function LeavesPage() {
                   </label>
                   <select
                     value={formData.sessionType}
-                    onChange={(e) => setFormData({ ...formData, sessionType: e.target.value })}
+                    onChange={(e) => handleFieldChange('sessionType', e.target.value)}
                     className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs outline-none"
                   >
                     <option value="Full Day">Full Day</option>
@@ -883,44 +970,70 @@ export default function LeavesPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                  <label htmlFor="leave-start-date" className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
                     Start Date <span className="text-rose-500">*</span>
                   </label>
                   <input
+                    id="leave-start-date"
                     type="date"
+                    min={todayStr}
                     value={formData.startDate}
-                    onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                    required
-                    className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs outline-none"
+                    onChange={(e) => {
+                      const newStart = e.target.value;
+                      handleFieldChange('startDate', newStart);
+                      if (formData.endDate && formData.endDate < newStart) {
+                        handleFieldChange('endDate', newStart);
+                      }
+                    }}
+                    onBlur={() => handleFieldBlur('startDate')}
+                    aria-invalid={!!formErrors.startDate}
+                    aria-describedby={formErrors.startDate ? 'leave-start-error' : undefined}
+                    className={`w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border rounded-xl text-xs outline-none ${
+                      formErrors.startDate ? 'border-rose-400 bg-rose-50/30' : 'border-slate-200 dark:border-slate-700'
+                    }`}
                   />
+                  <FieldError error={formErrors.startDate} id="leave-start-error" />
                 </div>
 
                 <div>
-                  <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                  <label htmlFor="leave-end-date" className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
                     End Date <span className="text-rose-500">*</span>
                   </label>
                   <input
+                    id="leave-end-date"
                     type="date"
+                    min={formData.startDate || todayStr}
                     value={formData.endDate}
-                    onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                    required
-                    className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs outline-none"
+                    onChange={(e) => handleFieldChange('endDate', e.target.value)}
+                    onBlur={() => handleFieldBlur('endDate')}
+                    aria-invalid={!!formErrors.endDate}
+                    aria-describedby={formErrors.endDate ? 'leave-end-error' : undefined}
+                    className={`w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border rounded-xl text-xs outline-none ${
+                      formErrors.endDate ? 'border-rose-400 bg-rose-50/30' : 'border-slate-200 dark:border-slate-700'
+                    }`}
                   />
+                  <FieldError error={formErrors.endDate} id="leave-end-error" />
                 </div>
               </div>
 
               <div>
-                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                <label htmlFor="leave-reason" className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
                   Reason for Absence <span className="text-rose-500">*</span>
                 </label>
                 <textarea
+                  id="leave-reason"
                   value={formData.reason}
-                  onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
-                  placeholder="Provide context, medical reason, or event details..."
-                  required
+                  onChange={(e) => handleFieldChange('reason', e.target.value)}
+                  onBlur={() => handleFieldBlur('reason')}
+                  placeholder="Provide context, medical reason, or event details (at least 3 characters)..."
                   rows={3}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs outline-none resize-none focus:ring-2 focus:ring-[#0050CB]"
+                  aria-invalid={!!formErrors.reason}
+                  aria-describedby={formErrors.reason ? 'leave-reason-error' : undefined}
+                  className={`w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border rounded-xl text-xs outline-none resize-none focus:ring-2 focus:ring-[#0050CB] ${
+                    formErrors.reason ? 'border-rose-400 bg-rose-50/30' : 'border-slate-200 dark:border-slate-700'
+                  }`}
                 />
+                <FieldError error={formErrors.reason} id="leave-reason-error" />
               </div>
 
               <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800">

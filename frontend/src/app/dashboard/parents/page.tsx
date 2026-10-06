@@ -12,6 +12,20 @@ import toast from 'react-hot-toast';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import AdminStatCard from '@/components/admin/AdminStatCard';
 import AdminDataTable, { Column } from '@/components/admin/AdminDataTable';
+import { FieldError } from '@/components/ui/FieldError';
+import {
+  ParentRegistrationSchema,
+  BroadcastMessageSchema,
+  LinkStudentSchema,
+} from '@/schemas';
+import {
+  preventNonAlphaKey,
+  preventNonNumericKey,
+  sanitizeNameInput,
+  sanitizePhoneInput,
+  handleNamePaste,
+  handlePhonePaste,
+} from '@/lib/validationUtils';
 
 interface ParentRecord {
   _id: string;
@@ -112,6 +126,11 @@ function ParentsPageContent() {
     subject: '',
     message: ''
   });
+
+  // Form error states
+  const [parentErrors, setParentErrors] = useState<Record<string, string>>({});
+  const [linkErrors, setLinkErrors] = useState<Record<string, string>>({});
+  const [broadcastErrors, setBroadcastErrors] = useState<Record<string, string>>({});
 
   // Mock Communication Logs
   const [commLogs, setCommLogs] = useState<CommLog[]>([
@@ -291,6 +310,32 @@ function ParentsPageContent() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const validation = ParentRegistrationSchema.safeParse({
+      fatherName: formData.fatherName || undefined,
+      fatherOccupation: formData.fatherOccupation || undefined,
+      fatherContact: formData.fatherContact || undefined,
+      motherName: formData.motherName || undefined,
+      motherOccupation: formData.motherOccupation || undefined,
+      motherContact: formData.motherContact || undefined,
+      guardianName: formData.guardianName || undefined,
+      guardianContact: formData.guardianContact || undefined,
+      primaryEmail: formData.primaryEmail,
+      address: formData.address,
+      whatsappNumber: formData.whatsappNumber || undefined,
+    });
+
+    if (!validation.success) {
+      const fieldErrors: Record<string, string> = {};
+      validation.error.issues.forEach((err) => {
+        const key = err.path[0] ? String(err.path[0]) : 'general';
+        if (!fieldErrors[key]) fieldErrors[key] = err.message;
+      });
+      setParentErrors(fieldErrors);
+      toast.error(Object.values(fieldErrors)[0] || 'Please fix parent form errors');
+      return;
+    }
+    setParentErrors({});
+
     try {
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
       const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
@@ -323,7 +368,24 @@ function ParentsPageContent() {
 
   const handleLinkStudent = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!showLinkModal.parent || !linkStudentForm.studentId) return;
+    if (!showLinkModal.parent) return;
+
+    const validation = LinkStudentSchema.safeParse({
+      studentId: linkStudentForm.studentId,
+      relationship: linkStudentForm.relationship,
+    });
+
+    if (!validation.success) {
+      const fieldErrors: Record<string, string> = {};
+      validation.error.issues.forEach((err) => {
+        const key = err.path[0] ? String(err.path[0]) : 'general';
+        if (!fieldErrors[key]) fieldErrors[key] = err.message;
+      });
+      setLinkErrors(fieldErrors);
+      toast.error(Object.values(fieldErrors)[0] || 'Please select a student');
+      return;
+    }
+    setLinkErrors({});
 
     const targetStudent = studentsList.find(s => s._id === linkStudentForm.studentId);
     if (!targetStudent) return;
@@ -332,6 +394,7 @@ function ParentsPageContent() {
       if (p._id === showLinkModal.parent?._id) {
         const existing = p.students || [];
         if (existing.some(s => s._id === targetStudent._id)) {
+          setLinkErrors({ studentId: 'Student is already linked to this parent profile' });
           toast.error('Student is already linked to this parent profile');
           return p;
         }
@@ -356,13 +419,32 @@ function ParentsPageContent() {
 
   const handleBroadcast = (e: React.FormEvent) => {
     e.preventDefault();
+    const validation = BroadcastMessageSchema.safeParse({
+      channel: broadcastForm.channel,
+      targetGroup: broadcastForm.targetGroup,
+      subject: broadcastForm.subject,
+      message: broadcastForm.message,
+    });
+
+    if (!validation.success) {
+      const fieldErrors: Record<string, string> = {};
+      validation.error.issues.forEach((err) => {
+        const key = err.path[0] ? String(err.path[0]) : 'general';
+        if (!fieldErrors[key]) fieldErrors[key] = err.message;
+      });
+      setBroadcastErrors(fieldErrors);
+      toast.error(Object.values(fieldErrors)[0] || 'Please fix broadcast notice errors');
+      return;
+    }
+    setBroadcastErrors({});
+
     const newLog: CommLog = {
       id: 'log-' + Date.now(),
       recipient: broadcastForm.targetGroup === 'All Parents' ? 'All Enrolled Parents (1,248)' : 'Class Pre-KG Parents',
       parentName: broadcastForm.targetGroup,
       studentName: 'Broadcast Group',
       channel: broadcastForm.channel,
-      subject: broadcastForm.subject,
+      subject: broadcastForm.subject.trim(),
       timestamp: new Date().toLocaleDateString('en-GB') + ' ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       status: 'Delivered'
     };
@@ -803,20 +885,36 @@ function ParentsPageContent() {
             <form onSubmit={handleSubmit} className="space-y-4 text-xs">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-600 dark:text-slate-300 mb-1">Father's Full Name *</label>
+                  <label className="block font-bold text-slate-600 dark:text-slate-300 mb-1">
+                    Father's Full Name <span className="text-[#FF690C]">*</span>
+                  </label>
                   <input
                     type="text"
-                    required
+                    id="parent-father"
+                    onKeyDown={preventNonAlphaKey}
+                    onPaste={(e) => handleNamePaste(e, (clean) => {
+                      setFormData(prev => ({ ...prev, fatherName: clean }));
+                      if (parentErrors.fatherName) setParentErrors(prev => ({ ...prev, fatherName: '' }));
+                    })}
                     value={formData.fatherName}
-                    onChange={(e) => setFormData({ ...formData, fatherName: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#000E28] font-bold"
+                    onChange={(e) => {
+                      setFormData({ ...formData, fatherName: sanitizeNameInput(e.target.value) });
+                      if (parentErrors.fatherName) setParentErrors(prev => ({ ...prev, fatherName: '' }));
+                    }}
+                    aria-invalid={Boolean(parentErrors.fatherName)}
+                    aria-describedby={parentErrors.fatherName ? "parent-father-err" : undefined}
+                    className={`w-full px-3 py-2 rounded-xl border font-bold ${
+                      parentErrors.fatherName ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#000E28]'
+                    }`}
                     placeholder="e.g. Vikram Sharma"
                   />
+                  <FieldError id="parent-father-err" error={parentErrors.fatherName} />
                 </div>
                 <div>
                   <label className="block font-bold text-slate-600 dark:text-slate-300 mb-1">Father's Occupation</label>
                   <input
                     type="text"
+                    id="parent-fatherOcc"
                     value={formData.fatherOccupation}
                     onChange={(e) => setFormData({ ...formData, fatherOccupation: e.target.value })}
                     className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#000E28] font-bold"
@@ -827,20 +925,36 @@ function ParentsPageContent() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-600 dark:text-slate-300 mb-1">Mother's Full Name *</label>
+                  <label className="block font-bold text-slate-600 dark:text-slate-300 mb-1">
+                    Mother's Full Name <span className="text-[#FF690C]">*</span>
+                  </label>
                   <input
                     type="text"
-                    required
+                    id="parent-mother"
+                    onKeyDown={preventNonAlphaKey}
+                    onPaste={(e) => handleNamePaste(e, (clean) => {
+                      setFormData(prev => ({ ...prev, motherName: clean }));
+                      if (parentErrors.motherName) setParentErrors(prev => ({ ...prev, motherName: '' }));
+                    })}
                     value={formData.motherName}
-                    onChange={(e) => setFormData({ ...formData, motherName: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#000E28] font-bold"
+                    onChange={(e) => {
+                      setFormData({ ...formData, motherName: sanitizeNameInput(e.target.value) });
+                      if (parentErrors.motherName) setParentErrors(prev => ({ ...prev, motherName: '' }));
+                    }}
+                    aria-invalid={Boolean(parentErrors.motherName)}
+                    aria-describedby={parentErrors.motherName ? "parent-mother-err" : undefined}
+                    className={`w-full px-3 py-2 rounded-xl border font-bold ${
+                      parentErrors.motherName ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#000E28]'
+                    }`}
                     placeholder="e.g. Priya Sharma"
                   />
+                  <FieldError id="parent-mother-err" error={parentErrors.motherName} />
                 </div>
                 <div>
                   <label className="block font-bold text-slate-600 dark:text-slate-300 mb-1">Mother's Occupation</label>
                   <input
                     type="text"
+                    id="parent-motherOcc"
                     value={formData.motherOccupation}
                     onChange={(e) => setFormData({ ...formData, motherOccupation: e.target.value })}
                     className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#000E28] font-bold"
@@ -851,39 +965,76 @@ function ParentsPageContent() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-600 dark:text-slate-300 mb-1">Primary Email *</label>
+                  <label className="block font-bold text-slate-600 dark:text-slate-300 mb-1">
+                    Primary Email <span className="text-[#FF690C]">*</span>
+                  </label>
                   <input
                     type="email"
+                    id="parent-email"
                     required
                     value={formData.primaryEmail}
-                    onChange={(e) => setFormData({ ...formData, primaryEmail: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#000E28] font-bold"
+                    onChange={(e) => {
+                      setFormData({ ...formData, primaryEmail: e.target.value });
+                      if (parentErrors.primaryEmail) setParentErrors(prev => ({ ...prev, primaryEmail: '' }));
+                    }}
+                    aria-invalid={Boolean(parentErrors.primaryEmail)}
+                    aria-describedby={parentErrors.primaryEmail ? "parent-email-err" : undefined}
+                    className={`w-full px-3 py-2 rounded-xl border font-bold ${
+                      parentErrors.primaryEmail ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#000E28]'
+                    }`}
                     placeholder="sharma.family@example.com"
                   />
+                  <FieldError id="parent-email-err" error={parentErrors.primaryEmail} />
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-600 dark:text-slate-300 mb-1">WhatsApp Mobile *</label>
+                  <label className="block font-bold text-slate-600 dark:text-slate-300 mb-1">
+                    WhatsApp Mobile <span className="text-[#FF690C]">*</span>
+                  </label>
                   <input
                     type="tel"
-                    required
+                    id="parent-whatsapp"
+                    onKeyDown={preventNonNumericKey}
+                    onPaste={(e) => handlePhonePaste(e, (clean) => {
+                      setFormData(prev => ({ ...prev, whatsappNumber: clean }));
+                      if (parentErrors.whatsappNumber) setParentErrors(prev => ({ ...prev, whatsappNumber: '' }));
+                    })}
                     value={formData.whatsappNumber}
-                    onChange={(e) => setFormData({ ...formData, whatsappNumber: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#000E28] font-bold"
-                    placeholder="+91 98765 43210"
+                    onChange={(e) => {
+                      setFormData({ ...formData, whatsappNumber: sanitizePhoneInput(e.target.value) });
+                      if (parentErrors.whatsappNumber) setParentErrors(prev => ({ ...prev, whatsappNumber: '' }));
+                    }}
+                    aria-invalid={Boolean(parentErrors.whatsappNumber)}
+                    aria-describedby={parentErrors.whatsappNumber ? "parent-whatsapp-err" : undefined}
+                    className={`w-full px-3 py-2 rounded-xl border font-bold font-mono ${
+                      parentErrors.whatsappNumber ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#000E28]'
+                    }`}
+                    placeholder="10-digit mobile"
                   />
+                  <FieldError id="parent-whatsapp-err" error={parentErrors.whatsappNumber} />
                 </div>
               </div>
 
               <div>
-                <label className="block font-bold text-slate-600 dark:text-slate-300 mb-1">Residential Address *</label>
+                <label className="block font-bold text-slate-600 dark:text-slate-300 mb-1">
+                  Residential Address <span className="text-[#FF690C]">*</span>
+                </label>
                 <textarea
                   rows={2}
+                  id="parent-address"
                   required
                   value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#000E28] font-medium"
+                  onChange={(e) => {
+                    setFormData({ ...formData, address: e.target.value });
+                    if (parentErrors.address) setParentErrors(prev => ({ ...prev, address: '' }));
+                  }}
+                  aria-invalid={Boolean(parentErrors.address)}
+                  aria-describedby={parentErrors.address ? "parent-address-err" : undefined}
+                  className={`w-full px-3 py-2 rounded-xl border font-medium ${
+                    parentErrors.address ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#000E28]'
+                  }`}
                   placeholder="Street, apartment, city, pincode"
                 />
+                <FieldError id="parent-address-err" error={parentErrors.address} />
               </div>
 
               <div className="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
@@ -926,11 +1077,20 @@ function ParentsPageContent() {
               </div>
 
               <div>
-                <label className="block font-bold text-slate-600 dark:text-slate-300 mb-1">Select Student</label>
+                <label className="block font-bold text-slate-600 dark:text-slate-300 mb-1">
+                  Select Student <span className="text-[#FF690C]">*</span>
+                </label>
                 <select
                   value={linkStudentForm.studentId}
-                  onChange={(e) => setLinkStudentForm({ ...linkStudentForm, studentId: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#000E28] font-bold"
+                  onChange={(e) => {
+                    setLinkStudentForm({ ...linkStudentForm, studentId: e.target.value });
+                    if (linkErrors.studentId) setLinkErrors(prev => ({ ...prev, studentId: '' }));
+                  }}
+                  aria-invalid={Boolean(linkErrors.studentId)}
+                  aria-describedby={linkErrors.studentId ? "link-student-err" : undefined}
+                  className={`w-full px-3 py-2 rounded-xl border font-bold ${
+                    linkErrors.studentId ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#000E28]'
+                  }`}
                   required
                 >
                   <option value="">-- Choose student from directory --</option>
@@ -940,6 +1100,7 @@ function ParentsPageContent() {
                     </option>
                   ))}
                 </select>
+                <FieldError id="link-student-err" error={linkErrors.studentId} />
               </div>
 
               <div>
@@ -1017,27 +1178,47 @@ function ParentsPageContent() {
               </div>
 
               <div>
-                <label className="block font-bold text-slate-600 dark:text-slate-300 mb-1">Subject / Header</label>
+                <label className="block font-bold text-slate-600 dark:text-slate-300 mb-1">
+                  Subject / Header <span className="text-[#FF690C]">*</span>
+                </label>
                 <input
                   type="text"
                   required
                   value={broadcastForm.subject}
-                  onChange={(e) => setBroadcastForm({ ...broadcastForm, subject: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#000E28] font-bold"
+                  onChange={(e) => {
+                    setBroadcastForm({ ...broadcastForm, subject: e.target.value });
+                    if (broadcastErrors.subject) setBroadcastErrors(prev => ({ ...prev, subject: '' }));
+                  }}
+                  aria-invalid={Boolean(broadcastErrors.subject)}
+                  aria-describedby={broadcastErrors.subject ? "broadcast-subject-err" : undefined}
+                  className={`w-full px-3 py-2 rounded-xl border font-bold ${
+                    broadcastErrors.subject ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#000E28]'
+                  }`}
                   placeholder="e.g. Tomorrow Campus Advisory / Event Circular"
                 />
+                <FieldError id="broadcast-subject-err" error={broadcastErrors.subject} />
               </div>
 
               <div>
-                <label className="block font-bold text-slate-600 dark:text-slate-300 mb-1">Circular Content</label>
+                <label className="block font-bold text-slate-600 dark:text-slate-300 mb-1">
+                  Circular Content <span className="text-[#FF690C]">*</span>
+                </label>
                 <textarea
                   rows={4}
                   required
                   value={broadcastForm.message}
-                  onChange={(e) => setBroadcastForm({ ...broadcastForm, message: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#000E28] font-medium"
+                  onChange={(e) => {
+                    setBroadcastForm({ ...broadcastForm, message: e.target.value });
+                    if (broadcastErrors.message) setBroadcastErrors(prev => ({ ...prev, message: '' }));
+                  }}
+                  aria-invalid={Boolean(broadcastErrors.message)}
+                  aria-describedby={broadcastErrors.message ? "broadcast-message-err" : undefined}
+                  className={`w-full px-3 py-2 rounded-xl border font-medium ${
+                    broadcastErrors.message ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#000E28]'
+                  }`}
                   placeholder="Type official communication message here..."
                 />
+                <FieldError id="broadcast-message-err" error={broadcastErrors.message} />
               </div>
 
               <div className="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">

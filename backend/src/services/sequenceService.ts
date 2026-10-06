@@ -171,7 +171,7 @@ export async function generateNextEmployeeID(
 
 /**
  * Concurrency-safe atomic generation of Roll Number:
- * Unique within: Academic Year + Class + Section
+ * Guaranteed strictly unique across the school/academic year (no duplicate roll numbers for different students)
  * Format: 001, 002, 003...
  */
 export async function generateNextRollNumber(
@@ -181,12 +181,24 @@ export async function generateNextRollNumber(
   session?: mongoose.ClientSession
 ): Promise<string> {
   const year = normalizeAcademicYear(rawYear);
-  const className = normalizeClassName(rawClass);
-  const sectionName = normalizeSectionName(rawSection);
-  const key = `roll:${year}:${className}:${sectionName}`;
+  const key = `roll_global:${year}`;
 
-  const seqNumber = await getNextSequence(key, session);
-  return String(seqNumber).padStart(3, '0');
+  let seqNumber = await getNextSequence(key, session);
+  let candidate = String(seqNumber).padStart(3, '0');
+
+  if (mongoose.connection.readyState === 1) {
+    const EnrollmentModel = mongoose.models.Enrollment || mongoose.model('Enrollment');
+    const StudentModel = mongoose.models.Student || mongoose.model('Student');
+    while (
+      (await EnrollmentModel.exists({ rollNumber: candidate })) ||
+      (await StudentModel.exists({ rollNumber: candidate }))
+    ) {
+      seqNumber = await getNextSequence(key, session);
+      candidate = String(seqNumber).padStart(3, '0');
+    }
+  }
+
+  return candidate;
 }
 
 /**

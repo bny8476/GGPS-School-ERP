@@ -4,6 +4,8 @@ import React, { useState } from "react";
 import { CheckCircle2, Clock, HelpCircle, Award, Play, Plus, BookOpen, X, Check } from "lucide-react";
 import EmergencyBanner from "@/components/ui/EmergencyBanner";
 import toast from "react-hot-toast";
+import { OnlineExamCreationSchema } from "@/schemas";
+import FieldError from "@/components/ui/FieldError";
 
 export default function OnlineExamsPage() {
   const [exams, setExams] = useState([
@@ -14,6 +16,7 @@ export default function OnlineExamsPage() {
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedExam, setSelectedExam] = useState<any | null>(null);
+  const [examErrors, setExamErrors] = useState<Record<string, string>>({});
 
   // Form states
   const [title, setTitle] = useState("");
@@ -24,21 +27,38 @@ export default function OnlineExamsPage() {
 
   const handleCreateExam = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) {
-      toast.error("Please enter an exam title");
+    const validation = OnlineExamCreationSchema.safeParse({
+      title,
+      duration,
+      totalQuestions,
+      passingScore,
+      status,
+    });
+
+    if (!validation.success) {
+      const fieldErrors: Record<string, string> = {};
+      validation.error.issues.forEach((err) => {
+        const key = err.path[0] ? String(err.path[0]) : "general";
+        if (!fieldErrors[key]) fieldErrors[key] = err.message;
+      });
+      setExamErrors(fieldErrors);
+      toast.error(Object.values(fieldErrors)[0] || "Please fix exam configuration");
       return;
     }
+    setExamErrors({});
+
     const newExam = {
       id: Date.now(),
-      title,
+      title: title.trim(),
       duration,
       totalQuestions: Number(totalQuestions) || 20,
       passingScore,
       status
     };
     setExams(prev => [newExam, ...prev]);
-    toast.success(`Exam "${title}" configured successfully!`);
+    toast.success(`Exam "${title.trim()}" configured successfully!`);
     setTitle("");
+    setExamErrors({});
     setShowCreateModal(false);
   };
 
@@ -122,15 +142,25 @@ export default function OnlineExamsPage() {
 
             <form onSubmit={handleCreateExam} className="space-y-3.5 text-xs">
               <div>
-                <label className="font-bold text-slate-700 dark:text-slate-300">Exam Title / Subject</label>
+                <label className="font-bold text-slate-700 dark:text-slate-300">
+                  Exam Title / Subject <span className="text-[#FF690C]">*</span>
+                </label>
                 <input
                   type="text"
                   value={title}
-                  onChange={(e) => setTitle(e.target.value)}
+                  onChange={(e) => {
+                    setTitle(e.target.value);
+                    if (examErrors.title) setExamErrors(prev => ({ ...prev, title: '' }));
+                  }}
+                  aria-invalid={Boolean(examErrors.title)}
+                  aria-describedby={examErrors.title ? "exam-title-err" : undefined}
                   placeholder="e.g. UKG Phonics & Sight Words Assessment"
                   required
-                  className="w-full mt-1 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 outline-none focus:ring-2 focus:ring-[#0050CB]"
+                  className={`w-full mt-1 px-3.5 py-2 rounded-xl border ${
+                    examErrors.title ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800'
+                  } outline-none focus:ring-2 focus:ring-[#0050CB] font-bold`}
                 />
+                <FieldError id="exam-title-err" error={examErrors.title} />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -150,15 +180,25 @@ export default function OnlineExamsPage() {
                 </div>
 
                 <div>
-                  <label className="font-bold text-slate-700 dark:text-slate-300">Total Questions</label>
+                  <label className="font-bold text-slate-700 dark:text-slate-300">
+                    Total Questions <span className="text-[#FF690C]">*</span>
+                  </label>
                   <input
                     type="number"
-                    min="5"
-                    max="150"
+                    min="1"
+                    max="200"
                     value={totalQuestions}
-                    onChange={(e) => setTotalQuestions(Number(e.target.value))}
-                    className="w-full mt-1 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 outline-none"
+                    onChange={(e) => {
+                      setTotalQuestions(Number(e.target.value));
+                      if (examErrors.totalQuestions) setExamErrors(prev => ({ ...prev, totalQuestions: '' }));
+                    }}
+                    aria-invalid={Boolean(examErrors.totalQuestions)}
+                    aria-describedby={examErrors.totalQuestions ? "exam-total-err" : undefined}
+                    className={`w-full mt-1 px-3 py-2 rounded-xl border ${
+                      examErrors.totalQuestions ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800'
+                    } outline-none font-bold`}
                   />
+                  <FieldError id="exam-total-err" error={examErrors.totalQuestions} />
                 </div>
               </div>
 

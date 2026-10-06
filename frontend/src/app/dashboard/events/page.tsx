@@ -33,6 +33,8 @@ import {
   Sparkles,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { EventCreationSchema } from "@/schemas";
+import FieldError from "@/components/ui/FieldError";
 
 interface EventItem {
   id: string;
@@ -161,6 +163,7 @@ export default function EventsManagementPage() {
     image: "/sports-day-track.jpg",
     description: "",
   });
+  const [eventErrors, setEventErrors] = useState<Record<string, string>>({});
 
   // Load from local storage if available and check for gallery redirect
   useEffect(() => {
@@ -196,6 +199,7 @@ export default function EventsManagementPage() {
 
   const handleOpenAdd = () => {
     setEditingEvent(null);
+    setEventErrors({});
     setFormValues({
       title: "",
       type: "Sports Event",
@@ -212,6 +216,7 @@ export default function EventsManagementPage() {
 
   const handleOpenEdit = (evt: EventItem) => {
     setEditingEvent(evt);
+    setEventErrors({});
     setFormValues({
       title: evt.title,
       type: evt.type,
@@ -238,10 +243,18 @@ export default function EventsManagementPage() {
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formValues.title.trim()) {
-      toast.error("Please enter an event title");
+    const validation = EventCreationSchema.safeParse(formValues);
+    if (!validation.success) {
+      const fieldErrors: Record<string, string> = {};
+      validation.error.issues.forEach((err) => {
+        const key = err.path[0] ? String(err.path[0]) : "general";
+        if (!fieldErrors[key]) fieldErrors[key] = err.message;
+      });
+      setEventErrors(fieldErrors);
+      toast.error(Object.values(fieldErrors)[0] || "Please check event details");
       return;
     }
+    setEventErrors({});
 
     if (editingEvent) {
       const updated = events.map((item) => {
@@ -971,16 +984,24 @@ export default function EventsManagementPage() {
             <form onSubmit={handleFormSubmit} className="mt-4 space-y-4">
               <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  Event Title *
+                  Event Title <span className="text-[#FF690C]">*</span>
                 </label>
                 <input
                   type="text"
                   required
                   placeholder="e.g. Annual Sports Day 2026"
                   value={formValues.title}
-                  onChange={(e) => setFormValues({ ...formValues, title: e.target.value })}
-                  className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0050CB]"
+                  onChange={(e) => {
+                    setFormValues({ ...formValues, title: e.target.value });
+                    if (eventErrors.title) setEventErrors(prev => ({ ...prev, title: '' }));
+                  }}
+                  aria-invalid={Boolean(eventErrors.title)}
+                  aria-describedby={eventErrors.title ? "evt-title-err" : undefined}
+                  className={`w-full px-3.5 py-2 text-xs rounded-xl border ${
+                    eventErrors.title ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800'
+                  } focus:outline-none focus:ring-2 focus:ring-[#0050CB]`}
                 />
+                <FieldError id="evt-title-err" error={eventErrors.title} />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1022,41 +1043,65 @@ export default function EventsManagementPage() {
 
                 <div>
                   <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    Event Date *
+                    Event Date <span className="text-[#FF690C]">*</span>
                   </label>
                   <input
                     type="date"
                     required
                     value={formValues.date}
-                    onChange={(e) => setFormValues({ ...formValues, date: e.target.value })}
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0050CB]"
+                    onChange={(e) => {
+                      setFormValues({ ...formValues, date: e.target.value });
+                      if (eventErrors.date) setEventErrors(prev => ({ ...prev, date: '' }));
+                    }}
+                    aria-invalid={Boolean(eventErrors.date)}
+                    aria-describedby={eventErrors.date ? "evt-date-err" : undefined}
+                    className={`w-full px-3 py-2 text-xs rounded-xl border ${
+                      eventErrors.date ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800'
+                    } focus:outline-none focus:ring-2 focus:ring-[#0050CB]`}
                   />
+                  <FieldError id="evt-date-err" error={eventErrors.date} />
                 </div>
 
                 <div>
                   <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    Timing
+                    Timing <span className="text-[#FF690C]">*</span>
                   </label>
                   <input
                     type="text"
                     placeholder="09:00 AM - 04:00 PM"
                     value={formValues.time}
-                    onChange={(e) => setFormValues({ ...formValues, time: e.target.value })}
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0050CB]"
+                    onChange={(e) => {
+                      setFormValues({ ...formValues, time: e.target.value });
+                      if (eventErrors.time) setEventErrors(prev => ({ ...prev, time: '' }));
+                    }}
+                    aria-invalid={Boolean(eventErrors.time)}
+                    aria-describedby={eventErrors.time ? "evt-time-err" : undefined}
+                    className={`w-full px-3 py-2 text-xs rounded-xl border ${
+                      eventErrors.time ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800'
+                    } focus:outline-none focus:ring-2 focus:ring-[#0050CB]`}
                   />
+                  <FieldError id="evt-time-err" error={eventErrors.time} />
                 </div>
 
                 <div>
                   <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    Location / Venue
+                    Location / Venue <span className="text-[#FF690C]">*</span>
                   </label>
                   <input
                     type="text"
                     placeholder="e.g. School Ground / Auditorium"
                     value={formValues.location}
-                    onChange={(e) => setFormValues({ ...formValues, location: e.target.value })}
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0050CB]"
+                    onChange={(e) => {
+                      setFormValues({ ...formValues, location: e.target.value });
+                      if (eventErrors.location) setEventErrors(prev => ({ ...prev, location: '' }));
+                    }}
+                    aria-invalid={Boolean(eventErrors.location)}
+                    aria-describedby={eventErrors.location ? "evt-loc-err" : undefined}
+                    className={`w-full px-3 py-2 text-xs rounded-xl border ${
+                      eventErrors.location ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800'
+                    } focus:outline-none focus:ring-2 focus:ring-[#0050CB]`}
                   />
+                  <FieldError id="evt-loc-err" error={eventErrors.location} />
                 </div>
 
                 <div>
@@ -1115,9 +1160,17 @@ export default function EventsManagementPage() {
                   rows={3}
                   placeholder="Provide instructions, guidelines or schedule details for students & parents..."
                   value={formValues.description}
-                  onChange={(e) => setFormValues({ ...formValues, description: e.target.value })}
-                  className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0050CB]"
+                  onChange={(e) => {
+                    setFormValues({ ...formValues, description: e.target.value });
+                    if (eventErrors.description) setEventErrors(prev => ({ ...prev, description: '' }));
+                  }}
+                  aria-invalid={Boolean(eventErrors.description)}
+                  aria-describedby={eventErrors.description ? "evt-desc-err" : undefined}
+                  className={`w-full px-3.5 py-2 text-xs rounded-xl border ${
+                    eventErrors.description ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800'
+                  } focus:outline-none focus:ring-2 focus:ring-[#0050CB]`}
                 />
+                <FieldError id="evt-desc-err" error={eventErrors.description} />
               </div>
 
               <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800">

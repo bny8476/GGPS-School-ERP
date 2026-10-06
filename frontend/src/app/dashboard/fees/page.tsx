@@ -17,6 +17,14 @@ import AdminDataTable, { Column } from '@/components/admin/AdminDataTable';
 import { downloadFile } from '@/lib/fileDownload';
 import { printDocument, exportToCSV } from '@/lib/exportUtils';
 import { authFetch } from '@/lib/apiClient';
+import { FieldError } from '@/components/ui/FieldError';
+import {
+  DirectCollectSchema,
+  FeeInvoiceCreationSchema,
+  ExpenseCreationSchema,
+  ScholarshipSchema,
+  FeeStructureSchema,
+} from '@/schemas';
 import {
   NAME_REGEX,
   preventNonAlphaKey,
@@ -190,6 +198,14 @@ function FeesFinanceContent() {
     discountPercentage: '15'
   });
 
+  // Form validation errors
+  const [collectErrors, setCollectErrors] = useState<Record<string, string>>({});
+  const [feeErrors, setFeeErrors] = useState<Record<string, string>>({});
+  const [updateFeeErrors, setUpdateFeeErrors] = useState<Record<string, string>>({});
+  const [expenseErrors, setExpenseErrors] = useState<Record<string, string>>({});
+  const [scholarshipErrors, setScholarshipErrors] = useState<Record<string, string>>({});
+  const [structureErrors, setStructureErrors] = useState<Record<string, string>>({});
+
   // Filter state for Invoices
   const [statusFilter, setStatusFilter] = useState('all');
   const [gradeFilter, setGradeFilter] = useState('all');
@@ -256,19 +272,26 @@ function FeesFinanceContent() {
   // Handlers
   const handleCreateFee = async (e: React.FormEvent) => {
     e.preventDefault();
+    const validation = FeeInvoiceCreationSchema.safeParse({
+      grade: feeForm.grade,
+      feeType: feeForm.feeType,
+      totalAmount: feeForm.totalAmount,
+      dueDate: feeForm.dueDate,
+    });
+
+    if (!validation.success) {
+      const fieldErrors: Record<string, string> = {};
+      validation.error.issues.forEach((err) => {
+        const key = err.path[0] ? String(err.path[0]) : 'general';
+        if (!fieldErrors[key]) fieldErrors[key] = err.message;
+      });
+      setFeeErrors(fieldErrors);
+      toast.error(Object.values(fieldErrors)[0] || 'Please fix fee invoice errors');
+      return;
+    }
+    setFeeErrors({});
     const amt = Number(feeForm.totalAmount);
-    if (!feeForm.totalAmount || isNaN(amt) || amt <= 0) {
-      toast.error('Please enter a valid positive fee amount');
-      return;
-    }
-    if (!feeForm.dueDate) {
-      toast.error('Please select a due date');
-      return;
-    }
-    if (!feeForm.feeType?.trim()) {
-      toast.error('Please enter fee description');
-      return;
-    }
+
     try {
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
       const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
@@ -303,10 +326,13 @@ function FeesFinanceContent() {
     e.preventDefault();
     if (!showUpdateFeeModal.fee) return;
     const paidAmt = Number(updateFeeForm.amountPaid);
-    if (isNaN(paidAmt) || paidAmt < 0) {
+    if (!updateFeeForm.amountPaid || isNaN(paidAmt) || paidAmt < 0) {
+      setUpdateFeeErrors({ amountPaid: 'Please enter a valid non-negative collection amount' });
       toast.error('Please enter a valid non-negative collection amount');
       return;
     }
+    setUpdateFeeErrors({});
+
     try {
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
       const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
@@ -341,16 +367,28 @@ function FeesFinanceContent() {
 
   const handleDirectCollect = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!collectForm.studentName?.trim()) {
-      toast.error('Please enter student name or admission number');
-      return;
-    }
-    const amt = Number(collectForm.amount);
-    if (!collectForm.amount || isNaN(amt) || amt <= 0) {
-      toast.error('Please enter a valid positive payment amount');
-      return;
-    }
+    const validation = DirectCollectSchema.safeParse({
+      studentName: collectForm.studentName,
+      grade: collectForm.grade,
+      amount: collectForm.amount,
+      paymentMode: collectForm.paymentMode,
+      referenceNo: collectForm.referenceNo?.trim() || undefined,
+      notes: collectForm.notes?.trim() || undefined,
+    });
 
+    if (!validation.success) {
+      const fieldErrors: Record<string, string> = {};
+      validation.error.issues.forEach((err) => {
+        const key = err.path[0] ? String(err.path[0]) : 'general';
+        if (!fieldErrors[key]) fieldErrors[key] = err.message;
+      });
+      setCollectErrors(fieldErrors);
+      toast.error(Object.values(fieldErrors)[0] || 'Please fix counter collection errors');
+      return;
+    }
+    setCollectErrors({});
+
+    const amt = Number(collectForm.amount);
     const recNum = `GGPS-REC-2026-${Math.floor(1000 + Math.random() * 9000)}`;
 
     // If an existing fee record matches
@@ -407,16 +445,28 @@ function FeesFinanceContent() {
 
   const handleCreateExpense = async (e: React.FormEvent) => {
     e.preventDefault();
-    const desc = expenseForm.description?.trim();
-    if (!desc || desc.length < 3) {
-      toast.error('Please provide an expense description (at least 3 characters)');
+    const validation = ExpenseCreationSchema.safeParse({
+      description: expenseForm.description,
+      category: expenseForm.category,
+      amount: expenseForm.amount,
+      date: expenseForm.date,
+    });
+
+    if (!validation.success) {
+      const fieldErrors: Record<string, string> = {};
+      validation.error.issues.forEach((err) => {
+        const key = err.path[0] ? String(err.path[0]) : 'general';
+        if (!fieldErrors[key]) fieldErrors[key] = err.message;
+      });
+      setExpenseErrors(fieldErrors);
+      toast.error(Object.values(fieldErrors)[0] || 'Please fix expense errors');
       return;
     }
+    setExpenseErrors({});
+
+    const desc = expenseForm.description.trim();
     const amt = Number(expenseForm.amount);
-    if (!expenseForm.amount || isNaN(amt) || amt <= 0) {
-      toast.error('Please enter a valid positive expense amount');
-      return;
-    }
+
     try {
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
       const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
@@ -445,20 +495,34 @@ function FeesFinanceContent() {
 
   const handleCreateStructure = (e: React.FormEvent) => {
     e.preventDefault();
+    const validation = FeeStructureSchema.safeParse({
+      grade: structureForm.grade,
+      tuitionFee: structureForm.tuitionFee,
+      developmentFee: structureForm.developmentFee,
+      labFee: structureForm.labFee,
+      sportsFee: structureForm.sportsFee,
+      examFee: structureForm.examFee,
+      termSchedule: structureForm.termSchedule,
+    });
+
+    if (!validation.success) {
+      const fieldErrors: Record<string, string> = {};
+      validation.error.issues.forEach((err) => {
+        const key = err.path[0] ? String(err.path[0]) : 'general';
+        if (!fieldErrors[key]) fieldErrors[key] = err.message;
+      });
+      setStructureErrors(fieldErrors);
+      toast.error(Object.values(fieldErrors)[0] || 'Please fix fee tariff errors');
+      return;
+    }
+    setStructureErrors({});
+
     const t = Number(structureForm.tuitionFee) || 0;
     const d = Number(structureForm.developmentFee) || 0;
     const l = Number(structureForm.labFee) || 0;
     const s = Number(structureForm.sportsFee) || 0;
     const ex = Number(structureForm.examFee) || 0;
-    if (t < 0 || d < 0 || l < 0 || s < 0 || ex < 0) {
-      toast.error('Fee components cannot be negative');
-      return;
-    }
     const total = t + d + l + s + ex;
-    if (total <= 0) {
-      toast.error('Total tariff structure must be greater than zero');
-      return;
-    }
 
     const newItem: FeeStructureItem = {
       id: 'fs-' + Date.now(),
@@ -479,16 +543,28 @@ function FeesFinanceContent() {
 
   const handleCreateScholarship = (e: React.FormEvent) => {
     e.preventDefault();
-    const trimmedName = scholarshipForm.studentName?.trim();
-    if (!trimmedName || !NAME_REGEX.test(trimmedName)) {
-      toast.error('Please enter a valid student name (letters, spaces, hyphens, and initials with dots)');
+    const validation = ScholarshipSchema.safeParse({
+      studentName: scholarshipForm.studentName,
+      admissionNo: scholarshipForm.admissionNo?.trim() || undefined,
+      grade: scholarshipForm.grade,
+      category: scholarshipForm.category,
+      discountPercentage: scholarshipForm.discountPercentage,
+    });
+
+    if (!validation.success) {
+      const fieldErrors: Record<string, string> = {};
+      validation.error.issues.forEach((err) => {
+        const key = err.path[0] ? String(err.path[0]) : 'general';
+        if (!fieldErrors[key]) fieldErrors[key] = err.message;
+      });
+      setScholarshipErrors(fieldErrors);
+      toast.error(Object.values(fieldErrors)[0] || 'Please fix scholarship errors');
       return;
     }
+    setScholarshipErrors({});
+
+    const trimmedName = scholarshipForm.studentName.trim();
     const pct = Number(scholarshipForm.discountPercentage);
-    if (isNaN(pct) || pct < 1 || pct > 100) {
-      toast.error('Discount percentage must be between 1% and 100%');
-      return;
-    }
     const approxBenefit = Math.round((45000 * pct) / 100);
 
     const newSch: ScholarshipRecord = {
@@ -909,21 +985,42 @@ function FeesFinanceContent() {
             <form onSubmit={handleDirectCollect} className="space-y-4 text-xs">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block font-bold text-slate-600 dark:text-slate-300 mb-1">Select Student / Enrollee</label>
+                  <label htmlFor="collect-student-name" className="block font-bold text-slate-600 dark:text-slate-300 mb-1">
+                    Student Full Name <span className="text-rose-500">*</span>
+                  </label>
                   <input
+                    id="collect-student-name"
                     type="text"
                     value={collectForm.studentName}
-                    onChange={(e) => setCollectForm({ ...collectForm, studentName: e.target.value })}
-                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#000E28] font-bold"
-                    placeholder="Enter student name or admission no..."
-                    required
+                    onKeyDown={preventNonAlphaKey}
+                    onPaste={(e) => handleNamePaste(e, (clean) => {
+                      setCollectForm((prev) => ({ ...prev, studentName: clean }));
+                      if (collectErrors.studentName) setCollectErrors((prev) => ({ ...prev, studentName: '' }));
+                    })}
+                    onChange={(e) => {
+                      setCollectForm({ ...collectForm, studentName: sanitizeNameInput(e.target.value) });
+                      if (collectErrors.studentName) setCollectErrors((prev) => ({ ...prev, studentName: '' }));
+                    }}
+                    aria-invalid={!!collectErrors.studentName}
+                    aria-describedby={collectErrors.studentName ? "collect-student-name-error" : undefined}
+                    className={`w-full px-3 py-2.5 rounded-xl border ${
+                      collectErrors.studentName ? 'border-rose-500 ring-1 ring-rose-500' : 'border-slate-200 dark:border-slate-800'
+                    } bg-slate-50 dark:bg-[#000E28] font-bold`}
+                    placeholder="Enter student name..."
                   />
+                  <FieldError error={collectErrors.studentName} id="collect-student-name-error" />
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-600 dark:text-slate-300 mb-1">Class / Grade</label>
+                  <label htmlFor="collect-grade" className="block font-bold text-slate-600 dark:text-slate-300 mb-1">
+                    Class / Grade <span className="text-rose-500">*</span>
+                  </label>
                   <select
+                    id="collect-grade"
                     value={collectForm.grade}
-                    onChange={(e) => setCollectForm({ ...collectForm, grade: e.target.value })}
+                    onChange={(e) => {
+                      setCollectForm({ ...collectForm, grade: e.target.value });
+                      if (collectErrors.grade) setCollectErrors((prev) => ({ ...prev, grade: '' }));
+                    }}
                     className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#000E28] font-bold"
                   >
                     <option>Pre-KG</option>
@@ -935,25 +1032,41 @@ function FeesFinanceContent() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block font-bold text-slate-600 dark:text-slate-300 mb-1">Payment Amount (₹)</label>
+                  <label htmlFor="collect-amount" className="block font-bold text-slate-600 dark:text-slate-300 mb-1">
+                    Payment Amount (₹) <span className="text-rose-500">*</span>
+                  </label>
                   <div className="relative">
                     <span className="absolute left-3 top-2.5 font-bold text-slate-400">₹</span>
                     <input
+                      id="collect-amount"
                       type="number"
-                      min={0}
+                      min={1}
                       value={collectForm.amount}
                       onKeyDown={preventNonDecimalKey}
-                      onPaste={(e) => handleAmountPaste(e, (clean) => setCollectForm((prev) => ({ ...prev, amount: clean })))}
-                      onChange={(e) => setCollectForm({ ...collectForm, amount: sanitizeAmountInput(e.target.value) })}
-                      className="w-full pl-8 pr-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#000E28] font-black text-emerald-600 text-sm"
+                      onPaste={(e) => handleAmountPaste(e, (clean) => {
+                        setCollectForm((prev) => ({ ...prev, amount: clean }));
+                        if (collectErrors.amount) setCollectErrors((prev) => ({ ...prev, amount: '' }));
+                      })}
+                      onChange={(e) => {
+                        setCollectForm({ ...collectForm, amount: sanitizeAmountInput(e.target.value) });
+                        if (collectErrors.amount) setCollectErrors((prev) => ({ ...prev, amount: '' }));
+                      }}
+                      aria-invalid={!!collectErrors.amount}
+                      aria-describedby={collectErrors.amount ? "collect-amount-error" : undefined}
+                      className={`w-full pl-8 pr-3 py-2.5 rounded-xl border ${
+                        collectErrors.amount ? 'border-rose-500 ring-1 ring-rose-500' : 'border-slate-200 dark:border-slate-800'
+                      } bg-slate-50 dark:bg-[#000E28] font-black text-emerald-600 text-sm`}
                       placeholder="e.g. 32000"
-                      required
                     />
                   </div>
+                  <FieldError error={collectErrors.amount} id="collect-amount-error" />
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-600 dark:text-slate-300 mb-1">Payment Mode</label>
+                  <label htmlFor="collect-mode" className="block font-bold text-slate-600 dark:text-slate-300 mb-1">
+                    Payment Mode <span className="text-rose-500">*</span>
+                  </label>
                   <select
+                    id="collect-mode"
                     value={collectForm.paymentMode}
                     onChange={(e) => setCollectForm({ ...collectForm, paymentMode: e.target.value })}
                     className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#000E28] font-bold"
@@ -969,24 +1082,34 @@ function FeesFinanceContent() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block font-bold text-slate-600 dark:text-slate-300 mb-1">Transaction Ref / Cheque No</label>
+                  <label htmlFor="collect-ref" className="block font-bold text-slate-600 dark:text-slate-300 mb-1">Transaction Ref / Cheque No</label>
                   <input
+                    id="collect-ref"
                     type="text"
                     value={collectForm.referenceNo}
-                    onChange={(e) => setCollectForm({ ...collectForm, referenceNo: e.target.value })}
+                    onChange={(e) => {
+                      setCollectForm({ ...collectForm, referenceNo: e.target.value });
+                      if (collectErrors.referenceNo) setCollectErrors((prev) => ({ ...prev, referenceNo: '' }));
+                    }}
                     className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#000E28] font-mono text-xs"
                     placeholder="e.g. UPI-938201 or CHQ-004812"
                   />
+                  <FieldError error={collectErrors.referenceNo} id="collect-ref-error" />
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-600 dark:text-slate-300 mb-1">Administrative Notes</label>
+                  <label htmlFor="collect-notes" className="block font-bold text-slate-600 dark:text-slate-300 mb-1">Administrative Notes</label>
                   <input
+                    id="collect-notes"
                     type="text"
                     value={collectForm.notes}
-                    onChange={(e) => setCollectForm({ ...collectForm, notes: e.target.value })}
+                    onChange={(e) => {
+                      setCollectForm({ ...collectForm, notes: e.target.value });
+                      if (collectErrors.notes) setCollectErrors((prev) => ({ ...prev, notes: '' }));
+                    }}
                     className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#000E28] font-medium"
                     placeholder="e.g. Cleared Term 1 Tuition & Kit"
                   />
+                  <FieldError error={collectErrors.notes} id="collect-notes-error" />
                 </div>
               </div>
 
@@ -1451,8 +1574,11 @@ function FeesFinanceContent() {
 
             <form onSubmit={handleCreateFee} className="space-y-4 text-xs">
               <div>
-                <label className="block font-bold text-slate-600 dark:text-slate-300 mb-1">Class / Grade</label>
+                <label htmlFor="fee-grade" className="block font-bold text-slate-600 dark:text-slate-300 mb-1">
+                  Class / Grade <span className="text-rose-500">*</span>
+                </label>
                 <select
+                  id="fee-grade"
                   value={feeForm.grade}
                   onChange={(e) => setFeeForm({ ...feeForm, grade: e.target.value })}
                   className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#000E28] font-bold"
@@ -1464,41 +1590,74 @@ function FeesFinanceContent() {
               </div>
 
               <div>
-                <label className="block font-bold text-slate-600 dark:text-slate-300 mb-1">Fee Head / Description</label>
+                <label htmlFor="fee-type" className="block font-bold text-slate-600 dark:text-slate-300 mb-1">
+                  Fee Head / Description <span className="text-rose-500">*</span>
+                </label>
                 <input
+                  id="fee-type"
                   type="text"
                   value={feeForm.feeType}
-                  onChange={(e) => setFeeForm({ ...feeForm, feeType: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#000E28] font-bold"
+                  onChange={(e) => {
+                    setFeeForm({ ...feeForm, feeType: e.target.value });
+                    if (feeErrors.feeType) setFeeErrors((prev) => ({ ...prev, feeType: '' }));
+                  }}
+                  aria-invalid={!!feeErrors.feeType}
+                  aria-describedby={feeErrors.feeType ? "fee-type-error" : undefined}
+                  className={`w-full px-3 py-2 rounded-xl border ${
+                    feeErrors.feeType ? 'border-rose-500 ring-1 ring-rose-500' : 'border-slate-200 dark:border-slate-800'
+                  } bg-slate-50 dark:bg-[#000E28] font-bold`}
                   placeholder="e.g. Term 1 Tuition Fee"
-                  required
                 />
+                <FieldError error={feeErrors.feeType} id="fee-type-error" />
               </div>
 
               <div>
-                <label className="block font-bold text-slate-600 dark:text-slate-300 mb-1">Total Amount (₹)</label>
+                <label htmlFor="fee-amount" className="block font-bold text-slate-600 dark:text-slate-300 mb-1">
+                  Total Amount (₹) <span className="text-rose-500">*</span>
+                </label>
                 <input
+                  id="fee-amount"
                   type="number"
-                  min={0}
+                  min={1}
                   value={feeForm.totalAmount}
                   onKeyDown={preventNonDecimalKey}
-                  onPaste={(e) => handleAmountPaste(e, (clean) => setFeeForm((prev) => ({ ...prev, totalAmount: clean })))}
-                  onChange={(e) => setFeeForm({ ...feeForm, totalAmount: sanitizeAmountInput(e.target.value) })}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#000E28] font-bold text-emerald-600"
+                  onPaste={(e) => handleAmountPaste(e, (clean) => {
+                    setFeeForm((prev) => ({ ...prev, totalAmount: clean }));
+                    if (feeErrors.totalAmount) setFeeErrors((prev) => ({ ...prev, totalAmount: '' }));
+                  })}
+                  onChange={(e) => {
+                    setFeeForm({ ...feeForm, totalAmount: sanitizeAmountInput(e.target.value) });
+                    if (feeErrors.totalAmount) setFeeErrors((prev) => ({ ...prev, totalAmount: '' }));
+                  }}
+                  aria-invalid={!!feeErrors.totalAmount}
+                  aria-describedby={feeErrors.totalAmount ? "fee-amount-error" : undefined}
+                  className={`w-full px-3 py-2 rounded-xl border ${
+                    feeErrors.totalAmount ? 'border-rose-500 ring-1 ring-rose-500' : 'border-slate-200 dark:border-slate-800'
+                  } bg-slate-50 dark:bg-[#000E28] font-bold text-emerald-600`}
                   placeholder="32000"
-                  required
                 />
+                <FieldError error={feeErrors.totalAmount} id="fee-amount-error" />
               </div>
 
               <div>
-                <label className="block font-bold text-slate-600 dark:text-slate-300 mb-1">Due Date</label>
+                <label htmlFor="fee-due-date" className="block font-bold text-slate-600 dark:text-slate-300 mb-1">
+                  Due Date <span className="text-rose-500">*</span>
+                </label>
                 <input
+                  id="fee-due-date"
                   type="date"
                   value={feeForm.dueDate}
-                  onChange={(e) => setFeeForm({ ...feeForm, dueDate: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#000E28] font-bold"
-                  required
+                  onChange={(e) => {
+                    setFeeForm({ ...feeForm, dueDate: e.target.value });
+                    if (feeErrors.dueDate) setFeeErrors((prev) => ({ ...prev, dueDate: '' }));
+                  }}
+                  aria-invalid={!!feeErrors.dueDate}
+                  aria-describedby={feeErrors.dueDate ? "fee-due-date-error" : undefined}
+                  className={`w-full px-3 py-2 rounded-xl border ${
+                    feeErrors.dueDate ? 'border-rose-500 ring-1 ring-rose-500' : 'border-slate-200 dark:border-slate-800'
+                  } bg-slate-50 dark:bg-[#000E28] font-bold`}
                 />
+                <FieldError error={feeErrors.dueDate} id="fee-due-date-error" />
               </div>
 
               <div className="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
@@ -1544,17 +1703,30 @@ function FeesFinanceContent() {
               </div>
 
               <div>
-                <label className="block font-bold text-slate-600 dark:text-slate-300 mb-1">Amount Collected (₹)</label>
+                <label htmlFor="update-fee-amount" className="block font-bold text-slate-600 dark:text-slate-300 mb-1">
+                  Amount Collected (₹) <span className="text-rose-500">*</span>
+                </label>
                 <input
+                  id="update-fee-amount"
                   type="number"
                   min={0}
                   value={updateFeeForm.amountPaid}
                   onKeyDown={preventNonDecimalKey}
-                  onPaste={(e) => handleAmountPaste(e, (clean) => setUpdateFeeForm((prev) => ({ ...prev, amountPaid: clean })))}
-                  onChange={(e) => setUpdateFeeForm({ ...updateFeeForm, amountPaid: sanitizeAmountInput(e.target.value) })}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#000E28] font-bold text-emerald-600 text-sm"
-                  required
+                  onPaste={(e) => handleAmountPaste(e, (clean) => {
+                    setUpdateFeeForm((prev) => ({ ...prev, amountPaid: clean }));
+                    if (updateFeeErrors.amountPaid) setUpdateFeeErrors((prev) => ({ ...prev, amountPaid: '' }));
+                  })}
+                  onChange={(e) => {
+                    setUpdateFeeForm({ ...updateFeeForm, amountPaid: sanitizeAmountInput(e.target.value) });
+                    if (updateFeeErrors.amountPaid) setUpdateFeeErrors((prev) => ({ ...prev, amountPaid: '' }));
+                  }}
+                  aria-invalid={!!updateFeeErrors.amountPaid}
+                  aria-describedby={updateFeeErrors.amountPaid ? "update-fee-amount-error" : undefined}
+                  className={`w-full px-3 py-2 rounded-xl border ${
+                    updateFeeErrors.amountPaid ? 'border-rose-500 ring-1 ring-rose-500' : 'border-slate-200 dark:border-slate-800'
+                  } bg-slate-50 dark:bg-[#000E28] font-bold text-emerald-600 text-sm`}
                 />
+                <FieldError error={updateFeeErrors.amountPaid} id="update-fee-amount-error" />
               </div>
 
               <div>
@@ -1730,20 +1902,33 @@ function FeesFinanceContent() {
 
             <form onSubmit={handleCreateExpense} className="space-y-4 text-xs">
               <div>
-                <label className="block font-bold text-slate-600 dark:text-slate-300 mb-1">Expense Description</label>
+                <label htmlFor="expense-desc" className="block font-bold text-slate-600 dark:text-slate-300 mb-1">
+                  Expense Description <span className="text-rose-500">*</span>
+                </label>
                 <input
+                  id="expense-desc"
                   type="text"
                   value={expenseForm.description}
-                  onChange={(e) => setExpenseForm({ ...expenseForm, description: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#000E28] font-bold"
+                  onChange={(e) => {
+                    setExpenseForm({ ...expenseForm, description: e.target.value });
+                    if (expenseErrors.description) setExpenseErrors((prev) => ({ ...prev, description: '' }));
+                  }}
+                  aria-invalid={!!expenseErrors.description}
+                  aria-describedby={expenseErrors.description ? "expense-desc-error" : undefined}
+                  className={`w-full px-3 py-2 rounded-xl border ${
+                    expenseErrors.description ? 'border-rose-500 ring-1 ring-rose-500' : 'border-slate-200 dark:border-slate-800'
+                  } bg-slate-50 dark:bg-[#000E28] font-bold`}
                   placeholder="e.g. Science Lab Supplies & Chemicals"
-                  required
                 />
+                <FieldError error={expenseErrors.description} id="expense-desc-error" />
               </div>
 
               <div>
-                <label className="block font-bold text-slate-600 dark:text-slate-300 mb-1">Category</label>
+                <label htmlFor="expense-category" className="block font-bold text-slate-600 dark:text-slate-300 mb-1">
+                  Category <span className="text-rose-500">*</span>
+                </label>
                 <select
+                  id="expense-category"
                   value={expenseForm.category}
                   onChange={(e) => setExpenseForm({ ...expenseForm, category: e.target.value })}
                   className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#000E28] font-bold"
@@ -1758,18 +1943,52 @@ function FeesFinanceContent() {
               </div>
 
               <div>
-                <label className="block font-bold text-slate-600 dark:text-slate-300 mb-1">Amount (₹)</label>
+                <label htmlFor="expense-amount" className="block font-bold text-slate-600 dark:text-slate-300 mb-1">
+                  Amount (₹) <span className="text-rose-500">*</span>
+                </label>
                 <input
+                  id="expense-amount"
                   type="number"
-                  min={0}
+                  min={1}
                   value={expenseForm.amount}
                   onKeyDown={preventNonDecimalKey}
-                  onPaste={(e) => handleAmountPaste(e, (clean) => setExpenseForm((prev) => ({ ...prev, amount: clean })))}
-                  onChange={(e) => setExpenseForm({ ...expenseForm, amount: sanitizeAmountInput(e.target.value) })}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#000E28] font-bold"
+                  onPaste={(e) => handleAmountPaste(e, (clean) => {
+                    setExpenseForm((prev) => ({ ...prev, amount: clean }));
+                    if (expenseErrors.amount) setExpenseErrors((prev) => ({ ...prev, amount: '' }));
+                  })}
+                  onChange={(e) => {
+                    setExpenseForm({ ...expenseForm, amount: sanitizeAmountInput(e.target.value) });
+                    if (expenseErrors.amount) setExpenseErrors((prev) => ({ ...prev, amount: '' }));
+                  }}
+                  aria-invalid={!!expenseErrors.amount}
+                  aria-describedby={expenseErrors.amount ? "expense-amount-error" : undefined}
+                  className={`w-full px-3 py-2 rounded-xl border ${
+                    expenseErrors.amount ? 'border-rose-500 ring-1 ring-rose-500' : 'border-slate-200 dark:border-slate-800'
+                  } bg-slate-50 dark:bg-[#000E28] font-bold`}
                   placeholder="45000"
-                  required
                 />
+                <FieldError error={expenseErrors.amount} id="expense-amount-error" />
+              </div>
+
+              <div>
+                <label htmlFor="expense-date" className="block font-bold text-slate-600 dark:text-slate-300 mb-1">
+                  Date <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  id="expense-date"
+                  type="date"
+                  value={expenseForm.date}
+                  onChange={(e) => {
+                    setExpenseForm({ ...expenseForm, date: e.target.value });
+                    if (expenseErrors.date) setExpenseErrors((prev) => ({ ...prev, date: '' }));
+                  }}
+                  aria-invalid={!!expenseErrors.date}
+                  aria-describedby={expenseErrors.date ? "expense-date-error" : undefined}
+                  className={`w-full px-3 py-2 rounded-xl border ${
+                    expenseErrors.date ? 'border-rose-500 ring-1 ring-rose-500' : 'border-slate-200 dark:border-slate-800'
+                  } bg-slate-50 dark:bg-[#000E28] font-bold`}
+                />
+                <FieldError error={expenseErrors.date} id="expense-date-error" />
               </div>
 
               <div className="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
@@ -1805,43 +2024,65 @@ function FeesFinanceContent() {
 
             <form onSubmit={handleCreateStructure} className="space-y-3.5 text-xs">
               <div>
-                <label className="block font-bold text-slate-600 dark:text-slate-300 mb-1">Class / Grade Level</label>
+                <label className="block font-bold text-slate-600 dark:text-slate-300 mb-1">
+                  Class / Grade Level <span className="text-red-500">*</span>
+                </label>
                 <select
                   value={structureForm.grade}
-                  onChange={(e) => setStructureForm({ ...structureForm, grade: e.target.value })}
+                  onChange={(e) => {
+                    setStructureForm({ ...structureForm, grade: e.target.value });
+                    if (structureErrors.grade) setStructureErrors(prev => ({ ...prev, grade: '' }));
+                  }}
                   className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#000E28] font-bold"
                 >
                   <option>Pre-KG</option>
                   <option>LKG</option>
                   <option>UKG</option>
                 </select>
+                <FieldError id="fs-grade-err" error={structureErrors.grade} />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-600 dark:text-slate-300 mb-1">Tuition Fee (₹)</label>
+                  <label className="block font-bold text-slate-600 dark:text-slate-300 mb-1">
+                    Tuition Fee (₹) <span className="text-red-500">*</span>
+                  </label>
                   <input
                     type="number"
+                    id="fs-tuitionFee"
                     min={0}
                     value={structureForm.tuitionFee}
                     onKeyDown={preventNonDecimalKey}
-                    onChange={(e) => setStructureForm({ ...structureForm, tuitionFee: sanitizeAmountInput(e.target.value) })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#000E28] font-bold"
+                    onChange={(e) => {
+                      setStructureForm({ ...structureForm, tuitionFee: sanitizeAmountInput(e.target.value) });
+                      if (structureErrors.tuitionFee) setStructureErrors(prev => ({ ...prev, tuitionFee: '' }));
+                    }}
+                    className={`w-full px-3 py-2 rounded-xl border ${structureErrors.tuitionFee ? 'border-red-500 bg-red-50/20' : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#000E28]'} font-bold`}
                     placeholder="30000"
+                    aria-invalid={Boolean(structureErrors.tuitionFee)}
+                    aria-describedby={structureErrors.tuitionFee ? "fs-tuitionFee-err" : undefined}
                     required
                   />
+                  <FieldError id="fs-tuitionFee-err" error={structureErrors.tuitionFee} />
                 </div>
                 <div>
                   <label className="block font-bold text-slate-600 dark:text-slate-300 mb-1">Development Fee (₹)</label>
                   <input
                     type="number"
+                    id="fs-devFee"
                     min={0}
                     value={structureForm.developmentFee}
                     onKeyDown={preventNonDecimalKey}
-                    onChange={(e) => setStructureForm({ ...structureForm, developmentFee: sanitizeAmountInput(e.target.value) })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#000E28] font-bold"
+                    onChange={(e) => {
+                      setStructureForm({ ...structureForm, developmentFee: sanitizeAmountInput(e.target.value) });
+                      if (structureErrors.developmentFee) setStructureErrors(prev => ({ ...prev, developmentFee: '' }));
+                    }}
+                    className={`w-full px-3 py-2 rounded-xl border ${structureErrors.developmentFee ? 'border-red-500 bg-red-50/20' : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#000E28]'} font-bold`}
                     placeholder="6000"
+                    aria-invalid={Boolean(structureErrors.developmentFee)}
+                    aria-describedby={structureErrors.developmentFee ? "fs-devFee-err" : undefined}
                   />
+                  <FieldError id="fs-devFee-err" error={structureErrors.developmentFee} />
                 </div>
               </div>
 
@@ -1850,45 +2091,71 @@ function FeesFinanceContent() {
                   <label className="block font-bold text-slate-600 dark:text-slate-300 mb-1">Lab (₹)</label>
                   <input
                     type="number"
+                    id="fs-labFee"
                     min={0}
                     value={structureForm.labFee}
                     onKeyDown={preventNonDecimalKey}
-                    onChange={(e) => setStructureForm({ ...structureForm, labFee: sanitizeAmountInput(e.target.value) })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#000E28] font-bold"
+                    onChange={(e) => {
+                      setStructureForm({ ...structureForm, labFee: sanitizeAmountInput(e.target.value) });
+                      if (structureErrors.labFee) setStructureErrors(prev => ({ ...prev, labFee: '' }));
+                    }}
+                    className={`w-full px-3 py-2 rounded-xl border ${structureErrors.labFee ? 'border-red-500 bg-red-50/20' : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#000E28]'} font-bold`}
                     placeholder="3000"
+                    aria-invalid={Boolean(structureErrors.labFee)}
+                    aria-describedby={structureErrors.labFee ? "fs-labFee-err" : undefined}
                   />
+                  <FieldError id="fs-labFee-err" error={structureErrors.labFee} />
                 </div>
                 <div>
                   <label className="block font-bold text-slate-600 dark:text-slate-300 mb-1">Sports (₹)</label>
                   <input
                     type="number"
+                    id="fs-sportsFee"
                     min={0}
                     value={structureForm.sportsFee}
                     onKeyDown={preventNonDecimalKey}
-                    onChange={(e) => setStructureForm({ ...structureForm, sportsFee: sanitizeAmountInput(e.target.value) })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#000E28] font-bold"
+                    onChange={(e) => {
+                      setStructureForm({ ...structureForm, sportsFee: sanitizeAmountInput(e.target.value) });
+                      if (structureErrors.sportsFee) setStructureErrors(prev => ({ ...prev, sportsFee: '' }));
+                    }}
+                    className={`w-full px-3 py-2 rounded-xl border ${structureErrors.sportsFee ? 'border-red-500 bg-red-50/20' : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#000E28]'} font-bold`}
                     placeholder="2500"
+                    aria-invalid={Boolean(structureErrors.sportsFee)}
+                    aria-describedby={structureErrors.sportsFee ? "fs-sportsFee-err" : undefined}
                   />
+                  <FieldError id="fs-sportsFee-err" error={structureErrors.sportsFee} />
                 </div>
                 <div>
                   <label className="block font-bold text-slate-600 dark:text-slate-300 mb-1">Exam (₹)</label>
                   <input
                     type="number"
+                    id="fs-examFee"
                     min={0}
                     value={structureForm.examFee}
                     onKeyDown={preventNonDecimalKey}
-                    onChange={(e) => setStructureForm({ ...structureForm, examFee: sanitizeAmountInput(e.target.value) })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#000E28] font-bold"
+                    onChange={(e) => {
+                      setStructureForm({ ...structureForm, examFee: sanitizeAmountInput(e.target.value) });
+                      if (structureErrors.examFee) setStructureErrors(prev => ({ ...prev, examFee: '' }));
+                    }}
+                    className={`w-full px-3 py-2 rounded-xl border ${structureErrors.examFee ? 'border-red-500 bg-red-50/20' : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#000E28]'} font-bold`}
                     placeholder="1500"
+                    aria-invalid={Boolean(structureErrors.examFee)}
+                    aria-describedby={structureErrors.examFee ? "fs-examFee-err" : undefined}
                   />
+                  <FieldError id="fs-examFee-err" error={structureErrors.examFee} />
                 </div>
               </div>
 
               <div>
-                <label className="block font-bold text-slate-600 dark:text-slate-300 mb-1">Installment Schedule</label>
+                <label className="block font-bold text-slate-600 dark:text-slate-300 mb-1">
+                  Installment Schedule <span className="text-red-500">*</span>
+                </label>
                 <select
                   value={structureForm.termSchedule}
-                  onChange={(e) => setStructureForm({ ...structureForm, termSchedule: e.target.value })}
+                  onChange={(e) => {
+                    setStructureForm({ ...structureForm, termSchedule: e.target.value });
+                    if (structureErrors.termSchedule) setStructureErrors(prev => ({ ...prev, termSchedule: '' }));
+                  }}
                   className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#000E28] font-bold"
                 >
                   <option>3 Equal Terms</option>
@@ -1896,6 +2163,7 @@ function FeesFinanceContent() {
                   <option>2 Bi-annual Terms</option>
                   <option>Annual Lump-sum</option>
                 </select>
+                <FieldError id="fs-terms-err" error={structureErrors.termSchedule} />
               </div>
 
               <div className="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
@@ -1931,37 +2199,60 @@ function FeesFinanceContent() {
 
             <form onSubmit={handleCreateScholarship} className="space-y-4 text-xs">
               <div>
-                <label className="block font-bold text-slate-600 dark:text-slate-300 mb-1">Student Full Name</label>
+                <label className="block font-bold text-slate-600 dark:text-slate-300 mb-1">
+                  Student Full Name <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="text"
+                  id="sch-studentName"
                   value={scholarshipForm.studentName}
                   onKeyDown={preventNonAlphaKey}
-                  onPaste={(e) => handleNamePaste(e, (clean) => setScholarshipForm((prev) => ({ ...prev, studentName: clean })))}
-                  onChange={(e) => setScholarshipForm({ ...scholarshipForm, studentName: sanitizeNameInput(e.target.value) })}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#000E28] font-bold"
+                  onPaste={(e) => handleNamePaste(e, (clean) => {
+                    setScholarshipForm((prev) => ({ ...prev, studentName: clean }));
+                    if (scholarshipErrors.studentName) setScholarshipErrors(prev => ({ ...prev, studentName: '' }));
+                  })}
+                  onChange={(e) => {
+                    setScholarshipForm({ ...scholarshipForm, studentName: sanitizeNameInput(e.target.value) });
+                    if (scholarshipErrors.studentName) setScholarshipErrors(prev => ({ ...prev, studentName: '' }));
+                  }}
+                  className={`w-full px-3 py-2 rounded-xl border ${scholarshipErrors.studentName ? 'border-red-500 bg-red-50/20' : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#000E28]'} font-bold`}
                   placeholder="e.g. Diya Patel"
+                  aria-invalid={Boolean(scholarshipErrors.studentName)}
+                  aria-describedby={scholarshipErrors.studentName ? "sch-studentName-err" : undefined}
                   required
                 />
+                <FieldError id="sch-studentName-err" error={scholarshipErrors.studentName} />
               </div>
 
               <div>
-                <label className="block font-bold text-slate-600 dark:text-slate-300 mb-1">Class / Grade</label>
+                <label className="block font-bold text-slate-600 dark:text-slate-300 mb-1">
+                  Class / Grade <span className="text-red-500">*</span>
+                </label>
                 <select
                   value={scholarshipForm.grade}
-                  onChange={(e) => setScholarshipForm({ ...scholarshipForm, grade: e.target.value })}
+                  onChange={(e) => {
+                    setScholarshipForm({ ...scholarshipForm, grade: e.target.value });
+                    if (scholarshipErrors.grade) setScholarshipErrors(prev => ({ ...prev, grade: '' }));
+                  }}
                   className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#000E28] font-bold"
                 >
                   <option>Pre-KG</option>
                   <option>LKG</option>
                   <option>UKG</option>
                 </select>
+                <FieldError id="sch-grade-err" error={scholarshipErrors.grade} />
               </div>
 
               <div>
-                <label className="block font-bold text-slate-600 dark:text-slate-300 mb-1">Concession Type</label>
+                <label className="block font-bold text-slate-600 dark:text-slate-300 mb-1">
+                  Concession Type <span className="text-red-500">*</span>
+                </label>
                 <select
                   value={scholarshipForm.category}
-                  onChange={(e) => setScholarshipForm({ ...scholarshipForm, category: e.target.value })}
+                  onChange={(e) => {
+                    setScholarshipForm({ ...scholarshipForm, category: e.target.value });
+                    if (scholarshipErrors.category) setScholarshipErrors(prev => ({ ...prev, category: '' }));
+                  }}
                   className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#000E28] font-bold"
                 >
                   <option>Sibling Discount (Second Child - 15%)</option>
@@ -1970,21 +2261,31 @@ function FeesFinanceContent() {
                   <option>EWS Full Tuition Waiver (100%)</option>
                   <option>Sports Excellence Fellowship (30%)</option>
                 </select>
+                <FieldError id="sch-category-err" error={scholarshipErrors.category} />
               </div>
 
               <div>
-                <label className="block font-bold text-slate-600 dark:text-slate-300 mb-1">Discount Percentage (%)</label>
+                <label className="block font-bold text-slate-600 dark:text-slate-300 mb-1">
+                  Discount Percentage (%) <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="number"
+                  id="sch-discount"
                   min={1}
                   max={100}
                   value={scholarshipForm.discountPercentage}
                   onKeyDown={preventNonDecimalKey}
-                  onChange={(e) => setScholarshipForm({ ...scholarshipForm, discountPercentage: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#000E28] font-bold text-[#FF690C]"
+                  onChange={(e) => {
+                    setScholarshipForm({ ...scholarshipForm, discountPercentage: e.target.value });
+                    if (scholarshipErrors.discountPercentage) setScholarshipErrors(prev => ({ ...prev, discountPercentage: '' }));
+                  }}
+                  className={`w-full px-3 py-2 rounded-xl border ${scholarshipErrors.discountPercentage ? 'border-red-500 bg-red-50/20' : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#000E28]'} font-bold text-[#FF690C]`}
                   placeholder="15"
+                  aria-invalid={Boolean(scholarshipErrors.discountPercentage)}
+                  aria-describedby={scholarshipErrors.discountPercentage ? "sch-discount-err" : undefined}
                   required
                 />
+                <FieldError id="sch-discount-err" error={scholarshipErrors.discountPercentage} />
               </div>
 
               <div className="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">

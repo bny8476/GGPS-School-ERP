@@ -39,6 +39,8 @@ import {
   Link2,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { FieldError } from "@/components/ui/FieldError";
+import { UserCreationSchema, UserEditSchema, CustomRoleSchema } from "@/schemas";
 import {
   NAME_REGEX,
   EMAIL_REGEX,
@@ -288,6 +290,11 @@ function UsersPageContent() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Form validation errors
+  const [createErrors, setCreateErrors] = useState<Record<string, string>>({});
+  const [editErrors, setEditErrors] = useState<Record<string, string>>({});
+  const [roleErrors, setRoleErrors] = useState<Record<string, string>>({});
 
   // Child linking state for Create Modal (when roleName === 'Parent')
   const [stagedChildren, setStagedChildren] = useState<StagedChild[]>([]);
@@ -679,6 +686,7 @@ function UsersPageContent() {
       designation: "",
       phoneNumber: "",
     });
+    setCreateErrors({});
     setStagedChildren([]);
     setStudentSearchQuery("");
     setSearchedStudents([]);
@@ -702,56 +710,42 @@ function UsersPageContent() {
       designation: user.designation || "",
       phoneNumber: user.phoneNumber || "",
     });
+    setEditErrors({});
     setIsEditModalOpen(true);
   };
 
   // Handle Create User Submit
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const validation = UserCreationSchema.safeParse({
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      email: formData.email,
+      password: formData.password,
+      confirmPassword: formData.confirmPassword,
+      roleName: formData.roleName,
+      phoneNumber: formData.phoneNumber ? formData.phoneNumber.trim() : undefined,
+      designation: formData.designation ? formData.designation.trim() : undefined,
+    });
+
+    if (!validation.success) {
+      const fieldErrors: Record<string, string> = {};
+      validation.error.issues.forEach((err) => {
+        const key = err.path[0] ? String(err.path[0]) : "general";
+        if (!fieldErrors[key]) fieldErrors[key] = err.message;
+      });
+      setCreateErrors(fieldErrors);
+      const firstMsg = Object.values(fieldErrors)[0];
+      toast.error(firstMsg || "Please fix form validation errors");
+      return;
+    }
+
+    setCreateErrors({});
     const trimmedFirst = formData.firstName.trim();
     const trimmedLast = formData.lastName.trim();
     const trimmedEmail = formData.email.trim();
-
-    if (!trimmedFirst) {
-      toast.error("Please enter a first name.");
-      return;
-    }
-    if (!NAME_REGEX.test(trimmedFirst)) {
-      toast.error("First name can only contain letters, spaces, hyphens, apostrophes, and periods.");
-      return;
-    }
-    if (!trimmedLast) {
-      toast.error("Please enter a last name.");
-      return;
-    }
-    if (!NAME_REGEX.test(trimmedLast)) {
-      toast.error("Last name can only contain letters, spaces, hyphens, apostrophes, and periods.");
-      return;
-    }
-    if (!trimmedEmail) {
-      toast.error("Please enter an institutional email.");
-      return;
-    }
-    if (!EMAIL_REGEX.test(trimmedEmail)) {
-      toast.error("Please enter a valid institutional email address (e.g. name@ggps.edu.in).");
-      return;
-    }
-
-    if (!formData.password || formData.password.length < 8) {
-      toast.error("Password must be at least 8 characters long.");
-      return;
-    }
-
-    if (formData.password !== formData.confirmPassword) {
-      toast.error("Passwords do not match. Please verify both password fields.");
-      return;
-    }
-
     const cleanedPhone = formData.phoneNumber ? sanitizePhoneInput(formData.phoneNumber) : "";
-    if (cleanedPhone && !TEN_DIGIT_PHONE_REGEX.test(cleanedPhone)) {
-      toast.error("Phone number must be a valid 10-digit number.");
-      return;
-    }
 
     setIsSaving(true);
     try {
@@ -807,36 +801,32 @@ function UsersPageContent() {
     e.preventDefault();
     if (!selectedUser) return;
 
+    const validation = UserEditSchema.safeParse({
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      email: formData.email,
+      roleName: formData.roleName,
+      phoneNumber: formData.phoneNumber ? formData.phoneNumber.trim() : undefined,
+      designation: formData.designation ? formData.designation.trim() : undefined,
+    });
+
+    if (!validation.success) {
+      const fieldErrors: Record<string, string> = {};
+      validation.error.issues.forEach((err) => {
+        const key = err.path[0] ? String(err.path[0]) : "general";
+        if (!fieldErrors[key]) fieldErrors[key] = err.message;
+      });
+      setEditErrors(fieldErrors);
+      const firstMsg = Object.values(fieldErrors)[0];
+      toast.error(firstMsg || "Please fix form validation errors");
+      return;
+    }
+
+    setEditErrors({});
     const trimmedFirst = formData.firstName.trim();
     const trimmedLast = formData.lastName.trim();
     const trimmedEmail = formData.email.trim();
-
-    if (!trimmedFirst) {
-      toast.error("Please enter a first name.");
-      return;
-    }
-    if (!NAME_REGEX.test(trimmedFirst)) {
-      toast.error("First name can only contain letters, spaces, hyphens, apostrophes, and periods.");
-      return;
-    }
-    if (trimmedLast && !NAME_REGEX.test(trimmedLast)) {
-      toast.error("Last name can only contain letters, spaces, hyphens, apostrophes, and periods.");
-      return;
-    }
-    if (!trimmedEmail) {
-      toast.error("Please enter an institutional email.");
-      return;
-    }
-    if (!EMAIL_REGEX.test(trimmedEmail)) {
-      toast.error("Please enter a valid email address.");
-      return;
-    }
-
     const cleanedPhone = formData.phoneNumber ? sanitizePhoneInput(formData.phoneNumber) : "";
-    if (cleanedPhone && !TEN_DIGIT_PHONE_REGEX.test(cleanedPhone)) {
-      toast.error("Phone number must be a valid 10-digit number.");
-      return;
-    }
 
     setIsSaving(true);
     try {
@@ -940,20 +930,22 @@ function UsersPageContent() {
   const handleCreateCustomRole = async (e: React.FormEvent) => {
     e.preventDefault();
     const formatted = newRoleName.trim();
-    if (!formatted) {
-      toast.error("Please enter a role title.");
-      return;
-    }
-    if (!/^[a-zA-Z\s\-]+$/.test(formatted)) {
-      toast.error("Role title can only contain letters, spaces, and hyphens.");
+
+    const validation = CustomRoleSchema.safeParse({ roleName: formatted });
+    if (!validation.success) {
+      const msg = validation.error.issues[0]?.message || "Please enter a valid role title.";
+      setRoleErrors({ roleName: msg });
+      toast.error(msg);
       return;
     }
 
-    if (rolesList.includes(formatted)) {
+    if (rolesList.some((r) => r.toLowerCase() === formatted.toLowerCase())) {
+      setRoleErrors({ roleName: "A role with this name already exists." });
       toast.error("A role with this name already exists.");
       return;
     }
 
+    setRoleErrors({});
     setRolesList((prev) => [...prev, formatted]);
     setRolePermissions((prev) => ({ ...prev, [formatted]: ["academics:read", "students:read"] }));
     setSelectedRole(formatted);
@@ -1921,16 +1913,26 @@ function UsersPageContent() {
 
             <form onSubmit={handleCreateCustomRole} className="space-y-4 text-xs">
               <div>
-                <label className="block text-[11px] font-bold uppercase text-slate-500 mb-1">Role Title *</label>
+                <label htmlFor="create-role-name" className="block text-[11px] font-bold uppercase text-slate-500 mb-1">
+                  Role Title <span className="text-rose-500">*</span>
+                </label>
                 <input
+                  id="create-role-name"
                   type="text"
-                  required
                   value={newRoleName}
-                  onChange={(e) => setNewRoleName(e.target.value)}
+                  onChange={(e) => {
+                    setNewRoleName(e.target.value);
+                    if (roleErrors.roleName) setRoleErrors((prev) => ({ ...prev, roleName: "" }));
+                  }}
                   onKeyDown={preventNonAlphaKey}
                   placeholder="e.g. Librarian, Hostel Warden, Lab Assistant"
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-[#001438] border border-slate-200 dark:border-slate-700 rounded-xl font-semibold text-slate-800 dark:text-white focus:outline-none focus:border-[#0050CB]"
+                  aria-invalid={!!roleErrors.roleName}
+                  aria-describedby={roleErrors.roleName ? "create-role-name-error" : undefined}
+                  className={`w-full px-3 py-2 bg-slate-50 dark:bg-[#001438] border ${
+                    roleErrors.roleName ? "border-rose-500 ring-1 ring-rose-500" : "border-slate-200 dark:border-slate-700"
+                  } rounded-xl font-semibold text-slate-800 dark:text-white focus:outline-none focus:border-[#0050CB]`}
                 />
+                <FieldError error={roleErrors.roleName} id="create-role-name-error" />
               </div>
 
               <p className="text-[11px] text-slate-400 leading-relaxed">
@@ -1988,55 +1990,100 @@ function UsersPageContent() {
             <form onSubmit={handleCreateUser} className="p-6 space-y-4 text-xs overflow-y-auto">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-bold uppercase text-slate-500 mb-1">First Name *</label>
+                  <label htmlFor="create-first-name" className="block text-[11px] font-bold uppercase text-slate-500 mb-1">
+                    First Name <span className="text-rose-500">*</span>
+                  </label>
                   <input
+                    id="create-first-name"
                     type="text"
-                    required
                     value={formData.firstName}
                     onKeyDown={preventNonAlphaKey}
-                    onPaste={(e) => handleNamePaste(e, (clean) => setFormData((prev) => ({ ...prev, firstName: clean })))}
-                    onChange={(e) => setFormData({ ...formData, firstName: sanitizeNameInput(e.target.value) })}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-[#001438] border border-slate-200 dark:border-slate-700 rounded-xl font-semibold text-slate-800 dark:text-white focus:outline-none focus:border-[#0050CB]"
+                    onPaste={(e) => handleNamePaste(e, (clean) => {
+                      setFormData((prev) => ({ ...prev, firstName: clean }));
+                      if (createErrors.firstName) setCreateErrors((prev) => ({ ...prev, firstName: "" }));
+                    })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, firstName: sanitizeNameInput(e.target.value) });
+                      if (createErrors.firstName) setCreateErrors((prev) => ({ ...prev, firstName: "" }));
+                    }}
+                    aria-invalid={!!createErrors.firstName}
+                    aria-describedby={createErrors.firstName ? "create-first-name-error" : undefined}
+                    className={`w-full px-3 py-2 bg-slate-50 dark:bg-[#001438] border ${
+                      createErrors.firstName ? "border-rose-500 ring-1 ring-rose-500" : "border-slate-200 dark:border-slate-700"
+                    } rounded-xl font-semibold text-slate-800 dark:text-white focus:outline-none focus:border-[#0050CB]`}
                     placeholder="e.g. Ramesh"
                   />
+                  <FieldError error={createErrors.firstName} id="create-first-name-error" />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-bold uppercase text-slate-500 mb-1">Last Name *</label>
+                  <label htmlFor="create-last-name" className="block text-[11px] font-bold uppercase text-slate-500 mb-1">
+                    Last Name <span className="text-rose-500">*</span>
+                  </label>
                   <input
+                    id="create-last-name"
                     type="text"
-                    required
                     value={formData.lastName}
                     onKeyDown={preventNonAlphaKey}
-                    onPaste={(e) => handleNamePaste(e, (clean) => setFormData((prev) => ({ ...prev, lastName: clean })))}
-                    onChange={(e) => setFormData({ ...formData, lastName: sanitizeNameInput(e.target.value) })}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-[#001438] border border-slate-200 dark:border-slate-700 rounded-xl font-semibold text-slate-800 dark:text-white focus:outline-none focus:border-[#0050CB]"
+                    onPaste={(e) => handleNamePaste(e, (clean) => {
+                      setFormData((prev) => ({ ...prev, lastName: clean }));
+                      if (createErrors.lastName) setCreateErrors((prev) => ({ ...prev, lastName: "" }));
+                    })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, lastName: sanitizeNameInput(e.target.value) });
+                      if (createErrors.lastName) setCreateErrors((prev) => ({ ...prev, lastName: "" }));
+                    }}
+                    aria-invalid={!!createErrors.lastName}
+                    aria-describedby={createErrors.lastName ? "create-last-name-error" : undefined}
+                    className={`w-full px-3 py-2 bg-slate-50 dark:bg-[#001438] border ${
+                      createErrors.lastName ? "border-rose-500 ring-1 ring-rose-500" : "border-slate-200 dark:border-slate-700"
+                    } rounded-xl font-semibold text-slate-800 dark:text-white focus:outline-none focus:border-[#0050CB]`}
                     placeholder="e.g. Kumar"
                   />
+                  <FieldError error={createErrors.lastName} id="create-last-name-error" />
                 </div>
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold uppercase text-slate-500 mb-1">Email *</label>
+                <label htmlFor="create-email" className="block text-[11px] font-bold uppercase text-slate-500 mb-1">
+                  Institutional Email <span className="text-rose-500">*</span>
+                </label>
                 <input
+                  id="create-email"
                   type="email"
-                  required
                   value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value.toLowerCase().trim() })}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-[#001438] border border-slate-200 dark:border-slate-700 rounded-xl font-semibold text-slate-800 dark:text-white focus:outline-none focus:border-[#0050CB]"
+                  onChange={(e) => {
+                    setFormData({ ...formData, email: e.target.value.toLowerCase().trim() });
+                    if (createErrors.email) setCreateErrors((prev) => ({ ...prev, email: "" }));
+                  }}
+                  aria-invalid={!!createErrors.email}
+                  aria-describedby={createErrors.email ? "create-email-error" : undefined}
+                  className={`w-full px-3 py-2 bg-slate-50 dark:bg-[#001438] border ${
+                    createErrors.email ? "border-rose-500 ring-1 ring-rose-500" : "border-slate-200 dark:border-slate-700"
+                  } rounded-xl font-semibold text-slate-800 dark:text-white focus:outline-none focus:border-[#0050CB]`}
                   placeholder="ramesh.k@ggps.edu.in"
                 />
+                <FieldError error={createErrors.email} id="create-email-error" />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-bold uppercase text-slate-500 mb-1">Temporary Password *</label>
+                  <label htmlFor="create-password" className="block text-[11px] font-bold uppercase text-slate-500 mb-1">
+                    Temporary Password <span className="text-rose-500">*</span>
+                  </label>
                   <div className="relative">
                     <input
+                      id="create-password"
                       type={showPassword ? "text" : "password"}
-                      required
                       value={formData.password}
-                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      className="w-full px-3 py-2 pr-9 bg-slate-50 dark:bg-[#001438] border border-slate-200 dark:border-slate-700 rounded-xl font-semibold text-slate-800 dark:text-white focus:outline-none focus:border-[#0050CB]"
+                      onChange={(e) => {
+                        setFormData({ ...formData, password: e.target.value });
+                        if (createErrors.password) setCreateErrors((prev) => ({ ...prev, password: "" }));
+                      }}
+                      aria-invalid={!!createErrors.password}
+                      aria-describedby={createErrors.password ? "create-password-error" : undefined}
+                      className={`w-full px-3 py-2 pr-9 bg-slate-50 dark:bg-[#001438] border ${
+                        createErrors.password ? "border-rose-500 ring-1 ring-rose-500" : "border-slate-200 dark:border-slate-700"
+                      } rounded-xl font-semibold text-slate-800 dark:text-white focus:outline-none focus:border-[#0050CB]`}
                       placeholder="Min 8 characters"
                     />
                     <button
@@ -2047,16 +2094,26 @@ function UsersPageContent() {
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
+                  <FieldError error={createErrors.password} id="create-password-error" />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-bold uppercase text-slate-500 mb-1">Confirm Password *</label>
+                  <label htmlFor="create-confirm-password" className="block text-[11px] font-bold uppercase text-slate-500 mb-1">
+                    Confirm Password <span className="text-rose-500">*</span>
+                  </label>
                   <div className="relative">
                     <input
+                      id="create-confirm-password"
                       type={showConfirmPassword ? "text" : "password"}
-                      required
                       value={formData.confirmPassword}
-                      onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                      className="w-full px-3 py-2 pr-9 bg-slate-50 dark:bg-[#001438] border border-slate-200 dark:border-slate-700 rounded-xl font-semibold text-slate-800 dark:text-white focus:outline-none focus:border-[#0050CB]"
+                      onChange={(e) => {
+                        setFormData({ ...formData, confirmPassword: e.target.value });
+                        if (createErrors.confirmPassword) setCreateErrors((prev) => ({ ...prev, confirmPassword: "" }));
+                      }}
+                      aria-invalid={!!createErrors.confirmPassword}
+                      aria-describedby={createErrors.confirmPassword ? "create-confirm-password-error" : undefined}
+                      className={`w-full px-3 py-2 pr-9 bg-slate-50 dark:bg-[#001438] border ${
+                        createErrors.confirmPassword ? "border-rose-500 ring-1 ring-rose-500" : "border-slate-200 dark:border-slate-700"
+                      } rounded-xl font-semibold text-slate-800 dark:text-white focus:outline-none focus:border-[#0050CB]`}
                       placeholder="Re-type password"
                     />
                     <button
@@ -2067,16 +2124,27 @@ function UsersPageContent() {
                       {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
+                  <FieldError error={createErrors.confirmPassword} id="create-confirm-password-error" />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-bold uppercase text-slate-500 mb-1">System Role</label>
+                  <label htmlFor="create-role" className="block text-[11px] font-bold uppercase text-slate-500 mb-1">
+                    System Role <span className="text-rose-500">*</span>
+                  </label>
                   <select
+                    id="create-role"
                     value={formData.roleName}
-                    onChange={(e) => setFormData({ ...formData, roleName: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-[#001438] border border-slate-200 dark:border-slate-700 rounded-xl font-semibold text-slate-800 dark:text-white focus:outline-none focus:border-[#0050CB]"
+                    onChange={(e) => {
+                      setFormData({ ...formData, roleName: e.target.value });
+                      if (createErrors.roleName) setCreateErrors((prev) => ({ ...prev, roleName: "" }));
+                    }}
+                    aria-invalid={!!createErrors.roleName}
+                    aria-describedby={createErrors.roleName ? "create-role-error" : undefined}
+                    className={`w-full px-3 py-2 bg-slate-50 dark:bg-[#001438] border ${
+                      createErrors.roleName ? "border-rose-500 ring-1 ring-rose-500" : "border-slate-200 dark:border-slate-700"
+                    } rounded-xl font-semibold text-slate-800 dark:text-white focus:outline-none focus:border-[#0050CB]`}
                   >
                     {rolesList.map((r) => (
                       <option key={r} value={r}>
@@ -2084,33 +2152,53 @@ function UsersPageContent() {
                       </option>
                     ))}
                   </select>
+                  <FieldError error={createErrors.roleName} id="create-role-error" />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-bold uppercase text-slate-500 mb-1">
+                  <label htmlFor="create-designation" className="block text-[11px] font-bold uppercase text-slate-500 mb-1">
                     {formData.roleName === "Parent" ? "Relationship Label" : "Designation"}
                   </label>
                   <input
+                    id="create-designation"
                     type="text"
                     value={formData.designation}
-                    onChange={(e) => setFormData({ ...formData, designation: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, designation: e.target.value });
+                      if (createErrors.designation) setCreateErrors((prev) => ({ ...prev, designation: "" }));
+                    }}
                     className="w-full px-3 py-2 bg-slate-50 dark:bg-[#001438] border border-slate-200 dark:border-slate-700 rounded-xl font-semibold text-slate-800 dark:text-white focus:outline-none focus:border-[#0050CB]"
                     placeholder={formData.roleName === "Parent" ? "e.g. Father / Guardian" : "e.g. Science Teacher"}
                   />
+                  <FieldError error={createErrors.designation} id="create-designation-error" />
                 </div>
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold uppercase text-slate-500 mb-1">Phone Number</label>
+                <label htmlFor="create-phone" className="block text-[11px] font-bold uppercase text-slate-500 mb-1">
+                  Phone Number
+                </label>
                 <input
+                  id="create-phone"
                   type="tel"
                   maxLength={10}
                   value={formData.phoneNumber}
                   onKeyDown={preventNonNumericKey}
-                  onPaste={(e) => handlePhonePaste(e, (clean) => setFormData((prev) => ({ ...prev, phoneNumber: clean })))}
-                  onChange={(e) => setFormData({ ...formData, phoneNumber: sanitizePhoneInput(e.target.value) })}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-[#001438] border border-slate-200 dark:border-slate-700 rounded-xl font-semibold text-slate-800 dark:text-white focus:outline-none focus:border-[#0050CB]"
+                  onPaste={(e) => handlePhonePaste(e, (clean) => {
+                    setFormData((prev) => ({ ...prev, phoneNumber: clean }));
+                    if (createErrors.phoneNumber) setCreateErrors((prev) => ({ ...prev, phoneNumber: "" }));
+                  })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, phoneNumber: sanitizePhoneInput(e.target.value) });
+                    if (createErrors.phoneNumber) setCreateErrors((prev) => ({ ...prev, phoneNumber: "" }));
+                  }}
+                  aria-invalid={!!createErrors.phoneNumber}
+                  aria-describedby={createErrors.phoneNumber ? "create-phone-error" : undefined}
+                  className={`w-full px-3 py-2 bg-slate-50 dark:bg-[#001438] border ${
+                    createErrors.phoneNumber ? "border-rose-500 ring-1 ring-rose-500" : "border-slate-200 dark:border-slate-700"
+                  } rounded-xl font-semibold text-slate-800 dark:text-white focus:outline-none focus:border-[#0050CB]`}
                   placeholder="10-digit mobile number"
                 />
+                <FieldError error={createErrors.phoneNumber} id="create-phone-error" />
               </div>
 
               {/* Link Child / Children Section when creating a Parent */}
@@ -2348,48 +2436,95 @@ function UsersPageContent() {
             <form onSubmit={handleEditUser} className="p-6 space-y-4 text-xs">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-bold uppercase text-slate-500 mb-1">First Name</label>
+                  <label htmlFor="edit-first-name" className="block text-[11px] font-bold uppercase text-slate-500 mb-1">
+                    First Name <span className="text-rose-500">*</span>
+                  </label>
                   <input
+                    id="edit-first-name"
                     type="text"
-                    required
                     value={formData.firstName}
                     onKeyDown={preventNonAlphaKey}
-                    onPaste={(e) => handleNamePaste(e, (clean) => setFormData((prev) => ({ ...prev, firstName: clean })))}
-                    onChange={(e) => setFormData({ ...formData, firstName: sanitizeNameInput(e.target.value) })}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-[#001438] border border-slate-200 dark:border-slate-700 rounded-xl font-semibold text-slate-800 dark:text-white focus:outline-none focus:border-[#0050CB]"
+                    onPaste={(e) => handleNamePaste(e, (clean) => {
+                      setFormData((prev) => ({ ...prev, firstName: clean }));
+                      if (editErrors.firstName) setEditErrors((prev) => ({ ...prev, firstName: "" }));
+                    })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, firstName: sanitizeNameInput(e.target.value) });
+                      if (editErrors.firstName) setEditErrors((prev) => ({ ...prev, firstName: "" }));
+                    }}
+                    aria-invalid={!!editErrors.firstName}
+                    aria-describedby={editErrors.firstName ? "edit-first-name-error" : undefined}
+                    className={`w-full px-3 py-2 bg-slate-50 dark:bg-[#001438] border ${
+                      editErrors.firstName ? "border-rose-500 ring-1 ring-rose-500" : "border-slate-200 dark:border-slate-700"
+                    } rounded-xl font-semibold text-slate-800 dark:text-white focus:outline-none focus:border-[#0050CB]`}
                   />
+                  <FieldError error={editErrors.firstName} id="edit-first-name-error" />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-bold uppercase text-slate-500 mb-1">Last Name</label>
+                  <label htmlFor="edit-last-name" className="block text-[11px] font-bold uppercase text-slate-500 mb-1">
+                    Last Name <span className="text-rose-500">*</span>
+                  </label>
                   <input
+                    id="edit-last-name"
                     type="text"
                     value={formData.lastName}
                     onKeyDown={preventNonAlphaKey}
-                    onPaste={(e) => handleNamePaste(e, (clean) => setFormData((prev) => ({ ...prev, lastName: clean })))}
-                    onChange={(e) => setFormData({ ...formData, lastName: sanitizeNameInput(e.target.value) })}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-[#001438] border border-slate-200 dark:border-slate-700 rounded-xl font-semibold text-slate-800 dark:text-white focus:outline-none focus:border-[#0050CB]"
+                    onPaste={(e) => handleNamePaste(e, (clean) => {
+                      setFormData((prev) => ({ ...prev, lastName: clean }));
+                      if (editErrors.lastName) setEditErrors((prev) => ({ ...prev, lastName: "" }));
+                    })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, lastName: sanitizeNameInput(e.target.value) });
+                      if (editErrors.lastName) setEditErrors((prev) => ({ ...prev, lastName: "" }));
+                    }}
+                    aria-invalid={!!editErrors.lastName}
+                    aria-describedby={editErrors.lastName ? "edit-last-name-error" : undefined}
+                    className={`w-full px-3 py-2 bg-slate-50 dark:bg-[#001438] border ${
+                      editErrors.lastName ? "border-rose-500 ring-1 ring-rose-500" : "border-slate-200 dark:border-slate-700"
+                    } rounded-xl font-semibold text-slate-800 dark:text-white focus:outline-none focus:border-[#0050CB]`}
                   />
+                  <FieldError error={editErrors.lastName} id="edit-last-name-error" />
                 </div>
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold uppercase text-slate-500 mb-1">Email</label>
+                <label htmlFor="edit-email" className="block text-[11px] font-bold uppercase text-slate-500 mb-1">
+                  Email <span className="text-rose-500">*</span>
+                </label>
                 <input
+                  id="edit-email"
                   type="email"
-                  required
                   value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value.toLowerCase().trim() })}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-[#001438] border border-slate-200 dark:border-slate-700 rounded-xl font-semibold text-slate-800 dark:text-white focus:outline-none focus:border-[#0050CB]"
+                  onChange={(e) => {
+                    setFormData({ ...formData, email: e.target.value.toLowerCase().trim() });
+                    if (editErrors.email) setEditErrors((prev) => ({ ...prev, email: "" }));
+                  }}
+                  aria-invalid={!!editErrors.email}
+                  aria-describedby={editErrors.email ? "edit-email-error" : undefined}
+                  className={`w-full px-3 py-2 bg-slate-50 dark:bg-[#001438] border ${
+                    editErrors.email ? "border-rose-500 ring-1 ring-rose-500" : "border-slate-200 dark:border-slate-700"
+                  } rounded-xl font-semibold text-slate-800 dark:text-white focus:outline-none focus:border-[#0050CB]`}
                 />
+                <FieldError error={editErrors.email} id="edit-email-error" />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-bold uppercase text-slate-500 mb-1">Role</label>
+                  <label htmlFor="edit-role" className="block text-[11px] font-bold uppercase text-slate-500 mb-1">
+                    Role <span className="text-rose-500">*</span>
+                  </label>
                   <select
+                    id="edit-role"
                     value={formData.roleName}
-                    onChange={(e) => setFormData({ ...formData, roleName: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-[#001438] border border-slate-200 dark:border-slate-700 rounded-xl font-semibold text-slate-800 dark:text-white focus:outline-none focus:border-[#0050CB]"
+                    onChange={(e) => {
+                      setFormData({ ...formData, roleName: e.target.value });
+                      if (editErrors.roleName) setEditErrors((prev) => ({ ...prev, roleName: "" }));
+                    }}
+                    aria-invalid={!!editErrors.roleName}
+                    aria-describedby={editErrors.roleName ? "edit-role-error" : undefined}
+                    className={`w-full px-3 py-2 bg-slate-50 dark:bg-[#001438] border ${
+                      editErrors.roleName ? "border-rose-500 ring-1 ring-rose-500" : "border-slate-200 dark:border-slate-700"
+                    } rounded-xl font-semibold text-slate-800 dark:text-white focus:outline-none focus:border-[#0050CB]`}
                   >
                     {rolesList.map((r) => (
                       <option key={r} value={r}>
@@ -2397,30 +2532,48 @@ function UsersPageContent() {
                       </option>
                     ))}
                   </select>
+                  <FieldError error={editErrors.roleName} id="edit-role-error" />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-bold uppercase text-slate-500 mb-1">Designation</label>
+                  <label htmlFor="edit-designation" className="block text-[11px] font-bold uppercase text-slate-500 mb-1">Designation</label>
                   <input
+                    id="edit-designation"
                     type="text"
                     value={formData.designation}
-                    onChange={(e) => setFormData({ ...formData, designation: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, designation: e.target.value });
+                      if (editErrors.designation) setEditErrors((prev) => ({ ...prev, designation: "" }));
+                    }}
                     className="w-full px-3 py-2 bg-slate-50 dark:bg-[#001438] border border-slate-200 dark:border-slate-700 rounded-xl font-semibold text-slate-800 dark:text-white focus:outline-none focus:border-[#0050CB]"
                   />
+                  <FieldError error={editErrors.designation} id="edit-designation-error" />
                 </div>
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold uppercase text-slate-500 mb-1">Phone Number</label>
+                <label htmlFor="edit-phone" className="block text-[11px] font-bold uppercase text-slate-500 mb-1">Phone Number</label>
                 <input
+                  id="edit-phone"
                   type="tel"
                   maxLength={10}
                   value={formData.phoneNumber}
                   onKeyDown={preventNonNumericKey}
-                  onPaste={(e) => handlePhonePaste(e, (clean) => setFormData((prev) => ({ ...prev, phoneNumber: clean })))}
-                  onChange={(e) => setFormData({ ...formData, phoneNumber: sanitizePhoneInput(e.target.value) })}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-[#001438] border border-slate-200 dark:border-slate-700 rounded-xl font-semibold text-slate-800 dark:text-white focus:outline-none focus:border-[#0050CB]"
+                  onPaste={(e) => handlePhonePaste(e, (clean) => {
+                    setFormData((prev) => ({ ...prev, phoneNumber: clean }));
+                    if (editErrors.phoneNumber) setEditErrors((prev) => ({ ...prev, phoneNumber: "" }));
+                  })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, phoneNumber: sanitizePhoneInput(e.target.value) });
+                    if (editErrors.phoneNumber) setEditErrors((prev) => ({ ...prev, phoneNumber: "" }));
+                  }}
+                  aria-invalid={!!editErrors.phoneNumber}
+                  aria-describedby={editErrors.phoneNumber ? "edit-phone-error" : undefined}
+                  className={`w-full px-3 py-2 bg-slate-50 dark:bg-[#001438] border ${
+                    editErrors.phoneNumber ? "border-rose-500 ring-1 ring-rose-500" : "border-slate-200 dark:border-slate-700"
+                  } rounded-xl font-semibold text-slate-800 dark:text-white focus:outline-none focus:border-[#0050CB]`}
                   placeholder="10-digit mobile number"
                 />
+                <FieldError error={editErrors.phoneNumber} id="edit-phone-error" />
               </div>
 
               <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-2.5">

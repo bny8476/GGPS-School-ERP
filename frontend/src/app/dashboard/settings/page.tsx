@@ -27,10 +27,29 @@ import {
   Sparkles,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { FieldError } from '@/components/ui/FieldError';
+import {
+  InstitutionalSettingsSchema,
+  ProfileUpdateSchema,
+  PasswordChangeSchema,
+} from '@/schemas';
+import {
+  preventNonAlphaKey,
+  preventNonNumericKey,
+  sanitizeNameInput,
+  sanitizePhoneInput,
+  handleNamePaste,
+  handlePhonePaste,
+} from '@/lib/validationUtils';
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<'general' | 'profile' | 'security' | 'notifications' | 'permissions'>('general');
   const [isLoading, setIsLoading] = useState(true);
+
+  // Form error states
+  const [generalErrors, setGeneralErrors] = useState<Record<string, string>>({});
+  const [profileErrors, setProfileErrors] = useState<Record<string, string>>({});
+  const [passwordErrors, setPasswordErrors] = useState<Record<string, string>>({});
 
   // Current Logged-in User
   const [user, setUser] = useState<any>(null);
@@ -189,6 +208,19 @@ export default function SettingsPage() {
   // Handler: Save Institutional General Settings
   const handleSaveGeneralSettings = async (e: React.FormEvent) => {
     e.preventDefault();
+    const validation = InstitutionalSettingsSchema.safeParse(generalSettings);
+    if (!validation.success) {
+      const fieldErrors: Record<string, string> = {};
+      validation.error.issues.forEach((err) => {
+        const key = err.path[0] ? String(err.path[0]) : 'general';
+        if (!fieldErrors[key]) fieldErrors[key] = err.message;
+      });
+      setGeneralErrors(fieldErrors);
+      toast.error(Object.values(fieldErrors)[0] || 'Please fix settings errors');
+      return;
+    }
+    setGeneralErrors({});
+
     setIsGeneralSaving(true);
     try {
       const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
@@ -219,6 +251,25 @@ export default function SettingsPage() {
   // Handler: Save Personal Profile
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
+    const validation = ProfileUpdateSchema.safeParse({
+      firstName: profileData.firstName,
+      lastName: profileData.lastName,
+      email: profileData.email,
+      phoneNumber: profileData.phoneNumber || undefined,
+    });
+
+    if (!validation.success) {
+      const fieldErrors: Record<string, string> = {};
+      validation.error.issues.forEach((err) => {
+        const key = err.path[0] ? String(err.path[0]) : 'general';
+        if (!fieldErrors[key]) fieldErrors[key] = err.message;
+      });
+      setProfileErrors(fieldErrors);
+      toast.error(Object.values(fieldErrors)[0] || 'Please fix profile errors');
+      return;
+    }
+    setProfileErrors({});
+
     setIsProfileSaving(true);
     try {
       const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
@@ -251,14 +302,18 @@ export default function SettingsPage() {
   // Handler: Change Password
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (passwordData.newPassword !== passwordData.confirmPassword) {
-      toast.error('New passwords do not match.');
+    const validation = PasswordChangeSchema.safeParse(passwordData);
+    if (!validation.success) {
+      const fieldErrors: Record<string, string> = {};
+      validation.error.issues.forEach((err) => {
+        const key = err.path[0] ? String(err.path[0]) : 'general';
+        if (!fieldErrors[key]) fieldErrors[key] = err.message;
+      });
+      setPasswordErrors(fieldErrors);
+      toast.error(Object.values(fieldErrors)[0] || 'Please fix password errors');
       return;
     }
-    if (passwordData.newPassword.length < 6) {
-      toast.error('New password must be at least 6 characters.');
-      return;
-    }
+    setPasswordErrors({});
 
     setIsPasswordSaving(true);
     try {
@@ -519,16 +574,25 @@ export default function SettingsPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   <div className="sm:col-span-2">
                     <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-2">
-                      School Legal Name
+                      School Legal Name <span className="text-[#FF690C]">*</span>
                     </label>
                     <input
                       type="text"
+                      id="gen-schoolName"
                       value={generalSettings.schoolName}
-                      onChange={(e) => setGeneralSettings({ ...generalSettings, schoolName: e.target.value })}
+                      onChange={(e) => {
+                        setGeneralSettings({ ...generalSettings, schoolName: e.target.value });
+                        if (generalErrors.schoolName) setGeneralErrors(prev => ({ ...prev, schoolName: '' }));
+                      }}
                       required
-                      className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm font-semibold text-[#000E28] dark:text-white focus:ring-2 focus:ring-[#0050CB] focus:outline-none transition-colors"
+                      aria-invalid={Boolean(generalErrors.schoolName)}
+                      aria-describedby={generalErrors.schoolName ? "gen-schoolName-err" : undefined}
+                      className={`w-full px-4 py-3 rounded-xl border text-sm font-semibold text-[#000E28] dark:text-white focus:ring-2 focus:ring-[#0050CB] focus:outline-none transition-colors ${
+                        generalErrors.schoolName ? 'border-rose-400 bg-rose-50/20' : 'border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800'
+                      }`}
                       placeholder="e.g. Global Guru Shanti Public School (GGPS)"
                     />
+                    <FieldError id="gen-schoolName-err" error={generalErrors.schoolName} />
                   </div>
 
                   <div className="sm:col-span-2">
@@ -537,62 +601,96 @@ export default function SettingsPage() {
                     </label>
                     <input
                       type="text"
+                      id="gen-schoolTagline"
                       value={generalSettings.schoolTagline}
-                      onChange={(e) => setGeneralSettings({ ...generalSettings, schoolTagline: e.target.value })}
+                      onChange={(e) => {
+                        setGeneralSettings({ ...generalSettings, schoolTagline: e.target.value });
+                        if (generalErrors.schoolTagline) setGeneralErrors(prev => ({ ...prev, schoolTagline: '' }));
+                      }}
+                      aria-invalid={Boolean(generalErrors.schoolTagline)}
+                      aria-describedby={generalErrors.schoolTagline ? "gen-schoolTagline-err" : undefined}
                       className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm font-semibold text-[#000E28] dark:text-white focus:ring-2 focus:ring-[#0050CB] focus:outline-none transition-colors"
                       placeholder="e.g. Excellence in Holistic Education & Character"
                     />
+                    <FieldError id="gen-schoolTagline-err" error={generalErrors.schoolTagline} />
                   </div>
 
                   <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-2">
-                      Official Contact Email
+                      Official Contact Email <span className="text-[#FF690C]">*</span>
                     </label>
                     <div className="relative">
                       <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
                       <input
                         type="email"
+                        id="gen-schoolEmail"
                         value={generalSettings.schoolEmail}
-                        onChange={(e) => setGeneralSettings({ ...generalSettings, schoolEmail: e.target.value })}
+                        onChange={(e) => {
+                          setGeneralSettings({ ...generalSettings, schoolEmail: e.target.value });
+                          if (generalErrors.schoolEmail) setGeneralErrors(prev => ({ ...prev, schoolEmail: '' }));
+                        }}
                         required
-                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm font-semibold text-[#000E28] dark:text-white focus:ring-2 focus:ring-[#0050CB] focus:outline-none transition-colors"
+                        aria-invalid={Boolean(generalErrors.schoolEmail)}
+                        aria-describedby={generalErrors.schoolEmail ? "gen-schoolEmail-err" : undefined}
+                        className={`w-full pl-10 pr-4 py-3 rounded-xl border text-sm font-semibold text-[#000E28] dark:text-white focus:ring-2 focus:ring-[#0050CB] focus:outline-none transition-colors ${
+                          generalErrors.schoolEmail ? 'border-rose-400 bg-rose-50/20' : 'border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800'
+                        }`}
                         placeholder="contact@ggps.edu.in"
                       />
                     </div>
+                    <FieldError id="gen-schoolEmail-err" error={generalErrors.schoolEmail} />
                   </div>
 
                   <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-2">
-                      Reception Phone Number
+                      Reception Phone Number <span className="text-[#FF690C]">*</span>
                     </label>
                     <div className="relative">
                       <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
                       <input
                         type="text"
+                        id="gen-schoolPhone"
                         value={generalSettings.schoolPhone}
-                        onChange={(e) => setGeneralSettings({ ...generalSettings, schoolPhone: e.target.value })}
+                        onChange={(e) => {
+                          setGeneralSettings({ ...generalSettings, schoolPhone: e.target.value });
+                          if (generalErrors.schoolPhone) setGeneralErrors(prev => ({ ...prev, schoolPhone: '' }));
+                        }}
                         required
-                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm font-semibold text-[#000E28] dark:text-white focus:ring-2 focus:ring-[#0050CB] focus:outline-none transition-colors"
+                        aria-invalid={Boolean(generalErrors.schoolPhone)}
+                        aria-describedby={generalErrors.schoolPhone ? "gen-schoolPhone-err" : undefined}
+                        className={`w-full pl-10 pr-4 py-3 rounded-xl border text-sm font-semibold text-[#000E28] dark:text-white focus:ring-2 focus:ring-[#0050CB] focus:outline-none transition-colors ${
+                          generalErrors.schoolPhone ? 'border-rose-400 bg-rose-50/20' : 'border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800'
+                        }`}
                         placeholder="+91 (800) 555-GGPS"
                       />
                     </div>
+                    <FieldError id="gen-schoolPhone-err" error={generalErrors.schoolPhone} />
                   </div>
 
                   <div className="sm:col-span-2">
                     <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-2">
-                      Primary Campus Address
+                      Primary Campus Address <span className="text-[#FF690C]">*</span>
                     </label>
                     <div className="relative">
                       <MapPin className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
                       <input
                         type="text"
+                        id="gen-schoolAddress"
                         value={generalSettings.schoolAddress}
-                        onChange={(e) => setGeneralSettings({ ...generalSettings, schoolAddress: e.target.value })}
+                        onChange={(e) => {
+                          setGeneralSettings({ ...generalSettings, schoolAddress: e.target.value });
+                          if (generalErrors.schoolAddress) setGeneralErrors(prev => ({ ...prev, schoolAddress: '' }));
+                        }}
                         required
-                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm font-semibold text-[#000E28] dark:text-white focus:ring-2 focus:ring-[#0050CB] focus:outline-none transition-colors"
+                        aria-invalid={Boolean(generalErrors.schoolAddress)}
+                        aria-describedby={generalErrors.schoolAddress ? "gen-schoolAddress-err" : undefined}
+                        className={`w-full pl-10 pr-4 py-3 rounded-xl border text-sm font-semibold text-[#000E28] dark:text-white focus:ring-2 focus:ring-[#0050CB] focus:outline-none transition-colors ${
+                          generalErrors.schoolAddress ? 'border-rose-400 bg-rose-50/20' : 'border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800'
+                        }`}
                         placeholder="Main Campus, Sector 4, Institutional Area"
                       />
                     </div>
+                    <FieldError id="gen-schoolAddress-err" error={generalErrors.schoolAddress} />
                   </div>
 
                   <div>
@@ -694,48 +792,85 @@ export default function SettingsPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-2">
-                      First Name
+                      First Name <span className="text-[#FF690C]">*</span>
                     </label>
                     <div className="relative">
                       <UserCircle className="h-5 w-5 text-slate-400 absolute left-3 top-3.5" />
                       <input
                         type="text"
-                        className="block w-full pl-10 pr-3 py-3 border border-slate-300 dark:border-slate-700 rounded-xl text-sm font-medium focus:ring-2 focus:ring-[#0050CB] focus:outline-none bg-slate-50 dark:bg-slate-800 text-[#000E28] dark:text-white transition-colors"
+                        id="prof-firstName"
+                        onKeyDown={preventNonAlphaKey}
+                        onPaste={(e) => handleNamePaste(e, (clean) => {
+                          setProfileData(prev => ({ ...prev, firstName: clean }));
+                          if (profileErrors.firstName) setProfileErrors(prev => ({ ...prev, firstName: '' }));
+                        })}
+                        className={`block w-full pl-10 pr-3 py-3 border rounded-xl text-sm font-medium focus:ring-2 focus:ring-[#0050CB] focus:outline-none text-[#000E28] dark:text-white transition-colors ${
+                          profileErrors.firstName ? 'border-rose-400 bg-rose-50/20' : 'border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800'
+                        }`}
                         value={profileData.firstName}
-                        onChange={(e) => setProfileData({ ...profileData, firstName: e.target.value })}
+                        onChange={(e) => {
+                          setProfileData({ ...profileData, firstName: sanitizeNameInput(e.target.value) });
+                          if (profileErrors.firstName) setProfileErrors(prev => ({ ...prev, firstName: '' }));
+                        }}
+                        aria-invalid={Boolean(profileErrors.firstName)}
+                        aria-describedby={profileErrors.firstName ? "prof-firstName-err" : undefined}
                         required
                       />
                     </div>
+                    <FieldError id="prof-firstName-err" error={profileErrors.firstName} />
                   </div>
                   <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-2">
-                      Last Name
+                      Last Name <span className="text-[#FF690C]">*</span>
                     </label>
                     <div className="relative">
                       <UserCircle className="h-5 w-5 text-slate-400 absolute left-3 top-3.5" />
                       <input
                         type="text"
-                        className="block w-full pl-10 pr-3 py-3 border border-slate-300 dark:border-slate-700 rounded-xl text-sm font-medium focus:ring-2 focus:ring-[#0050CB] focus:outline-none bg-slate-50 dark:bg-slate-800 text-[#000E28] dark:text-white transition-colors"
+                        id="prof-lastName"
+                        onKeyDown={preventNonAlphaKey}
+                        onPaste={(e) => handleNamePaste(e, (clean) => {
+                          setProfileData(prev => ({ ...prev, lastName: clean }));
+                          if (profileErrors.lastName) setProfileErrors(prev => ({ ...prev, lastName: '' }));
+                        })}
+                        className={`block w-full pl-10 pr-3 py-3 border rounded-xl text-sm font-medium focus:ring-2 focus:ring-[#0050CB] focus:outline-none text-[#000E28] dark:text-white transition-colors ${
+                          profileErrors.lastName ? 'border-rose-400 bg-rose-50/20' : 'border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800'
+                        }`}
                         value={profileData.lastName}
-                        onChange={(e) => setProfileData({ ...profileData, lastName: e.target.value })}
+                        onChange={(e) => {
+                          setProfileData({ ...profileData, lastName: sanitizeNameInput(e.target.value) });
+                          if (profileErrors.lastName) setProfileErrors(prev => ({ ...prev, lastName: '' }));
+                        }}
+                        aria-invalid={Boolean(profileErrors.lastName)}
+                        aria-describedby={profileErrors.lastName ? "prof-lastName-err" : undefined}
                         required
                       />
                     </div>
+                    <FieldError id="prof-lastName-err" error={profileErrors.lastName} />
                   </div>
                   <div className="sm:col-span-2">
                     <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-2">
-                      Email Address
+                      Email Address <span className="text-[#FF690C]">*</span>
                     </label>
                     <div className="relative">
                       <Mail className="h-5 w-5 text-slate-400 absolute left-3 top-3.5" />
                       <input
                         type="email"
-                        className="block w-full pl-10 pr-3 py-3 border border-slate-300 dark:border-slate-700 rounded-xl text-sm font-medium focus:ring-2 focus:ring-[#0050CB] focus:outline-none bg-slate-50 dark:bg-slate-800 text-[#000E28] dark:text-white transition-colors"
+                        id="prof-email"
+                        className={`block w-full pl-10 pr-3 py-3 border rounded-xl text-sm font-medium focus:ring-2 focus:ring-[#0050CB] focus:outline-none text-[#000E28] dark:text-white transition-colors ${
+                          profileErrors.email ? 'border-rose-400 bg-rose-50/20' : 'border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800'
+                        }`}
                         value={profileData.email}
-                        onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
+                        onChange={(e) => {
+                          setProfileData({ ...profileData, email: e.target.value });
+                          if (profileErrors.email) setProfileErrors(prev => ({ ...prev, email: '' }));
+                        }}
+                        aria-invalid={Boolean(profileErrors.email)}
+                        aria-describedby={profileErrors.email ? "prof-email-err" : undefined}
                         required
                       />
                     </div>
+                    <FieldError id="prof-email-err" error={profileErrors.email} />
                   </div>
                   <div className="sm:col-span-2">
                     <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-2">
@@ -745,12 +880,26 @@ export default function SettingsPage() {
                       <Phone className="h-5 w-5 text-slate-400 absolute left-3 top-3.5" />
                       <input
                         type="tel"
-                        className="block w-full pl-10 pr-3 py-3 border border-slate-300 dark:border-slate-700 rounded-xl text-sm font-medium focus:ring-2 focus:ring-[#0050CB] focus:outline-none bg-slate-50 dark:bg-slate-800 text-[#000E28] dark:text-white transition-colors"
+                        id="prof-phone"
+                        onKeyDown={preventNonNumericKey}
+                        onPaste={(e) => handlePhonePaste(e, (clean) => {
+                          setProfileData(prev => ({ ...prev, phoneNumber: clean }));
+                          if (profileErrors.phoneNumber) setProfileErrors(prev => ({ ...prev, phoneNumber: '' }));
+                        })}
+                        className={`block w-full pl-10 pr-3 py-3 border rounded-xl text-sm font-medium focus:ring-2 focus:ring-[#0050CB] focus:outline-none text-[#000E28] dark:text-white transition-colors font-mono ${
+                          profileErrors.phoneNumber ? 'border-rose-400 bg-rose-50/20' : 'border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800'
+                        }`}
                         value={profileData.phoneNumber}
-                        onChange={(e) => setProfileData({ ...profileData, phoneNumber: e.target.value })}
+                        onChange={(e) => {
+                          setProfileData({ ...profileData, phoneNumber: sanitizePhoneInput(e.target.value) });
+                          if (profileErrors.phoneNumber) setProfileErrors(prev => ({ ...prev, phoneNumber: '' }));
+                        }}
+                        aria-invalid={Boolean(profileErrors.phoneNumber)}
+                        aria-describedby={profileErrors.phoneNumber ? "prof-phone-err" : undefined}
                         placeholder="+91 98765 43210"
                       />
                     </div>
+                    <FieldError id="prof-phone-err" error={profileErrors.phoneNumber} />
                   </div>
                 </div>
 
@@ -796,67 +945,94 @@ export default function SettingsPage() {
                 <form onSubmit={handleChangePassword} className="space-y-4">
                   <div>
                     <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1.5">
-                      Current Password
+                      Current Password <span className="text-[#FF690C]">*</span>
                     </label>
                     <div className="relative">
                       <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
                       <input
                         type={showCurrentPassword ? 'text' : 'password'}
+                        id="pwd-current"
                         value={passwordData.currentPassword}
-                        onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                        onChange={(e) => {
+                          setPasswordData({ ...passwordData, currentPassword: e.target.value });
+                          if (passwordErrors.currentPassword) setPasswordErrors(prev => ({ ...prev, currentPassword: '' }));
+                        }}
                         required
-                        className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-medium text-[#000E28] dark:text-white focus:ring-2 focus:ring-[#0050CB] focus:outline-none"
+                        aria-invalid={Boolean(passwordErrors.currentPassword)}
+                        aria-describedby={passwordErrors.currentPassword ? "pwd-current-err" : undefined}
+                        className={`w-full pl-10 pr-10 py-2.5 rounded-xl border text-sm font-medium text-[#000E28] dark:text-white focus:ring-2 focus:ring-[#0050CB] focus:outline-none ${
+                          passwordErrors.currentPassword ? 'border-rose-400 bg-rose-50/20' : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800'
+                        }`}
                         placeholder="••••••••"
                       />
                       <button
                         type="button"
                         onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                        className="absolute right-3.5 top-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                        className="absolute right-3.5 top-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
                       >
                         {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
+                    <FieldError id="pwd-current-err" error={passwordErrors.currentPassword} />
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1.5">
-                        New Password
+                        New Password <span className="text-[#FF690C]">*</span>
                       </label>
                       <div className="relative">
                         <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
                         <input
                           type={showNewPassword ? 'text' : 'password'}
+                          id="pwd-new"
                           value={passwordData.newPassword}
-                          onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                          onChange={(e) => {
+                            setPasswordData({ ...passwordData, newPassword: e.target.value });
+                            if (passwordErrors.newPassword) setPasswordErrors(prev => ({ ...prev, newPassword: '' }));
+                          }}
                           required
-                          className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-medium text-[#000E28] dark:text-white focus:ring-2 focus:ring-[#0050CB] focus:outline-none"
+                          aria-invalid={Boolean(passwordErrors.newPassword)}
+                          aria-describedby={passwordErrors.newPassword ? "pwd-new-err" : undefined}
+                          className={`w-full pl-10 pr-10 py-2.5 rounded-xl border text-sm font-medium text-[#000E28] dark:text-white focus:ring-2 focus:ring-[#0050CB] focus:outline-none ${
+                            passwordErrors.newPassword ? 'border-rose-400 bg-rose-50/20' : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800'
+                          }`}
                           placeholder="Min 6 characters"
                         />
                         <button
                           type="button"
                           onClick={() => setShowNewPassword(!showNewPassword)}
-                          className="absolute right-3.5 top-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                          className="absolute right-3.5 top-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
                         >
                           {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                         </button>
                       </div>
+                      <FieldError id="pwd-new-err" error={passwordErrors.newPassword} />
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1.5">
-                        Confirm New Password
+                        Confirm New Password <span className="text-[#FF690C]">*</span>
                       </label>
                       <div className="relative">
                         <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
                         <input
                           type={showNewPassword ? 'text' : 'password'}
+                          id="pwd-confirm"
                           value={passwordData.confirmPassword}
-                          onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                          onChange={(e) => {
+                            setPasswordData({ ...passwordData, confirmPassword: e.target.value });
+                            if (passwordErrors.confirmPassword) setPasswordErrors(prev => ({ ...prev, confirmPassword: '' }));
+                          }}
                           required
-                          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-medium text-[#000E28] dark:text-white focus:ring-2 focus:ring-[#0050CB] focus:outline-none"
+                          aria-invalid={Boolean(passwordErrors.confirmPassword)}
+                          aria-describedby={passwordErrors.confirmPassword ? "pwd-confirm-err" : undefined}
+                          className={`w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm font-medium text-[#000E28] dark:text-white focus:ring-2 focus:ring-[#0050CB] focus:outline-none ${
+                            passwordErrors.confirmPassword ? 'border-rose-400 bg-rose-50/20' : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800'
+                          }`}
                           placeholder="Repeat new password"
                         />
                       </div>
+                      <FieldError id="pwd-confirm-err" error={passwordErrors.confirmPassword} />
                     </div>
                   </div>
 

@@ -27,6 +27,74 @@ export const getEnrollments = async (req: Request, res: Response) => {
     if (sectionId) query.sectionId = sectionId;
     if (status) query.status = status;
 
+    // Automatic self-healing: resolve any duplicate roll numbers among active enrollments
+    try {
+      const activeList = await Enrollment.find({ status: 'Active' }).sort({ createdAt: 1 });
+      const seenRolls = new Set<string>();
+      let hasDuplicateRolls = false;
+      for (const e of activeList) {
+        if (!e.rollNumber || seenRolls.has(e.rollNumber)) {
+          hasDuplicateRolls = true;
+          break;
+        }
+        seenRolls.add(e.rollNumber);
+      }
+
+      if (hasDuplicateRolls) {
+        const usedRolls = new Set<string>();
+        let counter = 1;
+        for (const e of activeList) {
+          let assigned = e.rollNumber;
+          if (!assigned || usedRolls.has(assigned)) {
+            while (usedRolls.has(String(counter).padStart(3, '0'))) {
+              counter++;
+            }
+            assigned = String(counter).padStart(3, '0');
+            counter++;
+            e.rollNumber = assigned;
+            await e.save();
+            if (e.studentId) {
+              await Student.findByIdAndUpdate(e.studentId, { rollNumber: assigned });
+            }
+          }
+          usedRolls.add(assigned);
+        }
+      }
+
+      // Automatic self-healing: resolve any duplicate admission numbers among students
+      const allStudents = await Student.find().sort({ createdAt: 1 });
+      const seenAdmissions = new Set<string>();
+      let hasDuplicateAdmissions = false;
+      for (const s of allStudents) {
+        if (!s.admissionNumber || seenAdmissions.has(s.admissionNumber)) {
+          hasDuplicateAdmissions = true;
+          break;
+        }
+        seenAdmissions.add(s.admissionNumber);
+      }
+
+      if (hasDuplicateAdmissions) {
+        const usedAdmissions = new Set<string>();
+        let admCounter = 1;
+        for (const s of allStudents) {
+          let assignedAdm = s.admissionNumber;
+          if (!assignedAdm || usedAdmissions.has(assignedAdm)) {
+            const currentYear = new Date().getFullYear();
+            while (usedAdmissions.has(`GGPS${currentYear}Admin${String(admCounter).padStart(3, '0')}`)) {
+              admCounter++;
+            }
+            assignedAdm = `GGPS${currentYear}Admin${String(admCounter).padStart(3, '0')}`;
+            admCounter++;
+            s.admissionNumber = assignedAdm;
+            await s.save();
+          }
+          usedAdmissions.add(assignedAdm);
+        }
+      }
+    } catch (cleanupErr) {
+      console.warn('Enrollment deduplication check skipped:', cleanupErr);
+    }
+
     const skip = (Number(page) - 1) * Number(limit);
 
     let enrollments = await Enrollment.find(query)
@@ -103,8 +171,17 @@ export const assignEnrollment = async (req: Request, res: Response) => {
       }
     }
 
+    // Auto-assign roll number:
+    // If student already has an existing roll number assigned, check if it is taken by another student.
+    // If empty or duplicate, auto-generate a guaranteed unique roll number.
     let finalRollNumber = rollNumber;
-    if (!finalRollNumber) {
+    const isDuplicate = finalRollNumber && (await Enrollment.exists({
+      academicYearId: resolvedYearId,
+      rollNumber: finalRollNumber,
+      studentId: { $ne: studentId }
+    }));
+
+    if (!finalRollNumber || isDuplicate) {
       const [cDoc, sDoc, yDoc] = await Promise.all([
         Class.findById(classId),
         sectionId ? Section.findById(sectionId) : null,

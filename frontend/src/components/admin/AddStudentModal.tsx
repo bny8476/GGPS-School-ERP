@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { authFetch } from '@/lib/apiClient';
+import { FieldError } from '@/components/ui/FieldError';
 import {
   NAME_REGEX,
   EMAIL_REGEX,
@@ -520,15 +521,15 @@ export default function AddStudentModal({
                           onKeyDown={preventNonAlphaKey}
                           onChange={(e) => handleChange('firstName', sanitizeNameInput(e.target.value))}
                           onPaste={(e) => handleNamePaste(e, (v) => handleChange('firstName', v))}
+                          aria-invalid={!!errors.firstName}
+                          aria-describedby={errors.firstName ? "firstName-error" : undefined}
                           className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border text-xs sm:text-sm text-[#000E28] dark:text-white focus:outline-none transition-all ${
                             errors.firstName
                               ? 'border-rose-400 focus:ring-2 focus:ring-rose-500/15'
                               : 'border-slate-200 dark:border-slate-700 focus:border-[#0050CB] focus:ring-2 focus:ring-[#0050CB]/30'
                           }`}
                         />
-                        {errors.firstName && (
-                          <p className="text-[11px] text-rose-500 font-semibold mt-1">{errors.firstName}</p>
-                        )}
+                        <FieldError error={errors.firstName} id="firstName-error" />
                       </div>
                       <div>
                         <label htmlFor="lastName" className="block text-xs font-bold text-[#000E28] dark:text-slate-300 mb-1.5">
@@ -543,15 +544,15 @@ export default function AddStudentModal({
                           onKeyDown={preventNonAlphaKey}
                           onChange={(e) => handleChange('lastName', sanitizeNameInput(e.target.value))}
                           onPaste={(e) => handleNamePaste(e, (v) => handleChange('lastName', v))}
+                          aria-invalid={!!errors.lastName}
+                          aria-describedby={errors.lastName ? "lastName-error" : undefined}
                           className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border text-xs sm:text-sm text-[#000E28] dark:text-white focus:outline-none transition-all ${
                             errors.lastName
                               ? 'border-rose-400 focus:ring-2 focus:ring-rose-500/15'
                               : 'border-slate-200 dark:border-slate-700 focus:border-[#0050CB] focus:ring-2 focus:ring-[#0050CB]/30'
                           }`}
                         />
-                        {errors.lastName && (
-                          <p className="text-[11px] text-rose-500 font-semibold mt-1">{errors.lastName}</p>
-                        )}
+                        <FieldError error={errors.lastName} id="lastName-error" />
                       </div>
                       <div>
                         <label htmlFor="dateOfBirth" className="block text-xs font-bold text-[#000E28] dark:text-slate-300 mb-1.5">
@@ -563,15 +564,15 @@ export default function AddStudentModal({
                           max={new Date().toISOString().split("T")[0]}
                           value={formData.dateOfBirth}
                           onChange={(e) => handleChange('dateOfBirth', e.target.value)}
+                          aria-invalid={!!errors.dateOfBirth}
+                          aria-describedby={errors.dateOfBirth ? "dateOfBirth-error" : undefined}
                           className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border text-xs sm:text-sm text-[#000E28] dark:text-white focus:outline-none transition-all ${
                             errors.dateOfBirth
                               ? 'border-rose-400 focus:ring-2 focus:ring-rose-500/15'
                               : 'border-slate-200 dark:border-slate-700 focus:border-[#0050CB] focus:ring-2 focus:ring-[#0050CB]/30'
                           }`}
                         />
-                        {errors.dateOfBirth && (
-                          <p className="text-[11px] text-rose-500 font-semibold mt-1">{errors.dateOfBirth}</p>
-                        )}
+                        <FieldError error={errors.dateOfBirth} id="dateOfBirth-error" />
                       </div>
                       <div>
                         <label className="block text-xs font-bold text-[#000E28] dark:text-slate-300 mb-1.5">
@@ -643,15 +644,15 @@ export default function AddStudentModal({
                           onKeyDown={preventNonAlphaKey}
                           onChange={(e) => handleChange('parentName', sanitizeNameInput(e.target.value))}
                           onPaste={(e) => handleNamePaste(e, (v) => handleChange('parentName', v))}
+                          aria-invalid={!!errors.parentName}
+                          aria-describedby={errors.parentName ? "parentName-error" : undefined}
                           className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border text-xs sm:text-sm text-[#000E28] dark:text-white focus:outline-none transition-all ${
                             errors.parentName
                               ? 'border-rose-400 focus:ring-2 focus:ring-rose-500/15'
                               : 'border-slate-200 dark:border-slate-700 focus:border-[#0050CB] focus:ring-2 focus:ring-[#0050CB]/30'
                           }`}
                         />
-                        {errors.parentName && (
-                          <p className="text-[11px] text-rose-500 font-semibold mt-1">{errors.parentName}</p>
-                        )}
+                        <FieldError error={errors.parentName} id="parentName-error" />
                       </div>
                       <div>
                         <label htmlFor="emergencyContact" className="block text-xs font-bold text-[#000E28] dark:text-slate-300 mb-1.5">
@@ -667,15 +668,15 @@ export default function AddStudentModal({
                           onKeyDown={preventNonNumericKey}
                           onChange={(e) => handleChange('emergencyContact', sanitizePhoneInput(e.target.value))}
                           onPaste={(e) => handlePhonePaste(e, (v) => handleChange('emergencyContact', v))}
+                          aria-invalid={!!errors.emergencyContact}
+                          aria-describedby={errors.emergencyContact ? "emergencyContact-error" : undefined}
                           className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border text-xs sm:text-sm text-[#000E28] dark:text-white focus:outline-none transition-all ${
                             errors.emergencyContact
                               ? 'border-rose-400 focus:ring-2 focus:ring-rose-500/15'
                               : 'border-slate-200 dark:border-slate-700 focus:border-[#0050CB] focus:ring-2 focus:ring-[#0050CB]/30'
                           }`}
                         />
-                        {errors.emergencyContact && (
-                          <p className="text-[11px] text-rose-500 font-semibold mt-1">{errors.emergencyContact}</p>
-                        )}
+                        <FieldError error={errors.emergencyContact} id="emergencyContact-error" />
                       </div>
                       <div>
                         <label htmlFor="parentEmail" className="block text-xs font-bold text-[#000E28] dark:text-slate-300 mb-1.5">
@@ -687,15 +688,15 @@ export default function AddStudentModal({
                           placeholder="vikram.sharma@example.com"
                           value={formData.parentEmail}
                           onChange={(e) => handleChange('parentEmail', e.target.value)}
+                          aria-invalid={!!errors.parentEmail}
+                          aria-describedby={errors.parentEmail ? "parentEmail-error" : undefined}
                           className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border text-xs sm:text-sm text-[#000E28] dark:text-white focus:outline-none transition-all ${
                             errors.parentEmail
                               ? 'border-rose-400 focus:ring-2 focus:ring-rose-500/15'
                               : 'border-slate-200 dark:border-slate-700 focus:border-[#0050CB] focus:ring-2 focus:ring-[#0050CB]/30'
                           }`}
                         />
-                        {errors.parentEmail && (
-                          <p className="text-[11px] text-rose-500 font-semibold mt-1">{errors.parentEmail}</p>
-                        )}
+                        <FieldError error={errors.parentEmail} id="parentEmail-error" />
                       </div>
                       <div className="sm:col-span-2">
                         <label className="block text-xs font-bold text-[#000E28] dark:text-slate-300 mb-1.5">

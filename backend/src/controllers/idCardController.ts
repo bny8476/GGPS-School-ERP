@@ -704,7 +704,7 @@ export const downloadIdCardPDF = async (req: Request, res: Response) => {
 
     // Details Grid
     doc.fillColor('#334155').fontSize(7.5).font('Helvetica');
-    doc.text(`ID: ${student.studentId || card.barcodeValue}`, frontX + 15, infoY + 32);
+    doc.text(`Roll No: ${student.rollNumber || student.studentId || card.barcodeValue}`, frontX + 15, infoY + 32);
     doc.text(`Adm No: ${student.admissionNumber || '-'}`, frontX + 15, infoY + 44);
     if (card.fields.showBloodGroup) {
       doc.text(`Blood: ${student.bloodGroup || 'B+'}`, frontX + 15, infoY + 56);

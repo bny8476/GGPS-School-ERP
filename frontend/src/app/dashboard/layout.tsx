@@ -656,30 +656,8 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
           })}
         </nav>
 
-        {/* Better Education / Brighter Future Bottom Card matching screenshot */}
-        {!isCollapsed && (
-          <div className="p-3 mx-3 my-2 rounded-2xl bg-gradient-to-b from-[#0B1D45] to-[#040D1E] border border-blue-900/60 overflow-hidden relative shadow-lg text-white shrink-0">
-            <p className="text-xs font-bold text-white">Better Education</p>
-            <p className="text-xs font-black text-[#38BDF8]">Brighter Future</p>
-            <div className="mt-2.5 rounded-xl overflow-hidden h-20 w-full relative">
-              <AppImage src="/admin-hero-campus.jpg" alt="GGPS Campus" className="w-full h-full object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#040D1E]/70 via-transparent to-transparent pointer-events-none" />
-            </div>
-          </div>
-        )}
-
-        {/* Sidebar Footer Admin Profile & Actions */}
+        {/* Sidebar Footer Admin Actions */}
         <div className="p-3 border-t border-slate-800/80 bg-[#000E28] space-y-1 shrink-0">
-          <Link
-            href="/dashboard/settings"
-            title="System Settings"
-            className={`flex items-center ${
-              isCollapsed ? 'justify-center px-2' : 'px-3'
-            } py-2 text-xs font-semibold text-slate-300 hover:bg-white/5 hover:text-white rounded-xl transition-all`}
-          >
-            <Settings className={`h-4 w-4 ${isCollapsed ? '' : 'mr-2.5'} text-slate-400 shrink-0`} />
-            {!isCollapsed && <span>System Settings</span>}
-          </Link>
 
           <button
             type="button"

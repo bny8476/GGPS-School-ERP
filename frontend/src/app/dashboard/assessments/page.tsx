@@ -13,6 +13,8 @@ import { getApiBaseUrl } from '@/lib/utils';
 import { authFetch } from '@/lib/apiClient';
 import { printDocument } from '@/lib/exportUtils';
 import { downloadPdf } from '@/lib/fileDownload';
+import { AssessmentEntrySchema } from '@/schemas';
+import FieldError from '@/components/ui/FieldError';
 
 const RUBRIC_TEMPLATE = [
   { category: 'Motor Skills', skill: 'Holds pencil correctly and traces lines' },
@@ -181,6 +183,7 @@ export default function AssessmentsPage() {
   const [selectedTerm, setSelectedTerm] = useState('Term 1');
   const [teacherComments, setTeacherComments] = useState('');
   const [rubricScores, setRubricScores] = useState<Record<string, string>>({});
+  const [assessmentErrors, setAssessmentErrors] = useState<Record<string, string>>({});
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -234,10 +237,23 @@ export default function AssessmentsPage() {
 
   const handleSaveAssessment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedStudent) {
-      toast.error("Please select a student");
+    const validation = AssessmentEntrySchema.safeParse({
+      studentId: selectedStudent,
+      term: selectedTerm,
+      teacherComments,
+    });
+
+    if (!validation.success) {
+      const fieldErrors: Record<string, string> = {};
+      validation.error.issues.forEach((err) => {
+        const key = err.path[0] ? String(err.path[0]) : "general";
+        if (!fieldErrors[key]) fieldErrors[key] = err.message;
+      });
+      setAssessmentErrors(fieldErrors);
+      toast.error(Object.values(fieldErrors)[0] || "Please select a student");
       return;
     }
+    setAssessmentErrors({});
 
     const rubrics = RUBRIC_TEMPLATE.map(r => ({
       category: r.category,
@@ -760,12 +776,21 @@ export default function AssessmentsPage() {
               {/* Meta Selection */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-900/60 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
                 <div>
-                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Select Student *</label>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Select Student <span className="text-[#FF690C]">*</span>
+                  </label>
                   <select
                     required
                     value={selectedStudent}
-                    onChange={(e) => setSelectedStudent(e.target.value)}
-                    className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 font-bold outline-hidden"
+                    onChange={(e) => {
+                      setSelectedStudent(e.target.value);
+                      if (assessmentErrors.studentId) setAssessmentErrors(prev => ({ ...prev, studentId: '' }));
+                    }}
+                    aria-invalid={Boolean(assessmentErrors.studentId)}
+                    aria-describedby={assessmentErrors.studentId ? "assess-student-err" : undefined}
+                    className={`w-full border rounded-xl p-2.5 font-bold outline-hidden ${
+                      assessmentErrors.studentId ? 'border-rose-400 bg-rose-50/20' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'
+                    }`}
                   >
                     <option value="">-- Choose a student --</option>
                     {students.map((s) => (
@@ -774,6 +799,7 @@ export default function AssessmentsPage() {
                       </option>
                     ))}
                   </select>
+                  <FieldError id="assess-student-err" error={assessmentErrors.studentId} />
                 </div>
 
                 <div>
@@ -837,10 +863,18 @@ export default function AssessmentsPage() {
                 <textarea
                   rows={3}
                   value={teacherComments}
-                  onChange={(e) => setTeacherComments(e.target.value)}
+                  onChange={(e) => {
+                    setTeacherComments(e.target.value);
+                    if (assessmentErrors.teacherComments) setAssessmentErrors(prev => ({ ...prev, teacherComments: '' }));
+                  }}
+                  aria-invalid={Boolean(assessmentErrors.teacherComments)}
+                  aria-describedby={assessmentErrors.teacherComments ? "assess-comments-err" : undefined}
                   placeholder="Share developmental remarks, social interaction observations, and areas for encouragement..."
-                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 outline-hidden font-medium"
+                  className={`w-full border rounded-xl p-3 outline-hidden font-medium ${
+                    assessmentErrors.teacherComments ? 'border-rose-400 bg-rose-50/20' : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700'
+                  }`}
                 />
+                <FieldError id="assess-comments-err" error={assessmentErrors.teacherComments} />
               </div>
 
               {/* Actions */}

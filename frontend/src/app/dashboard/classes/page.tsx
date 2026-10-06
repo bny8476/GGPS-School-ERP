@@ -23,6 +23,13 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import toast from "react-hot-toast";
+import { FieldError } from "@/components/ui/FieldError";
+import { ClassCreationSchema, SectionCreationSchema } from "@/schemas";
+import {
+  preventNonAlphaKey,
+  sanitizeNameInput,
+  handleNamePaste,
+} from "@/lib/validationUtils";
 
 interface SectionBadge {
   name: string;
@@ -119,6 +126,8 @@ export default function ClassesPage() {
   const [newClassSubtitle, setNewClassSubtitle] = useState("");
   const [newClassTeacher, setNewClassTeacher] = useState("");
   const [newClassBadgeColor, setNewClassBadgeColor] = useState("bg-[#3B82F6]");
+  const [classErrors, setClassErrors] = useState<Record<string, string>>({});
+  const [sectionErrors, setSectionErrors] = useState<Record<string, string>>({});
 
   // Dynamic Metrics
   const totalClasses = classesList.length;
@@ -157,10 +166,24 @@ export default function ClassesPage() {
   // Handle Add Class
   const handleCreateClass = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newClassName.trim()) {
-      toast.error("Please enter a class name");
+    const validation = ClassCreationSchema.safeParse({
+      name: newClassName,
+      subtitle: newClassSubtitle.trim() || undefined,
+      classTeacher: newClassTeacher.trim() || undefined,
+      badgeColor: newClassBadgeColor,
+    });
+
+    if (!validation.success) {
+      const fieldErrors: Record<string, string> = {};
+      validation.error.issues.forEach((err) => {
+        const key = err.path[0] ? String(err.path[0]) : "general";
+        if (!fieldErrors[key]) fieldErrors[key] = err.message;
+      });
+      setClassErrors(fieldErrors);
+      toast.error(Object.values(fieldErrors)[0] || "Please enter valid class details");
       return;
     }
+    setClassErrors({});
 
     const created: ClassItem = {
       id: `cls-${Date.now()}`,
@@ -190,10 +213,27 @@ export default function ClassesPage() {
   // Handle Add Section to specific class
   const handleAddSection = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedClassForSections || !newSectionLetter.trim()) return;
+    if (!selectedClassForSections) return;
+
+    const validation = SectionCreationSchema.safeParse({
+      letter: newSectionLetter,
+    });
+
+    if (!validation.success) {
+      const fieldErrors: Record<string, string> = {};
+      validation.error.issues.forEach((err) => {
+        const key = err.path[0] ? String(err.path[0]) : "general";
+        if (!fieldErrors[key]) fieldErrors[key] = err.message;
+      });
+      setSectionErrors(fieldErrors);
+      toast.error(Object.values(fieldErrors)[0] || "Please enter a valid section letter");
+      return;
+    }
+    setSectionErrors({});
 
     const letter = newSectionLetter.trim().toUpperCase();
     if (selectedClassForSections.sections.some((s) => s.name === letter)) {
+      setSectionErrors({ letter: `Section ${letter} already exists for ${selectedClassForSections.name}` });
       toast.error(`Section ${letter} already exists for ${selectedClassForSections.name}`);
       return;
     }
@@ -778,12 +818,20 @@ export default function ClassesPage() {
                 </label>
                 <input
                   type="text"
-                  required
+                  id="cls-name"
                   value={newClassName}
-                  onChange={(e) => setNewClassName(e.target.value)}
-                  placeholder="e.g. Grade 3 / Nursery"
-                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 rounded-xl text-slate-900 dark:text-white focus:outline-hidden focus:border-[#0050CB]"
+                  onChange={(e) => {
+                    setNewClassName(e.target.value);
+                    if (classErrors.name) setClassErrors(prev => ({ ...prev, name: '' }));
+                  }}
+                  placeholder="e.g. Pre-KG / UKG"
+                  aria-invalid={Boolean(classErrors.name)}
+                  aria-describedby={classErrors.name ? "cls-name-err" : undefined}
+                  className={`w-full px-3 py-2 border rounded-xl text-slate-900 dark:text-white focus:outline-hidden focus:border-[#0050CB] ${
+                    classErrors.name ? "border-rose-400 bg-rose-50/20" : "border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900"
+                  }`}
                 />
+                <FieldError id="cls-name-err" error={classErrors.name} />
               </div>
 
               <div>
@@ -792,11 +840,18 @@ export default function ClassesPage() {
                 </label>
                 <input
                   type="text"
+                  id="cls-subtitle"
                   value={newClassSubtitle}
-                  onChange={(e) => setNewClassSubtitle(e.target.value)}
-                  placeholder="e.g. Third Grade / Early Foundation"
+                  onChange={(e) => {
+                    setNewClassSubtitle(e.target.value);
+                    if (classErrors.subtitle) setClassErrors(prev => ({ ...prev, subtitle: '' }));
+                  }}
+                  placeholder="e.g. Lower Kindergarten / Early Foundation"
+                  aria-invalid={Boolean(classErrors.subtitle)}
+                  aria-describedby={classErrors.subtitle ? "cls-subtitle-err" : undefined}
                   className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 rounded-xl text-slate-900 dark:text-white focus:outline-hidden focus:border-[#0050CB]"
                 />
+                <FieldError id="cls-subtitle-err" error={classErrors.subtitle} />
               </div>
 
               <div>
@@ -805,11 +860,23 @@ export default function ClassesPage() {
                 </label>
                 <input
                   type="text"
+                  id="cls-teacher"
                   value={newClassTeacher}
-                  onChange={(e) => setNewClassTeacher(e.target.value)}
+                  onKeyDown={preventNonAlphaKey}
+                  onPaste={(e) => handleNamePaste(e, (clean) => {
+                    setNewClassTeacher(clean);
+                    if (classErrors.classTeacher) setClassErrors(prev => ({ ...prev, classTeacher: '' }));
+                  })}
+                  onChange={(e) => {
+                    setNewClassTeacher(sanitizeNameInput(e.target.value));
+                    if (classErrors.classTeacher) setClassErrors(prev => ({ ...prev, classTeacher: '' }));
+                  }}
                   placeholder="e.g. Ms. Anita Roy"
+                  aria-invalid={Boolean(classErrors.classTeacher)}
+                  aria-describedby={classErrors.classTeacher ? "cls-teacher-err" : undefined}
                   className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 rounded-xl text-slate-900 dark:text-white focus:outline-hidden focus:border-[#0050CB]"
                 />
+                <FieldError id="cls-teacher-err" error={classErrors.classTeacher} />
               </div>
 
               <div>
@@ -909,7 +976,7 @@ export default function ClassesPage() {
                       </span>
                       <div>
                         <span className="text-xs font-bold text-slate-800 dark:text-white block">
-                          Section {sec.name}
+                           Section {sec.name}
                         </span>
                         <span className="text-[10px] text-slate-400">Capacity: 30 pupils</span>
                       </div>
@@ -931,25 +998,35 @@ export default function ClassesPage() {
             {/* Add New Section Form */}
             <form onSubmit={handleAddSection} className="pt-3 border-t border-slate-100 dark:border-slate-800">
               <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                Add Section Letter
+                Add Section Letter <span className="text-rose-500">*</span>
               </label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  maxLength={2}
-                  required
-                  value={newSectionLetter}
-                  onChange={(e) => setNewSectionLetter(e.target.value)}
-                  placeholder="e.g. D"
-                  className="w-24 px-3 py-2 text-xs uppercase font-bold text-center border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 rounded-xl text-slate-900 dark:text-white focus:outline-hidden focus:border-[#0050CB]"
-                />
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-[#0050CB] hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs cursor-pointer flex items-center gap-1.5 transition-colors"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Add Section</span>
-                </button>
+              <div className="flex flex-col gap-1.5">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    id="sec-letter"
+                    maxLength={2}
+                    value={newSectionLetter}
+                    onChange={(e) => {
+                      setNewSectionLetter(e.target.value.toUpperCase());
+                      if (sectionErrors.letter) setSectionErrors(prev => ({ ...prev, letter: '' }));
+                    }}
+                    placeholder="e.g. D"
+                    aria-invalid={Boolean(sectionErrors.letter)}
+                    aria-describedby={sectionErrors.letter ? "sec-letter-err" : undefined}
+                    className={`w-24 px-3 py-2 text-xs uppercase font-bold text-center border rounded-xl text-slate-900 dark:text-white focus:outline-hidden focus:border-[#0050CB] ${
+                      sectionErrors.letter ? "border-rose-400 bg-rose-50/20" : "border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900"
+                    }`}
+                  />
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-[#0050CB] hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs cursor-pointer flex items-center gap-1.5 transition-colors"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add Section</span>
+                  </button>
+                </div>
+                <FieldError id="sec-letter-err" error={sectionErrors.letter} />
               </div>
             </form>
 

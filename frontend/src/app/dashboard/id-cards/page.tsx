@@ -49,6 +49,7 @@ import {
 import toast from "react-hot-toast";
 import QRCode from "qrcode";
 import { getSocket } from "@/lib/socket";
+import { toSchoolISODate } from "@/lib/date/timezone";
 
 // Card Templates
 export type CardTemplate = "modern-blue" | "classic-white" | "premium-school" | "minimal";
@@ -73,6 +74,7 @@ interface StudentRecord {
   lastName: string;
   admissionNumber: string;
   studentId?: string;
+  rollNumber?: string;
   grade: string;
   section?: string;
   photoUrl?: string;
@@ -182,7 +184,26 @@ export default function IdCardGeneratorPage() {
   // ID Card Configuration matching screenshot
   const [titlePosition, setTitlePosition] = useState("Student");
   const [template, setTemplate] = useState<CardTemplate>("modern-blue");
-  const [validFrom, setValidFrom] = useState("2026-05-12");
+
+  const todayStr = useMemo(() => {
+    try {
+      return toSchoolISODate();
+    } catch {
+      const d = new Date();
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+  }, []);
+
+  const [validFrom, setValidFrom] = useState(() => {
+    try {
+      return toSchoolISODate();
+    } catch {
+      return "2026-10-06";
+    }
+  });
   const [validTill, setValidTill] = useState("2027-05-31");
   const [customPhoto, setCustomPhoto] = useState<string>("/aarav-hero-student.jpg");
   const [isAdditionalInfoOpen, setIsAdditionalInfoOpen] = useState(false);
@@ -558,6 +579,16 @@ export default function IdCardGeneratorPage() {
       return null;
     }
 
+    if (validFrom && validFrom < todayStr) {
+      toast.error("Valid From date cannot be in the past.");
+      return null;
+    }
+
+    if (validFrom && validTill && validTill < validFrom) {
+      toast.error("Valid Till date cannot be earlier than Valid From date.");
+      return null;
+    }
+
     try {
       setIsGenerating(true);
       const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
@@ -730,7 +761,7 @@ export default function IdCardGeneratorPage() {
   const studentName = selectedStudent
     ? `${selectedStudent.firstName} ${selectedStudent.lastName}`.trim()
     : "Aarav Sharma";
-  const studentIdDisplay = selectedStudent?.studentId || selectedStudent?.admissionNumber || "GGPS2026LKG001";
+  const studentIdDisplay = selectedStudent?.rollNumber || selectedStudent?.studentId || selectedStudent?.admissionNumber || "GGPS2026LKG001";
   const classDisplay = selectedStudent ? `${selectedStudent.grade || "LKG"} - ${selectedStudent.section || "A"}` : "LKG - A";
   const dobDisplay = selectedStudent?.dateOfBirth
     ? new Date(selectedStudent.dateOfBirth).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
@@ -1168,8 +1199,15 @@ export default function IdCardGeneratorPage() {
                     <Calendar className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                     <input
                       type="date"
+                      min={todayStr}
                       value={validFrom}
-                      onChange={(e) => setValidFrom(e.target.value)}
+                      onChange={(e) => {
+                        const newFrom = e.target.value;
+                        setValidFrom(newFrom);
+                        if (validTill && newFrom && validTill < newFrom) {
+                          setValidTill(newFrom);
+                        }
+                      }}
                       className="w-full pl-9 pr-3 py-2 bg-white dark:bg-[#07152F] border border-slate-200/90 dark:border-white/10 rounded-xl text-xs font-medium text-[#000E28] dark:text-white focus:outline-hidden focus:ring-2 focus:ring-[#0050CB]/20 transition-all cursor-pointer shadow-2xs"
                     />
                   </div>
@@ -1183,6 +1221,7 @@ export default function IdCardGeneratorPage() {
                     <Calendar className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                     <input
                       type="date"
+                      min={validFrom || todayStr}
                       value={validTill}
                       onChange={(e) => setValidTill(e.target.value)}
                       className="w-full pl-9 pr-3 py-2 bg-white dark:bg-[#07152F] border border-slate-200/90 dark:border-white/10 rounded-xl text-xs font-medium text-[#000E28] dark:text-white focus:outline-hidden focus:ring-2 focus:ring-[#0050CB]/20 transition-all cursor-pointer shadow-2xs"
@@ -1430,7 +1469,7 @@ export default function IdCardGeneratorPage() {
                   <div className={`w-full mt-2.5 space-y-1 ${currentTheme.infoBoxBg} rounded-2xl p-3 border text-left text-[10px] transition-colors duration-300`}>
                     <div className="flex items-center justify-between font-medium">
                       <span className={`${currentTheme.accentText} font-bold flex items-center gap-1`}>
-                        <IdCardIcon className={`w-3 h-3 ${currentTheme.accentText}`} /> ID No.
+                        <IdCardIcon className={`w-3 h-3 ${currentTheme.accentText}`} /> Roll No.
                       </span>
                       <span className="font-bold text-[#000E28]">: {studentIdDisplay}</span>
                     </div>
@@ -1637,8 +1676,6 @@ export default function IdCardGeneratorPage() {
                 <option value="Pre-KG">Pre-KG</option>
                 <option value="LKG">LKG</option>
                 <option value="UKG">UKG</option>
-                <option value="Class 1">Class 1</option>
-                <option value="Class 2">Class 2</option>
               </select>
             </div>
             <div className="flex items-end">

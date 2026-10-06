@@ -29,6 +29,8 @@ import toast from 'react-hot-toast';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import { getApiBaseUrl } from '@/lib/utils';
 import { printDocument } from '@/lib/exportUtils';
+import { NoticeCreationSchema } from '@/schemas';
+import FieldError from '@/components/ui/FieldError';
 
 interface CircularItem {
   _id: string;
@@ -136,6 +138,7 @@ export default function CircularsPage() {
   const [newCohort, setNewCohort] = useState('Pre-KG, LKG, UKG');
   const [newIsUrgent, setNewIsUrgent] = useState(false);
   const [newMessage, setNewMessage] = useState('');
+  const [circularErrors, setCircularErrors] = useState<Record<string, string>>({});
 
   const apiBase = getApiBaseUrl();
 
@@ -188,10 +191,26 @@ export default function CircularsPage() {
 
   const handleCreateCircular = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTitle.trim() || !newMessage.trim()) {
-      toast.error('Please enter circular title and notice content.');
+    const validation = NoticeCreationSchema.safeParse({
+      title: newTitle,
+      category: newCategory,
+      audience: newAudience,
+      cohort: newCohort,
+      isUrgent: newIsUrgent,
+      message: newMessage,
+    });
+
+    if (!validation.success) {
+      const fieldErrors: Record<string, string> = {};
+      validation.error.issues.forEach((err) => {
+        const key = err.path[0] ? String(err.path[0]) : 'general';
+        if (!fieldErrors[key]) fieldErrors[key] = err.message;
+      });
+      setCircularErrors(fieldErrors);
+      toast.error(Object.values(fieldErrors)[0] || 'Please fix form errors');
       return;
     }
+    setCircularErrors({});
 
     setIsSaving(true);
     try {
@@ -202,8 +221,8 @@ export default function CircularsPage() {
           headers: getHeaders(),
           credentials: 'include',
           body: JSON.stringify({
-            title: newTitle,
-            message: newMessage,
+            title: newTitle.trim(),
+            message: newMessage.trim(),
             audience: newAudience.includes('Staff') ? 'Staff' : newAudience.includes('All') ? 'All' : 'Parents',
           }),
         });
@@ -215,12 +234,12 @@ export default function CircularsPage() {
       const createdItem: CircularItem = {
         _id: `circ-${Date.now()}`,
         refNo: newRef,
-        title: newTitle,
+        title: newTitle.trim(),
         category: newCategory,
         audience: newAudience,
         cohort: newCohort,
         isUrgent: newIsUrgent,
-        message: newMessage,
+        message: newMessage.trim(),
         date: new Date().toISOString().split('T')[0],
         author: 'Principal Desk & Administration',
         readCount: 0,
@@ -234,6 +253,7 @@ export default function CircularsPage() {
       setNewTitle('');
       setNewMessage('');
       setNewIsUrgent(false);
+      setCircularErrors({});
       setIsComposeOpen(false);
     } catch (err) {
       toast.error('Failed to dispatch circular');
@@ -611,15 +631,25 @@ export default function CircularsPage() {
 
             <form onSubmit={handleCreateCircular} className="space-y-4 text-xs font-bold text-slate-700 dark:text-slate-200">
               <div>
-                <label className="block mb-1.5">Circular Title *</label>
+                <label className="block mb-1.5 font-bold text-slate-700 dark:text-slate-300">
+                  Circular Title <span className="text-[#FF690C]">*</span>
+                </label>
                 <input
                   required
                   type="text"
                   placeholder="e.g. Preschool Annual Sports Morning & Color Day Schedule"
                   value={newTitle}
-                  onChange={(e) => setNewTitle(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#0050CB] text-slate-800 dark:text-slate-100"
+                  onChange={(e) => {
+                    setNewTitle(e.target.value);
+                    if (circularErrors.title) setCircularErrors(prev => ({ ...prev, title: '' }));
+                  }}
+                  aria-invalid={Boolean(circularErrors.title)}
+                  aria-describedby={circularErrors.title ? "circ-title-err" : undefined}
+                  className={`w-full px-4 py-2.5 border rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#0050CB] text-slate-800 dark:text-slate-100 font-bold ${
+                    circularErrors.title ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900'
+                  }`}
                 />
+                <FieldError id="circ-title-err" error={circularErrors.title} />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -688,15 +718,25 @@ export default function CircularsPage() {
               </div>
 
               <div>
-                <label className="block mb-1.5">Notice Body & Details *</label>
+                <label className="block mb-1.5 font-bold text-slate-700 dark:text-slate-300">
+                  Notice Body & Details <span className="text-[#FF690C]">*</span>
+                </label>
                 <textarea
                   required
                   rows={5}
                   value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
+                  onChange={(e) => {
+                    setNewMessage(e.target.value);
+                    if (circularErrors.message) setCircularErrors(prev => ({ ...prev, message: '' }));
+                  }}
+                  aria-invalid={Boolean(circularErrors.message)}
+                  aria-describedby={circularErrors.message ? "circ-message-err" : undefined}
                   placeholder="Provide complete circular details, timing, venue, dress code, or parent action instructions..."
-                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#0050CB] text-slate-800 dark:text-slate-100 font-normal leading-relaxed"
+                  className={`w-full px-4 py-3 border rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[#0050CB] text-slate-800 dark:text-slate-100 font-normal leading-relaxed ${
+                    circularErrors.message ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900'
+                  }`}
                 />
+                <FieldError id="circ-message-err" error={circularErrors.message} />
               </div>
 
               <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">

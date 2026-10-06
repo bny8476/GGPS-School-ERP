@@ -17,6 +17,9 @@ import {
 } from 'lucide-react';
 import { EmergencyBanner } from '@/components/ui/EmergencyBanner';
 import { getApiBaseUrl } from '@/lib/utils';
+import toast from 'react-hot-toast';
+import { ClassroomMaterialSchema } from '@/schemas';
+import FieldError from '@/components/ui/FieldError';
 
 export default function DigitalClassroomPage() {
   const [activeTab, setActiveTab] = useState<'materials' | 'exams' | 'questions' | 'atrisk'>('materials');
@@ -30,6 +33,7 @@ export default function DigitalClassroomPage() {
 
   // Modals & New Form State
   const [showMaterialModal, setShowMaterialModal] = useState(false);
+  const [materialErrors, setMaterialErrors] = useState<Record<string, string>>({});
   const [newMaterial, setNewMaterial] = useState({
     title: '',
     subject: 'Phonics & English',
@@ -97,6 +101,19 @@ export default function DigitalClassroomPage() {
 
   const handleCreateMaterial = async (e: React.FormEvent) => {
     e.preventDefault();
+    const validation = ClassroomMaterialSchema.safeParse(newMaterial);
+    if (!validation.success) {
+      const fieldErrors: Record<string, string> = {};
+      validation.error.issues.forEach((err) => {
+        const key = err.path[0] ? String(err.path[0]) : "general";
+        if (!fieldErrors[key]) fieldErrors[key] = err.message;
+      });
+      setMaterialErrors(fieldErrors);
+      toast.error(Object.values(fieldErrors)[0] || "Please fill required material fields");
+      return;
+    }
+    setMaterialErrors({});
+
     try {
       const res = await fetch(`${API_BASE}/api/learning`, {
         method: 'POST',
@@ -105,11 +122,21 @@ export default function DigitalClassroomPage() {
         body: JSON.stringify(newMaterial),
       });
       if (res.ok) {
+        toast.success("Resource uploaded successfully!");
         setShowMaterialModal(false);
+        setNewMaterial({
+          title: '',
+          subject: 'Phonics & English',
+          classId: '',
+          fileUrl: '',
+          fileType: 'PDF',
+          description: '',
+        });
         fetchData();
       }
     } catch (err) {
       console.error(err);
+      toast.error("Failed to upload material");
     }
   };
 
@@ -365,19 +392,31 @@ export default function DigitalClassroomPage() {
             <h3 className="font-bold text-xl text-slate-900 dark:text-white">Upload Learning Resource</h3>
             <form onSubmit={handleCreateMaterial} className="space-y-3">
               <div>
-                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Title</label>
+                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
+                  Title <span className="text-[#FF690C]">*</span>
+                </label>
                 <input
                   type="text"
                   required
                   value={newMaterial.title}
-                  onChange={(e) => setNewMaterial({ ...newMaterial, title: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-xl dark:bg-slate-800 dark:border-slate-700 text-sm"
+                  onChange={(e) => {
+                    setNewMaterial({ ...newMaterial, title: e.target.value });
+                    if (materialErrors.title) setMaterialErrors(prev => ({ ...prev, title: '' }));
+                  }}
+                  aria-invalid={Boolean(materialErrors.title)}
+                  aria-describedby={materialErrors.title ? "mat-title-err" : undefined}
+                  className={`w-full px-3 py-2 border rounded-xl text-sm ${
+                    materialErrors.title ? 'border-rose-400 bg-rose-50/20' : 'dark:bg-slate-800 dark:border-slate-700'
+                  }`}
                   placeholder="Rhymes & Phonics Sound Cards (Pre-KG)"
                 />
+                <FieldError id="mat-title-err" error={materialErrors.title} />
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Subject</label>
+                  <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
+                    Subject <span className="text-[#FF690C]">*</span>
+                  </label>
                   <input
                     type="text"
                     required
@@ -401,15 +440,25 @@ export default function DigitalClassroomPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">File / Link URL</label>
+                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
+                  File / Link URL <span className="text-[#FF690C]">*</span>
+                </label>
                 <input
                   type="url"
                   required
                   value={newMaterial.fileUrl}
-                  onChange={(e) => setNewMaterial({ ...newMaterial, fileUrl: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-xl dark:bg-slate-800 dark:border-slate-700 text-sm"
+                  onChange={(e) => {
+                    setNewMaterial({ ...newMaterial, fileUrl: e.target.value });
+                    if (materialErrors.fileUrl) setMaterialErrors(prev => ({ ...prev, fileUrl: '' }));
+                  }}
+                  aria-invalid={Boolean(materialErrors.fileUrl)}
+                  aria-describedby={materialErrors.fileUrl ? "mat-url-err" : undefined}
+                  className={`w-full px-3 py-2 border rounded-xl text-sm ${
+                    materialErrors.fileUrl ? 'border-rose-400 bg-rose-50/20' : 'dark:bg-slate-800 dark:border-slate-700'
+                  }`}
                   placeholder="https://..."
                 />
+                <FieldError id="mat-url-err" error={materialErrors.fileUrl} />
               </div>
               <div>
                 <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Description</label>

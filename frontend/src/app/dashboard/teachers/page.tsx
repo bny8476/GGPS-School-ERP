@@ -13,9 +13,23 @@ import { Card, StatCard, ProfileCard, ActionCard, EmptyStateCard } from "@/compo
 import { downloadFile } from "@/lib/fileDownload";
 import FilePreviewModal from "@/components/common/FilePreviewModal";
 import FileUploadModal from "@/components/common/FileUploadModal";
+import {
+  sanitizePhoneInput,
+  preventNonNumericKey,
+  handlePhonePaste,
+  sanitizeNameInput,
+  preventNonAlphaKey,
+  handleNamePaste,
+  PHONE_REGEX,
+  TEN_DIGIT_PHONE_REGEX,
+} from "@/lib/validationUtils";
+import { TeacherCreationSchema } from "@/schemas";
+import FieldError from "@/components/ui/FieldError";
 
 function TeachersContent() {
   const searchParams = useSearchParams();
+  const tabParam = searchParams.get('tab');
+  const isAssignmentsTab = tabParam === 'assignments';
   const [teachers, setTeachers] = useState<any[]>([]);
   const [classes, setClasses] = useState<any[]>([]);
   const [subjects, setSubjects] = useState<any[]>([]);
@@ -237,6 +251,19 @@ function TeachersContent() {
     fetchData();
   }, []);
 
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({});
+
+  const validateTeacherField = (field: string, val: any): string => {
+    const shape = (TeacherCreationSchema as any).shape;
+    if (!shape || !shape[field]) return '';
+    const res = shape[field].safeParse(val);
+    if (!res.success) {
+      return res.error.issues[0]?.message || 'Invalid value';
+    }
+    return '';
+  };
+
   const resetForm = () => {
     setFormData({
       firstName: '', lastName: '', email: '', password: '',
@@ -245,12 +272,47 @@ function TeachersContent() {
       assignedClass: '',
       teachingAssignments: []
     });
+    setFormErrors({});
+    setTouchedFields({});
     setEditingTeacherId(null);
     setShowModal(false);
   };
 
+  const handleTeacherFieldChange = (field: string, val: any) => {
+    setFormData((prev) => ({ ...prev, [field]: val }));
+    // Real-time validation if field has been touched or has an existing error
+    if (touchedFields[field] || formErrors[field]) {
+      const err = validateTeacherField(field, val);
+      setFormErrors((prev) => {
+        const next = { ...prev };
+        if (err) {
+          next[field] = err;
+        } else {
+          delete next[field];
+        }
+        return next;
+      });
+    }
+  };
+
+  const handleFieldBlur = (field: string) => {
+    setTouchedFields((prev) => ({ ...prev, [field]: true }));
+    const err = validateTeacherField(field, (formData as any)[field]);
+    setFormErrors((prev) => {
+      const next = { ...prev };
+      if (err) {
+        next[field] = err;
+      } else {
+        delete next[field];
+      }
+      return next;
+    });
+  };
+
   const openEdit = (teacher: any) => {
     setEditingTeacherId(teacher._id);
+    setFormErrors({});
+    setTouchedFields({});
     setFormData({
       firstName: teacher.firstName,
       lastName: teacher.lastName,
@@ -289,6 +351,44 @@ function TeachersContent() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setTouchedFields({
+      firstName: true,
+      lastName: true,
+      email: true,
+      phoneNumber: true,
+      assignedClass: true,
+      experienceYears: true,
+      salary: true,
+    });
+
+    const result = TeacherCreationSchema.safeParse(formData);
+    if (!result.success) {
+      const fieldErrs: Record<string, string> = {};
+      for (const issue of result.error.issues) {
+        const fieldName = issue.path[0] ? String(issue.path[0]) : 'form';
+        if (!fieldErrs[fieldName]) {
+          fieldErrs[fieldName] = issue.message;
+        }
+      }
+      setFormErrors(fieldErrs);
+      const firstKey = Object.keys(fieldErrs)[0];
+      const elementMap: Record<string, string> = {
+        firstName: 'teacher-first-name',
+        lastName: 'teacher-last-name',
+        email: 'teacher-email',
+        phoneNumber: 'teacher-phone',
+        assignedClass: 'teacher-assigned-class',
+        experienceYears: 'teacher-experience',
+        salary: 'teacher-salary',
+      };
+      if (firstKey && elementMap[firstKey]) {
+        const el = document.getElementById(elementMap[firstKey]);
+        if (el) el.focus();
+      }
+      toast.error(Object.values(fieldErrs)[0] || 'Please resolve the validation errors before saving.');
+      return;
+    }
+
     setIsSaving(true);
     try {
       const token = localStorage.getItem('token');
@@ -317,7 +417,8 @@ function TeachersContent() {
         resetForm();
         fetchData();
       } else {
-        toast.error('Error saving teacher data');
+        const errData = await res.json().catch(() => ({}));
+        toast.error(errData.message || 'Error saving teacher data');
       }
     } catch (error) {
       console.error(error);
@@ -425,14 +526,16 @@ function TeachersContent() {
           />
         </div>
 
-        {/* Add New Teacher Button on Far Right */}
-        <button
-          onClick={() => { resetForm(); setShowModal(true); }}
-          className="flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-[#0757D5] hover:bg-[#1469E8] text-white text-xs font-extrabold shadow-md cursor-pointer transition-all shrink-0 hover-button-micro"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Add New Teacher</span>
-        </button>
+        {/* Add New Teacher Button on Far Right (Hidden in Assignments tab) */}
+        {!isAssignmentsTab && (
+          <button
+            onClick={() => { resetForm(); setShowModal(true); }}
+            className="flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-[#0757D5] hover:bg-[#1469E8] text-white text-xs font-extrabold shadow-md cursor-pointer transition-all shrink-0 hover-button-micro"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Add New Teacher</span>
+          </button>
+        )}
       </div>
 
       {/* MAIN TWO-COLUMN LAYOUT GRID */}
@@ -657,18 +760,20 @@ function TeachersContent() {
             </div>
 
             <div className="space-y-2">
-              <button 
-                onClick={() => { resetForm(); setShowModal(true); }}
-                className="w-full flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 hover:bg-[#E5EEFF] dark:hover:bg-[#0050CB]/20 text-xs font-bold text-[#000E28] dark:text-white transition-all border border-slate-100 dark:border-slate-800 group cursor-pointer"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-[#0050CB] text-white flex items-center justify-center">
-                    <Plus className="w-4 h-4" />
+              {!isAssignmentsTab && (
+                <button 
+                  onClick={() => { resetForm(); setShowModal(true); }}
+                  className="w-full flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 hover:bg-[#E5EEFF] dark:hover:bg-[#0050CB]/20 text-xs font-bold text-[#000E28] dark:text-white transition-all border border-slate-100 dark:border-slate-800 group cursor-pointer"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-[#0050CB] text-white flex items-center justify-center">
+                      <Plus className="w-4 h-4" />
+                    </div>
+                    <span>Add New Teacher</span>
                   </div>
-                  <span>Add New Teacher</span>
-                </div>
-                <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-[#0050CB]" />
-              </button>
+                  <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-[#0050CB]" />
+                </button>
+              )}
 
               <Link 
                 href="/dashboard/lesson-planner"
@@ -791,96 +896,188 @@ function TeachersContent() {
             <form onSubmit={handleSubmit} className="space-y-3.5 text-xs">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="font-bold text-slate-700 dark:text-slate-300">First Name *</label>
+                  <label htmlFor="teacher-first-name" className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                    First Name <span className="text-[#FF690C]">*</span>
+                  </label>
                   <input
+                    id="teacher-first-name"
                     type="text"
-                    value={formData.firstName}
-                    onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
                     required
-                    className="w-full mt-1 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 outline-none"
+                    value={formData.firstName}
+                    onKeyDown={preventNonAlphaKey}
+                    onPaste={(e) => handleNamePaste(e, (clean) => handleTeacherFieldChange('firstName', clean))}
+                    onChange={(e) => handleTeacherFieldChange('firstName', sanitizeNameInput(e.target.value))}
+                    onBlur={() => handleFieldBlur('firstName')}
+                    placeholder="e.g. Sarah"
+                    aria-invalid={!!formErrors.firstName}
+                    aria-describedby={formErrors.firstName ? 'teacher-first-error' : undefined}
+                    className={`w-full px-3 py-2 rounded-xl border bg-white dark:bg-slate-800 outline-none transition-colors ${
+                      formErrors.firstName ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200 dark:border-slate-700'
+                    }`}
                   />
+                  <FieldError error={formErrors.firstName} id="teacher-first-error" />
                 </div>
                 <div>
-                  <label className="font-bold text-slate-700 dark:text-slate-300">Last Name *</label>
+                  <label htmlFor="teacher-last-name" className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                    Last Name <span className="text-[#FF690C]">*</span>
+                  </label>
                   <input
+                    id="teacher-last-name"
                     type="text"
-                    value={formData.lastName}
-                    onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
                     required
-                    className="w-full mt-1 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 outline-none"
+                    value={formData.lastName}
+                    onKeyDown={preventNonAlphaKey}
+                    onPaste={(e) => handleNamePaste(e, (clean) => handleTeacherFieldChange('lastName', clean))}
+                    onChange={(e) => handleTeacherFieldChange('lastName', sanitizeNameInput(e.target.value))}
+                    onBlur={() => handleFieldBlur('lastName')}
+                    placeholder="e.g. Jenkins"
+                    aria-invalid={!!formErrors.lastName}
+                    aria-describedby={formErrors.lastName ? 'teacher-last-error' : undefined}
+                    className={`w-full px-3 py-2 rounded-xl border bg-white dark:bg-slate-800 outline-none transition-colors ${
+                      formErrors.lastName ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200 dark:border-slate-700'
+                    }`}
                   />
+                  <FieldError error={formErrors.lastName} id="teacher-last-error" />
                 </div>
               </div>
 
               <div>
-                <label className="font-bold text-slate-700 dark:text-slate-300">Email Address *</label>
+                <label htmlFor="teacher-email" className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                  Email Address <span className="text-[#FF690C]">*</span>
+                </label>
                 <input
+                  id="teacher-email"
                   type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   required
-                  className="w-full mt-1 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 outline-none"
+                  value={formData.email}
+                  onChange={(e) => handleTeacherFieldChange('email', e.target.value)}
+                  onBlur={() => handleFieldBlur('email')}
+                  placeholder="e.g. sarah.jenkins@ggps.edu"
+                  aria-invalid={!!formErrors.email}
+                  aria-describedby={formErrors.email ? 'teacher-email-error' : undefined}
+                  className={`w-full px-3 py-2 rounded-xl border bg-white dark:bg-slate-800 outline-none transition-colors ${
+                    formErrors.email ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200 dark:border-slate-700'
+                  }`}
                 />
+                <FieldError error={formErrors.email} id="teacher-email-error" />
               </div>
 
               <div>
-                <label className="font-bold text-slate-700 dark:text-slate-300">Teaching Class *</label>
+                <label htmlFor="teacher-phone" className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                  Phone Number
+                </label>
+                <input
+                  id="teacher-phone"
+                  type="tel"
+                  value={formData.phoneNumber}
+                  maxLength={10}
+                  onKeyDown={preventNonNumericKey}
+                  onPaste={(e) => handlePhonePaste(e, (clean) => handleTeacherFieldChange('phoneNumber', clean))}
+                  onChange={(e) => handleTeacherFieldChange('phoneNumber', sanitizePhoneInput(e.target.value))}
+                  onBlur={() => handleFieldBlur('phoneNumber')}
+                  placeholder="e.g. 9876543210"
+                  aria-invalid={!!formErrors.phoneNumber}
+                  aria-describedby={formErrors.phoneNumber ? 'teacher-phone-error' : undefined}
+                  className={`w-full px-3 py-2 rounded-xl border bg-white dark:bg-slate-800 outline-none transition-colors ${
+                    formErrors.phoneNumber ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200 dark:border-slate-700'
+                  }`}
+                />
+                <FieldError error={formErrors.phoneNumber} id="teacher-phone-error" />
+              </div>
+
+              <div>
+                <label htmlFor="teacher-assigned-class" className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                  Teaching Class <span className="text-[#FF690C]">*</span>
+                </label>
                 <select
+                  id="teacher-assigned-class"
                   value={formData.assignedClass}
-                  onChange={(e) => setFormData({ ...formData, assignedClass: e.target.value })}
-                  required
-                  className="w-full mt-1 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 outline-none font-semibold text-slate-800 dark:text-slate-200 cursor-pointer"
+                  onChange={(e) => handleTeacherFieldChange('assignedClass', e.target.value)}
+                  onBlur={() => handleFieldBlur('assignedClass')}
+                  aria-invalid={!!formErrors.assignedClass}
+                  aria-describedby={formErrors.assignedClass ? 'teacher-class-error' : undefined}
+                  className={`w-full px-3 py-2 rounded-xl border bg-white dark:bg-slate-800 outline-none font-semibold text-slate-800 dark:text-slate-200 cursor-pointer transition-colors ${
+                    formErrors.assignedClass ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200 dark:border-slate-700'
+                  }`}
                 >
                   <option value="">Select Teaching Class (LKG, PreKG, UKG)</option>
                   <option value="PreKG">PreKG</option>
                   <option value="LKG">LKG</option>
                   <option value="UKG">UKG</option>
                 </select>
+                <FieldError error={formErrors.assignedClass} id="teacher-class-error" />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="font-bold text-slate-700 dark:text-slate-300">Designation</label>
+                  <label htmlFor="teacher-designation" className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                    Designation
+                  </label>
                   <input
+                    id="teacher-designation"
                     type="text"
                     value={formData.designation}
-                    onChange={(e) => setFormData({ ...formData, designation: e.target.value })}
+                    onChange={(e) => handleTeacherFieldChange('designation', e.target.value)}
                     placeholder="e.g. Early Literacy & Phonics Lead"
-                    className="w-full mt-1 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 outline-none"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 outline-none"
                   />
                 </div>
                 <div>
-                  <label className="font-bold text-slate-700 dark:text-slate-300">Qualification</label>
+                  <label htmlFor="teacher-qualification" className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                    Qualification
+                  </label>
                   <input
+                    id="teacher-qualification"
                     type="text"
                     value={formData.qualification}
-                    onChange={(e) => setFormData({ ...formData, qualification: e.target.value })}
+                    onChange={(e) => handleTeacherFieldChange('qualification', e.target.value)}
                     placeholder="e.g. D.E.C.Ed, Montessori Certified"
-                    className="w-full mt-1 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 outline-none"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 outline-none"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="font-bold text-slate-700 dark:text-slate-300">Experience (Years)</label>
+                  <label htmlFor="teacher-experience" className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                    Experience (Years)
+                  </label>
                   <input
+                    id="teacher-experience"
                     type="number"
+                    min={0}
+                    max={50}
                     value={formData.experienceYears}
-                    onChange={(e) => setFormData({ ...formData, experienceYears: e.target.value })}
+                    onChange={(e) => handleTeacherFieldChange('experienceYears', e.target.value)}
+                    onBlur={() => handleFieldBlur('experienceYears')}
                     placeholder="e.g. 8"
-                    className="w-full mt-1 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 outline-none"
+                    aria-invalid={!!formErrors.experienceYears}
+                    aria-describedby={formErrors.experienceYears ? 'teacher-exp-error' : undefined}
+                    className={`w-full px-3 py-2 rounded-xl border bg-white dark:bg-slate-800 outline-none transition-colors ${
+                      formErrors.experienceYears ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200 dark:border-slate-700'
+                    }`}
                   />
+                  <FieldError error={formErrors.experienceYears} id="teacher-exp-error" />
                 </div>
                 <div>
-                  <label className="font-bold text-slate-700 dark:text-slate-300">Salary (₹ / Year)</label>
+                  <label htmlFor="teacher-salary" className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                    Salary (₹ / Year)
+                  </label>
                   <input
+                    id="teacher-salary"
                     type="number"
+                    min={0}
                     value={formData.salary}
-                    onChange={(e) => setFormData({ ...formData, salary: e.target.value })}
+                    onChange={(e) => handleTeacherFieldChange('salary', e.target.value)}
+                    onBlur={() => handleFieldBlur('salary')}
                     placeholder="e.g. 65000"
-                    className="w-full mt-1 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 outline-none"
+                    aria-invalid={!!formErrors.salary}
+                    aria-describedby={formErrors.salary ? 'teacher-salary-error' : undefined}
+                    className={`w-full px-3 py-2 rounded-xl border bg-white dark:bg-slate-800 outline-none transition-colors ${
+                      formErrors.salary ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200 dark:border-slate-700'
+                    }`}
                   />
+                  <FieldError error={formErrors.salary} id="teacher-salary-error" />
                 </div>
               </div>
 

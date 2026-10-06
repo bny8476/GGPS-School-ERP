@@ -218,6 +218,31 @@ export default function EnrollmentPage() {
     });
   }, [enrollments, selectedClassFilter, selectedSectionFilter, selectedStatusFilter, searchQuery]);
 
+  // Deduplicate and filter classes list (ensuring only one Pre-KG is shown)
+  const filteredClasses = useMemo(() => {
+    const hasHyphen = classes.some(
+      (c) => (c.name || '').replace(/\s+/g, '').toLowerCase() === 'pre-kg'
+    );
+    const seen = new Set<string>();
+
+    return classes.filter((c) => {
+      const rawName = (c.name || '').trim();
+      if (!rawName) return false;
+
+      // If 'Pre-KG' is present, remove the redundant 'PreKG' entry
+      if (hasHyphen && rawName.toLowerCase() === 'prekg') {
+        return false;
+      }
+
+      const norm = rawName.replace(/[\s-]+/g, '').toLowerCase();
+      if (seen.has(norm)) {
+        return false;
+      }
+      seen.add(norm);
+      return true;
+    });
+  }, [classes]);
+
   // Available sections for the assign form
   const assignAvailableSections = useMemo(() => {
     if (!assignForm.classId) return [];
@@ -353,7 +378,16 @@ export default function EnrollmentPage() {
           <div className="flex items-center gap-2 flex-wrap">
             <button
               type="button"
-              onClick={() => setIsAssignModalOpen(true)}
+              onClick={() => {
+                setAssignForm({
+                  studentId: '',
+                  classId: '',
+                  sectionId: '',
+                  rollNumber: '',
+                  remarks: '',
+                });
+                setIsAssignModalOpen(true);
+              }}
               className="flex items-center gap-2 px-4 py-2 bg-[#0050CB] hover:bg-[#003E9E] text-white text-xs font-bold rounded-xl shadow-md shadow-[#0050CB]/20 transition-all cursor-pointer"
             >
               <Plus className="w-4 h-4" />
@@ -470,7 +504,7 @@ export default function EnrollmentPage() {
                 className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs font-bold rounded-xl px-3 py-2 text-slate-700 dark:text-slate-200 outline-hidden"
               >
                 <option value="">All Classes</option>
-                {classes.map((c) => (
+                {filteredClasses.map((c) => (
                   <option key={c._id} value={c._id}>
                     {c.name}
                   </option>
@@ -937,7 +971,15 @@ export default function EnrollmentPage() {
                 </label>
                 <select
                   value={assignForm.studentId}
-                  onChange={(e) => setAssignForm({ ...assignForm, studentId: e.target.value })}
+                  onChange={(e) => {
+                    const chosenId = e.target.value;
+                    const existing = enrollments.find((enr) => enr.studentId?._id === chosenId);
+                    setAssignForm((prev) => ({
+                      ...prev,
+                      studentId: chosenId,
+                      rollNumber: existing?.rollNumber || '',
+                    }));
+                  }}
                   required
                   className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 font-bold outline-hidden"
                 >
@@ -961,7 +1003,7 @@ export default function EnrollmentPage() {
                   className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 font-bold outline-hidden"
                 >
                   <option value="">Choose class...</option>
-                  {classes.map((c) => (
+                  {filteredClasses.map((c) => (
                     <option key={c._id} value={c._id}>
                       {c.name}
                     </option>
@@ -989,16 +1031,24 @@ export default function EnrollmentPage() {
               </div>
 
               <div>
-                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                  Roll Number (Auto-assigned if empty)
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="font-bold text-slate-700 dark:text-slate-300 block">
+                    Roll Number
+                  </label>
+                  <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 px-2 py-0.5 rounded-full border border-blue-200 dark:border-blue-800/40">
+                    Auto-assigned (Locked)
+                  </span>
+                </div>
                 <input
                   type="text"
-                  placeholder="e.g. 01"
-                  value={assignForm.rollNumber}
-                  onChange={(e) => setAssignForm({ ...assignForm, rollNumber: e.target.value })}
-                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 font-bold outline-hidden"
+                  readOnly
+                  disabled
+                  value={assignForm.rollNumber ? assignForm.rollNumber : 'Auto-generated on allocation'}
+                  className="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 font-bold text-slate-500 dark:text-slate-400 cursor-not-allowed outline-hidden"
                 />
+                <p className="text-[11px] text-slate-400 mt-1">
+                  System auto-assigns a unique sequential roll number to each student. Manual editing is disabled to eliminate duplicates.
+                </p>
               </div>
 
               <div className="flex justify-end gap-2 pt-2">
