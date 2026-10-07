@@ -22,6 +22,7 @@ import {
   linkChildToParent,
   unlinkChildFromParent,
   updateChildRelationship,
+  provisionParentAccess,
 } from '../controllers/parentController';
 import { protect, authorize } from '../middleware/auth';
 
@@ -88,5 +89,8 @@ router.route('/')
 router.route('/:id')
   .get(authorize('SuperAdmin', 'Admin', 'Principal', 'Teacher'), getParentById)
   .put(authorize('SuperAdmin', 'Admin', 'Principal'), updateParent);
+
+router.route('/:id/provision-access')
+  .post(authorize('SuperAdmin', 'Admin', 'Principal'), provisionParentAccess);
 
 export default router;

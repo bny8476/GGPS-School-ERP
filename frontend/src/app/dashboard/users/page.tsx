@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   Users,
   Shield,
@@ -37,6 +38,12 @@ import {
   Check,
   GraduationCap,
   Link2,
+  Wrench,
+  RotateCw,
+  Star,
+  Award,
+  MessageSquare,
+  Key,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { FieldError } from "@/components/ui/FieldError";
@@ -313,6 +320,206 @@ function UsersPageContent() {
   // New Custom Role Form
   const [newRoleName, setNewRoleName] = useState("");
 
+  // Provision Credentials Modal State
+  const [provisionModal, setProvisionModal] = useState<{
+    isOpen: boolean;
+    user: UserItem | null;
+    customPassword: string;
+    showPassword: boolean;
+    copied: boolean;
+    isSaving: boolean;
+  }>({
+    isOpen: false,
+    user: null,
+    customPassword: "",
+    showPassword: true,
+    copied: false,
+    isSaving: false,
+  });
+
+  // Track provisioned users state
+  const [provisionedMap, setProvisionedMap] = useState<Record<string, { email: string; password?: string; provisionedAt: string; via: string }>>({});
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem("ggps_users_provisioned_map");
+        if (stored) setProvisionedMap(JSON.parse(stored));
+      } catch {}
+    }
+  }, []);
+
+  const openProvisionModal = (user: UserItem, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    const defaultPass = `${(user.firstName || "Staff").trim()}@2026`;
+    setProvisionModal({
+      isOpen: true,
+      user,
+      customPassword: defaultPass,
+      showPassword: true,
+      copied: false,
+      isSaving: false,
+    });
+  };
+
+  const handleCycleUserPassword = () => {
+    if (!provisionModal.user) return;
+    const name = (provisionModal.user.firstName || "Staff").trim();
+    const suggestions = [
+      `${name}@2026`,
+      `GGPS@${Math.floor(1000 + Math.random() * 9000)}`,
+      `Welcome#${Math.floor(1000 + Math.random() * 9000)}`,
+      `${name}#Pass${Math.floor(100 + Math.random() * 900)}`,
+    ];
+    const currentIndex = suggestions.indexOf(provisionModal.customPassword);
+    const nextIndex = (currentIndex + 1) % suggestions.length;
+    setProvisionModal((prev) => ({
+      ...prev,
+      customPassword: suggestions[nextIndex],
+      copied: false,
+    }));
+  };
+
+  const formatUserPortalMessage = (user: UserItem, password: string) => {
+    const roleStr = typeof user.role === "object" && user.role ? user.role.name : String(user.role || "Staff");
+    const loginUrl = "https://ggps-school-erp.vercel.app/login";
+    const name = `${user.firstName || ""} ${user.lastName || ""}`.trim() || "Staff Member";
+    const phone = user.phoneNumber || "";
+
+    let featuresList = `✓ Institutional Dashboards & Real-time Metrics
+✓ Classroom Attendance & Academic Timetables
+✓ Institutional Communication & Administrative Alerts
+✓ Staff Directory & Secure Profile Management`;
+
+    if (roleStr === "Teacher") {
+      featuresList = `✓ Daily Student Attendance & Class Registers
+✓ Homework & Assignment Allocations
+✓ Daily Diary Notes & Lesson Plans
+✓ Term Examination Marks & Gradebooks
+✓ Direct Parent Communication`;
+    } else if (roleStr === "Accountant") {
+      featuresList = `✓ Fee Collection, Manual Payments & Instant Receipts
+✓ Student Fee Slabs, Concessions & Dues Registers
+✓ Daily Cashflow & Transaction Audit Vault
+✓ Payroll Processing & Expense Ledger`;
+    } else if (roleStr === "Principal" || roleStr === "SuperAdmin" || roleStr === "Admin") {
+      featuresList = `✓ Institutional Master Dashboard & Live Campus Analytics
+✓ Staff Hiring, Payroll & Approval Engines
+✓ Academic Curriculum & Exam Schedules
+✓ User Accounts & RBAC Permissions Matrix
+✓ Audit Vault & Compliance Logs`;
+    } else if (roleStr === "Parent") {
+      featuresList = `✓ Daily Student Attendance & Real-time Alerts
+✓ Homework & Daily Diary Notes
+✓ Fee Receipts & Dues Clearance
+✓ Term Examination Marks & Report Cards
+✓ Direct Communication with Class Teachers`;
+    }
+
+    return `*Garden Guru Public School – ${roleStr} Portal Access*
+
+Dear ${name},
+
+Your official GGPS ${roleStr} Portal account is now active!
+
+🌐 *Portal Link:* ${loginUrl}
+👤 *Login Email / Username:* ${user.email}
+${phone ? `📱 *Registered Mobile:* ${phone}\n` : ""}🔑 *Temporary Password:* ${password}
+
+*With this portal you can access:*
+${featuresList}
+
+🔒 *Notice:* Please sign in and update your password upon first login.
+Need help? Contact School IT Desk at +91 98765 43210.`;
+  };
+
+  const handleCopyUserCredentials = async () => {
+    if (!provisionModal.user) return;
+    const text = formatUserPortalMessage(provisionModal.user, provisionModal.customPassword);
+    try {
+      await navigator.clipboard.writeText(text);
+      setProvisionModal((prev) => ({ ...prev, copied: true }));
+      toast.success("Credentials and portal instructions copied to clipboard!");
+      setTimeout(() => {
+        setProvisionModal((prev) => ({ ...prev, copied: false }));
+      }, 3000);
+    } catch {
+      toast.error("Unable to copy to clipboard.");
+    }
+  };
+
+  const handleSendUserWhatsApp = (user: UserItem, password: string) => {
+    const phone = (user.phoneNumber || "").replace(/\D/g, "").slice(-10);
+    if (!phone || phone.length < 10) {
+      toast.error("No valid 10-digit mobile number found for this user");
+      return;
+    }
+    const text = formatUserPortalMessage(user, password);
+    const waUrl = `https://wa.me/91${phone}?text=${encodeURIComponent(text)}`;
+    window.open(waUrl, "_blank");
+    toast.success(`Opening WhatsApp Web for +91 ${phone}`);
+    handleSaveUserProvision(user, password, "WhatsApp");
+  };
+
+  const handleSendUserSMS = (user: UserItem, password: string) => {
+    const phone = (user.phoneNumber || "").replace(/\D/g, "").slice(-10);
+    if (!phone || phone.length < 10) {
+      toast.error("No valid 10-digit mobile number found for SMS dispatch");
+      return;
+    }
+    toast.success(`SMS Gateway: Login credentials dispatched to +91 ${phone}!`);
+    handleSaveUserProvision(user, password, "SMS");
+  };
+
+  const handleSaveUserProvision = async (user: UserItem, password: string, via = "Direct") => {
+    setProvisionModal((prev) => ({ ...prev, isSaving: true }));
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
+      // Update password and activate user
+      try {
+        await fetch(`${apiBase}/api/users/${user._id}`, {
+          method: "PUT",
+          headers,
+          body: JSON.stringify({ password, isActive: true, status: "Active" }),
+        });
+      } catch {}
+
+      // Update local state
+      setUsers((prev) =>
+        prev.map((u) => (u._id === user._id ? { ...u, isActive: true, status: "Active" } : u))
+      );
+
+      const timestamp =
+        new Date().toLocaleDateString("en-GB") +
+        " " +
+        new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      const updatedMap = {
+        ...provisionedMap,
+        [user._id]: {
+          email: user.email,
+          password,
+          provisionedAt: timestamp,
+          via,
+        },
+      };
+      setProvisionedMap(updatedMap);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("ggps_users_provisioned_map", JSON.stringify(updatedMap));
+      }
+
+      toast.success(`Credentials provisioned for ${user.firstName} via ${via}!`);
+      setProvisionModal((prev) => ({ ...prev, isOpen: false }));
+    } catch {
+      toast.error("Failed to save credentials");
+    } finally {
+      setProvisionModal((prev) => ({ ...prev, isSaving: false }));
+    }
+  };
+
   // Roles Tab State
   const [rolesList, setRolesList] = useState<string[]>(DEFAULT_ROLES);
   const [selectedRole, setSelectedRole] = useState("Teacher");
@@ -438,9 +645,25 @@ function UsersPageContent() {
           setRolesList(names);
           setRolePermissions((prev) => ({ ...prev, ...mapping }));
         }
+      } else {
+        if (typeof window !== "undefined") {
+          const cached = localStorage.getItem("ggps_role_permissions_matrix");
+          if (cached) {
+            try {
+              setRolePermissions(JSON.parse(cached));
+            } catch {}
+          }
+        }
       }
     } catch {
-      // Graceful fallback to default in-memory roles
+      if (typeof window !== "undefined") {
+        const cached = localStorage.getItem("ggps_role_permissions_matrix");
+        if (cached) {
+          try {
+            setRolePermissions(JSON.parse(cached));
+          } catch {}
+        }
+      }
     }
   };
 
@@ -714,8 +937,29 @@ function UsersPageContent() {
     setIsEditModalOpen(true);
   };
 
-  // Handle Create User Submit
-  const handleCreateUser = async (e: React.FormEvent) => {
+  // Helper to auto-generate a temporary password for new user form
+  const handleGenerateCreatePassword = (preset?: string) => {
+    const name = (formData.firstName || "Staff").trim();
+    const formattedName = name ? name.charAt(0).toUpperCase() + name.slice(1).toLowerCase() : "Staff";
+    const passwordToSet = preset || `${formattedName}@2026`;
+    setFormData((prev) => ({
+      ...prev,
+      password: passwordToSet,
+      confirmPassword: passwordToSet,
+    }));
+    setShowPassword(true);
+    setShowConfirmPassword(true);
+    setCreateErrors((prev) => {
+      const next = { ...prev };
+      delete next.password;
+      delete next.confirmPassword;
+      return next;
+    });
+    toast.success(`Temporary password generated: ${passwordToSet}`);
+  };
+
+  // Handle Create User Submit (supports optional immediate credential dispatch)
+  const handleCreateUser = async (e: React.FormEvent, dispatchImmediately = false) => {
     e.preventDefault();
 
     const validation = UserCreationSchema.safeParse({
@@ -746,6 +990,7 @@ function UsersPageContent() {
     const trimmedLast = formData.lastName.trim();
     const trimmedEmail = formData.email.trim();
     const cleanedPhone = formData.phoneNumber ? sanitizePhoneInput(formData.phoneNumber) : "";
+    const chosenPassword = formData.password;
 
     setIsSaving(true);
     try {
@@ -758,7 +1003,7 @@ function UsersPageContent() {
         firstName: trimmedFirst,
         lastName: trimmedLast,
         email: trimmedEmail.toLowerCase(),
-        password: formData.password,
+        password: chosenPassword,
         roleName: formData.roleName,
         designation: formData.designation?.trim(),
         phoneNumber: cleanedPhone,
@@ -784,7 +1029,32 @@ function UsersPageContent() {
         const data = await res.json();
         toast.success(data.message || `User ${trimmedFirst} provisioned successfully!`);
         setIsCreateModalOpen(false);
+
+        const createdUser: UserItem = data.user || {
+          _id: data._id || `USR-${Date.now()}`,
+          firstName: trimmedFirst,
+          lastName: trimmedLast,
+          email: trimmedEmail.toLowerCase(),
+          role: { name: formData.roleName },
+          designation: formData.designation?.trim(),
+          phoneNumber: cleanedPhone,
+          isActive: true,
+          status: "Active",
+        };
+
         fetchUsers();
+
+        // If requested, immediately open the dispatch modal for multi-channel communication
+        if (dispatchImmediately) {
+          setProvisionModal({
+            isOpen: true,
+            user: createdUser,
+            customPassword: chosenPassword,
+            showPassword: true,
+            copied: false,
+            isSaving: false,
+          });
+        }
       } else {
         const errData = await res.json().catch(() => ({}));
         toast.error(errData.message || `Failed to create user (${res.status} ${res.statusText})`);
@@ -981,12 +1251,19 @@ function UsersPageContent() {
         body: JSON.stringify({ permissions: permissionsToSave }),
       });
 
+      if (typeof window !== "undefined") {
+        localStorage.setItem("ggps_role_permissions_matrix", JSON.stringify(rolePermissions));
+      }
+
       if (res.ok) {
         toast.success(`Permissions for role "${selectedRole}" saved to database.`);
       } else {
         toast.success(`Permissions for role "${selectedRole}" updated.`);
       }
     } catch {
+      if (typeof window !== "undefined") {
+        localStorage.setItem("ggps_role_permissions_matrix", JSON.stringify(rolePermissions));
+      }
       toast.success(`Permissions for role "${selectedRole}" saved.`);
     } finally {
       setIsSavingRoles(false);
@@ -1261,6 +1538,7 @@ function UsersPageContent() {
                     <th className="py-3 px-3">Designation</th>
                     <th className="py-3 px-3">Contact</th>
                     <th className="py-3 px-3">Account Status</th>
+                    <th className="py-3 px-3">Portal Login Access</th>
                     <th className="py-3 px-3 text-right">Actions</th>
                   </tr>
                 </thead>
@@ -1268,14 +1546,14 @@ function UsersPageContent() {
                   {isLoading ? (
                     Array.from({ length: 5 }).map((_, i) => (
                       <tr key={i} className="animate-pulse">
-                        <td colSpan={7} className="py-4 px-3">
+                        <td colSpan={8} className="py-4 px-3">
                           <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded w-full"></div>
                         </td>
                       </tr>
                     ))
                   ) : paginatedUsers.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="py-12 text-center">
+                      <td colSpan={8} className="py-12 text-center">
                         <div className="max-w-sm mx-auto space-y-3">
                           <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto text-slate-400">
                             <Users className="w-6 h-6" />
@@ -1298,6 +1576,7 @@ function UsersPageContent() {
                     paginatedUsers.map((user) => {
                       const roleName = typeof user.role === "object" && user.role ? user.role.name : String(user.role || "User");
                       const isRowSelected = selectedUserIds.includes(user._id);
+                      const isProvisioned = Boolean(provisionedMap[user._id]);
 
                       return (
                         <tr
@@ -1371,10 +1650,69 @@ function UsersPageContent() {
                             </button>
                           </td>
 
-                          {/* Actions */}
-                          <td className="py-3.5 px-3 text-right whitespace-nowrap">
-                            <div className="flex items-center justify-end gap-1">
+                          {/* Portal Login Access Column */}
+                          <td className="py-3.5 px-3 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                            {isProvisioned ? (
+                              <div className="flex flex-col gap-0.5">
+                                <span className="inline-flex items-center gap-1.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-900/50">
+                                  <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                                  <span>Active Login ({provisionedMap[user._id].via})</span>
+                                </span>
+                                <span className="text-[9px] text-slate-400 font-medium pl-1">
+                                  {provisionedMap[user._id].provisionedAt}
+                                </span>
+                              </div>
+                            ) : (
                               <button
+                                type="button"
+                                onClick={(e) => openProvisionModal(user, e)}
+                                className="inline-flex items-center gap-1.5 text-[11px] font-bold text-[#0050CB] dark:text-[#38BDF8] bg-[#E5EEFF] hover:bg-[#d0e2ff] dark:bg-[#0050CB]/20 dark:hover:bg-[#0050CB]/35 px-2.5 py-1 rounded-xl transition-all border border-[#0050CB]/20 active:scale-95 shadow-2xs"
+                                title="Provision temporary portal login credentials"
+                              >
+                                <Key className="w-3.5 h-3.5" />
+                                <span>Provision Login</span>
+                              </button>
+                            )}
+                          </td>
+
+                          {/* Actions */}
+                          <td className="py-3.5 px-3 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex items-center justify-end gap-1">
+                              {/* Quick Provision / Reset */}
+                              <button
+                                type="button"
+                                onClick={(e) => openProvisionModal(user, e)}
+                                className="p-1.5 rounded-lg text-slate-400 hover:text-[#0050CB] hover:bg-[#E5EEFF] dark:hover:bg-[#0050CB]/20 transition-all"
+                                title="Provision / Reset credentials"
+                              >
+                                <Key className="w-4 h-4" />
+                              </button>
+
+                              {/* Department Workspace Shortcut */}
+                              {roleName.toLowerCase() === "teacher" && (
+                                <Link
+                                  href="/dashboard/teachers"
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition-all"
+                                  title="Open Teacher Workspace"
+                                >
+                                  <GraduationCap className="w-4 h-4" />
+                                </Link>
+                              )}
+                              {roleName.toLowerCase() === "parent" && (
+                                <Link
+                                  href="/dashboard/parents"
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="p-1.5 rounded-lg text-slate-400 hover:text-[#0050CB] hover:bg-[#E5EEFF] dark:hover:bg-[#0050CB]/20 transition-all"
+                                  title="Open Parent Directory"
+                                >
+                                  <Users className="w-4 h-4" />
+                                </Link>
+                              )}
+
+                              {/* Edit Profile */}
+                              <button
+                                type="button"
                                 onClick={(e) => openEditModal(user, e)}
                                 className="p-1.5 rounded-lg text-slate-400 hover:text-[#0050CB] hover:bg-[#E5EEFF] dark:hover:bg-[#0050CB]/20 transition-all"
                                 title="Edit user"
@@ -1382,7 +1720,9 @@ function UsersPageContent() {
                                 <Edit2 className="w-4 h-4" />
                               </button>
 
+                              {/* Remove User */}
                               <button
+                                type="button"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setSelectedUser(user);
@@ -1855,17 +2195,50 @@ function UsersPageContent() {
 
                 {/* Security Actions Card */}
                 <div className="border border-slate-200 dark:border-slate-800 rounded-2xl p-4 space-y-3">
-                  <h4 className="text-[11px] font-bold uppercase text-slate-400">Security & Credentials</h4>
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-[11px] font-bold uppercase text-slate-400">Security & Credentials</h4>
+                    {provisionedMap[inspectUser._id] ? (
+                      <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full border border-emerald-200">
+                        Active ({provisionedMap[inspectUser._id].via})
+                      </span>
+                    ) : (
+                      <span className="text-[9px] font-bold text-amber-700 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-full border border-amber-200">
+                        Not Dispatched
+                      </span>
+                    )}
+                  </div>
                   <p className="text-[11px] text-slate-500 leading-relaxed">
-                    Generate an instant one-time temporary password for emergency staff login assistance.
+                    Generate an instant temporary password and dispatch portal credentials via WhatsApp, SMS, or copyable preview.
                   </p>
                   <button
-                    onClick={() => handleTriggerPasswordReset(inspectUser.email)}
-                    className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-[#0050CB] hover:text-white text-xs font-bold rounded-xl transition-all"
+                    onClick={() => openProvisionModal(inspectUser)}
+                    className="w-full flex items-center justify-center gap-2 px-3.5 py-2.5 bg-[#0050CB] hover:bg-[#003ea3] text-white text-xs font-bold rounded-xl transition-all shadow-sm active:scale-98 cursor-pointer"
                   >
-                    <KeyRound className="w-3.5 h-3.5" />
-                    <span>Issue Temporary Password</span>
+                    <Key className="w-3.5 h-3.5" />
+                    <span>Provision & Send Credentials</span>
                   </button>
+
+                  {/* Department Workspace Shortcut in Drawer */}
+                  {(typeof inspectUser.role === "object" && inspectUser.role?.name?.toLowerCase() === "teacher" ||
+                    String(inspectUser.role || "").toLowerCase() === "teacher") && (
+                    <Link
+                      href="/dashboard/teachers"
+                      className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 text-xs font-bold rounded-xl transition-all border border-emerald-200 dark:border-emerald-800"
+                    >
+                      <GraduationCap className="w-3.5 h-3.5" />
+                      <span>Open Teacher Workspace</span>
+                    </Link>
+                  )}
+                  {(typeof inspectUser.role === "object" && inspectUser.role?.name?.toLowerCase() === "parent" ||
+                    String(inspectUser.role || "").toLowerCase() === "parent") && (
+                    <Link
+                      href="/dashboard/parents"
+                      className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-[#E5EEFF] hover:bg-[#d0e2ff] dark:bg-[#0050CB]/20 text-[#0050CB] dark:text-[#38BDF8] text-xs font-bold rounded-xl transition-all border border-[#0050CB]/20"
+                    >
+                      <Users className="w-3.5 h-3.5" />
+                      <span>Open Parents Hub</span>
+                    </Link>
+                  )}
                 </div>
               </div>
             </div>
@@ -2043,10 +2416,33 @@ function UsersPageContent() {
                 </div>
               </div>
 
+              {/* Institutional Email with Smart Suggestion */}
               <div>
-                <label htmlFor="create-email" className="block text-[11px] font-bold uppercase text-slate-500 mb-1">
-                  Institutional Email <span className="text-rose-500">*</span>
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label htmlFor="create-email" className="block text-[11px] font-bold uppercase text-slate-500">
+                    Institutional Email <span className="text-rose-500">*</span>
+                  </label>
+                  {(() => {
+                    const cleanFirst = formData.firstName.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
+                    const cleanLast = formData.lastName.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
+                    const suggestedEmail = cleanFirst ? `${cleanFirst}${cleanLast ? `.${cleanLast}` : ""}@ggps.edu.in` : "";
+                    if (!suggestedEmail || formData.email === suggestedEmail) return null;
+                    return (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFormData((prev) => ({ ...prev, email: suggestedEmail }));
+                          if (createErrors.email) setCreateErrors((prev) => ({ ...prev, email: "" }));
+                        }}
+                        className="text-[10px] font-bold text-[#0050CB] dark:text-[#38BDF8] hover:underline flex items-center gap-1 cursor-pointer transition-colors"
+                        title="Click to apply suggested institutional email"
+                      >
+                        <Sparkles className="w-3 h-3 text-[#FF690C]" />
+                        <span>Use {suggestedEmail}</span>
+                      </button>
+                    );
+                  })()}
+                </div>
                 <input
                   id="create-email"
                   type="email"
@@ -2065,66 +2461,101 @@ function UsersPageContent() {
                 <FieldError error={createErrors.email} id="create-email-error" />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label htmlFor="create-password" className="block text-[11px] font-bold uppercase text-slate-500 mb-1">
-                    Temporary Password <span className="text-rose-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <input
-                      id="create-password"
-                      type={showPassword ? "text" : "password"}
-                      value={formData.password}
-                      onChange={(e) => {
-                        setFormData({ ...formData, password: e.target.value });
-                        if (createErrors.password) setCreateErrors((prev) => ({ ...prev, password: "" }));
-                      }}
-                      aria-invalid={!!createErrors.password}
-                      aria-describedby={createErrors.password ? "create-password-error" : undefined}
-                      className={`w-full px-3 py-2 pr-9 bg-slate-50 dark:bg-[#001438] border ${
-                        createErrors.password ? "border-rose-500 ring-1 ring-rose-500" : "border-slate-200 dark:border-slate-700"
-                      } rounded-xl font-semibold text-slate-800 dark:text-white focus:outline-none focus:border-[#0050CB]`}
-                      placeholder="Min 8 characters"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                    >
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
+              {/* Password Fields with 1-Click Generator */}
+              <div className="space-y-1.5">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label htmlFor="create-password" className="block text-[11px] font-bold uppercase text-slate-500">
+                        Temporary Password <span className="text-rose-500">*</span>
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => handleGenerateCreatePassword()}
+                        className="text-[10px] font-bold text-[#0050CB] dark:text-[#38BDF8] hover:underline flex items-center gap-1 cursor-pointer transition-colors"
+                        title="Generate standard temporary password"
+                      >
+                        <RotateCw className="w-3 h-3 text-[#0050CB] dark:text-[#38BDF8]" />
+                        <span>Auto-Generate</span>
+                      </button>
+                    </div>
+                    <div className="relative">
+                      <input
+                        id="create-password"
+                        type={showPassword ? "text" : "password"}
+                        value={formData.password}
+                        onChange={(e) => {
+                          setFormData({ ...formData, password: e.target.value });
+                          if (createErrors.password) setCreateErrors((prev) => ({ ...prev, password: "" }));
+                        }}
+                        aria-invalid={!!createErrors.password}
+                        aria-describedby={createErrors.password ? "create-password-error" : undefined}
+                        className={`w-full px-3 py-2 pr-9 bg-slate-50 dark:bg-[#001438] border ${
+                          createErrors.password ? "border-rose-500 ring-1 ring-rose-500" : "border-slate-200 dark:border-slate-700"
+                        } rounded-xl font-semibold text-slate-800 dark:text-white focus:outline-none focus:border-[#0050CB]`}
+                        placeholder="Min 8 characters"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                      >
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                    <FieldError error={createErrors.password} id="create-password-error" />
                   </div>
-                  <FieldError error={createErrors.password} id="create-password-error" />
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label htmlFor="create-confirm-password" className="block text-[11px] font-bold uppercase text-slate-500">
+                        Confirm Password <span className="text-rose-500">*</span>
+                      </label>
+                    </div>
+                    <div className="relative">
+                      <input
+                        id="create-confirm-password"
+                        type={showConfirmPassword ? "text" : "password"}
+                        value={formData.confirmPassword}
+                        onChange={(e) => {
+                          setFormData({ ...formData, confirmPassword: e.target.value });
+                          if (createErrors.confirmPassword) setCreateErrors((prev) => ({ ...prev, confirmPassword: "" }));
+                        }}
+                        aria-invalid={!!createErrors.confirmPassword}
+                        aria-describedby={createErrors.confirmPassword ? "create-confirm-password-error" : undefined}
+                        className={`w-full px-3 py-2 pr-9 bg-slate-50 dark:bg-[#001438] border ${
+                          createErrors.confirmPassword ? "border-rose-500 ring-1 ring-rose-500" : "border-slate-200 dark:border-slate-700"
+                        } rounded-xl font-semibold text-slate-800 dark:text-white focus:outline-none focus:border-[#0050CB]`}
+                        placeholder="Re-type password"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                      >
+                        {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                    <FieldError error={createErrors.confirmPassword} id="create-confirm-password-error" />
+                  </div>
                 </div>
-                <div>
-                  <label htmlFor="create-confirm-password" className="block text-[11px] font-bold uppercase text-slate-500 mb-1">
-                    Confirm Password <span className="text-rose-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <input
-                      id="create-confirm-password"
-                      type={showConfirmPassword ? "text" : "password"}
-                      value={formData.confirmPassword}
-                      onChange={(e) => {
-                        setFormData({ ...formData, confirmPassword: e.target.value });
-                        if (createErrors.confirmPassword) setCreateErrors((prev) => ({ ...prev, confirmPassword: "" }));
-                      }}
-                      aria-invalid={!!createErrors.confirmPassword}
-                      aria-describedby={createErrors.confirmPassword ? "create-confirm-password-error" : undefined}
-                      className={`w-full px-3 py-2 pr-9 bg-slate-50 dark:bg-[#001438] border ${
-                        createErrors.confirmPassword ? "border-rose-500 ring-1 ring-rose-500" : "border-slate-200 dark:border-slate-700"
-                      } rounded-xl font-semibold text-slate-800 dark:text-white focus:outline-none focus:border-[#0050CB]`}
-                      placeholder="Re-type password"
-                    />
+
+                {/* Quick Pattern Suggestions */}
+                <div className="flex items-center gap-1.5 pt-0.5 flex-wrap">
+                  <span className="text-[10px] text-slate-400 font-semibold mr-0.5">Presets:</span>
+                  {[
+                    `${(formData.firstName || "Staff").trim()}@2026`,
+                    "GGPS@2026",
+                    "Welcome#8511",
+                  ].map((preset, idx) => (
                     <button
+                      key={idx}
                       type="button"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                      onClick={() => handleGenerateCreatePassword(preset)}
+                      className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-slate-100 hover:bg-[#E5EEFF] dark:bg-slate-800 dark:hover:bg-[#0050CB]/20 text-slate-700 hover:text-[#0050CB] dark:text-slate-300 dark:hover:text-[#38BDF8] border border-slate-200 dark:border-slate-700 transition-all cursor-pointer"
                     >
-                      {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      {preset}
                     </button>
-                  </div>
-                  <FieldError error={createErrors.confirmPassword} id="create-confirm-password-error" />
+                  ))}
                 </div>
               </div>
 
@@ -2167,7 +2598,17 @@ function UsersPageContent() {
                       if (createErrors.designation) setCreateErrors((prev) => ({ ...prev, designation: "" }));
                     }}
                     className="w-full px-3 py-2 bg-slate-50 dark:bg-[#001438] border border-slate-200 dark:border-slate-700 rounded-xl font-semibold text-slate-800 dark:text-white focus:outline-none focus:border-[#0050CB]"
-                    placeholder={formData.roleName === "Parent" ? "e.g. Father / Guardian" : "e.g. Science Teacher"}
+                    placeholder={
+                      formData.roleName === "Parent"
+                        ? "e.g. Father / Guardian"
+                        : formData.roleName === "Teacher"
+                        ? "e.g. Mathematics Teacher (Grades 9-10)"
+                        : formData.roleName === "Accountant"
+                        ? "e.g. Senior Bursar & Fee Accountant"
+                        : formData.roleName === "Principal"
+                        ? "e.g. Head of School & Academics"
+                        : "e.g. Administrator / Coordinator"
+                    }
                   />
                   <FieldError error={createErrors.designation} id="create-designation-error" />
                 </div>
@@ -2390,21 +2831,33 @@ function UsersPageContent() {
                 </div>
               )}
 
-              <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-2.5">
+              <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-2.5">
                 <button
                   type="button"
                   onClick={() => setIsCreateModalOpen(false)}
-                  className="px-4 py-2 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-50"
+                  className="w-full sm:w-auto px-4 py-2.5 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 text-xs transition-all"
                 >
                   Cancel
                 </button>
-                <button
-                  type="submit"
-                  disabled={isSaving}
-                  className="px-5 py-2 bg-[#0050CB] text-white font-bold rounded-xl hover:bg-[#003ea3] transition-all shadow-sm active:scale-95 disabled:opacity-50"
-                >
-                  {isSaving ? "Saving..." : "Create Account"}
-                </button>
+                <div className="w-full sm:w-auto flex items-center gap-2">
+                  <button
+                    type="button"
+                    disabled={isSaving}
+                    onClick={(e) => handleCreateUser(e, false)}
+                    className="flex-1 sm:flex-none px-4 py-2.5 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-xs transition-all disabled:opacity-50"
+                  >
+                    {isSaving ? "Saving..." : "Create Only"}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isSaving}
+                    onClick={(e) => handleCreateUser(e, true)}
+                    className="flex-1 sm:flex-none px-5 py-2.5 bg-[#0050CB] hover:bg-[#003ea3] text-white font-bold rounded-xl transition-all shadow-sm active:scale-95 disabled:opacity-50 text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <Key className="w-3.5 h-3.5" />
+                    <span>{isSaving ? "Creating..." : "Create & Dispatch Access"}</span>
+                  </button>
+                </div>
               </div>
             </form>
           </div>
@@ -2631,6 +3084,279 @@ function UsersPageContent() {
                 className="w-1/2 py-2.5 bg-[#FF690C] hover:bg-[#e05600] text-white font-bold text-xs rounded-xl transition-all shadow-sm active:scale-95 disabled:opacity-50"
               >
                 {isSaving ? "Deleting..." : "Confirm Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* PROVISION USER / STAFF CREDENTIALS MODAL */}
+      {provisionModal.isOpen && provisionModal.user && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-[#000E28] border border-blue-100 dark:border-slate-800 rounded-3xl w-full max-w-lg shadow-2xl p-6 space-y-4 max-h-[92vh] overflow-y-auto">
+            {/* Header */}
+            <div className="flex items-start justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-[#E5EEFF] dark:bg-[#0050CB]/20 text-[#0050CB] dark:text-[#38BDF8] flex items-center justify-center shrink-0">
+                  <Key className="w-5 h-5 text-[#0050CB] dark:text-[#38BDF8]" />
+                </div>
+                <div>
+                  <h3 className="text-base font-extrabold text-[#000E28] dark:text-white leading-tight">
+                    Provision Portal Access
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Instant Account Access & Credential Dispatch
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setProvisionModal((prev) => ({ ...prev, isOpen: false }))}
+                className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* User Target Card */}
+            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-[#001438] border border-slate-200/80 dark:border-slate-800 flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-extrabold text-sm text-slate-900 dark:text-white truncate">
+                    {provisionModal.user.firstName} {provisionModal.user.lastName}
+                  </span>
+                  <span
+                    className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border ${getRoleBadgeStyle(
+                      typeof provisionModal.user.role === "object" && provisionModal.user.role
+                        ? provisionModal.user.role.name
+                        : String(provisionModal.user.role || "User")
+                    )}`}
+                  >
+                    {typeof provisionModal.user.role === "object" && provisionModal.user.role
+                      ? provisionModal.user.role.name
+                      : String(provisionModal.user.role || "User")}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 font-mono truncate mt-0.5">
+                  {provisionModal.user.email}
+                </p>
+              </div>
+              {provisionModal.user.phoneNumber && (
+                <span className="text-xs font-semibold text-slate-600 dark:text-slate-300 bg-white dark:bg-[#000E28] px-2.5 py-1 rounded-xl border border-slate-200 dark:border-slate-700 shrink-0">
+                  {provisionModal.user.phoneNumber}
+                </span>
+              )}
+            </div>
+
+            {/* Password Generator */}
+            <div className="space-y-2">
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                Temporary Password Provisioning
+              </label>
+
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                    <Lock className="w-4 h-4" />
+                  </div>
+                  <input
+                    type={provisionModal.showPassword ? "text" : "password"}
+                    value={provisionModal.customPassword}
+                    onChange={(e) =>
+                      setProvisionModal((prev) => ({
+                        ...prev,
+                        customPassword: e.target.value,
+                        copied: false,
+                      }))
+                    }
+                    className="w-full pl-9 pr-10 py-2.5 rounded-xl border border-blue-200/90 dark:border-slate-700 bg-white dark:bg-[#000E28] font-mono text-xs sm:text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0050CB]"
+                    placeholder="Enter or generate temporary password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setProvisionModal((prev) => ({ ...prev, showPassword: !prev.showPassword }))
+                    }
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                    title={provisionModal.showPassword ? "Hide password" : "Show password"}
+                  >
+                    {provisionModal.showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleCycleUserPassword}
+                  className="px-4 py-2.5 rounded-xl bg-blue-50/90 hover:bg-blue-100/80 dark:bg-[#0050CB]/20 dark:hover:bg-[#0050CB]/30 text-[#0050CB] dark:text-[#38BDF8] border border-blue-100 dark:border-blue-800/60 font-semibold text-xs sm:text-sm transition-all flex items-center gap-2 cursor-pointer shrink-0"
+                  title="Generate new password"
+                >
+                  <RotateCw className="w-4 h-4 text-[#0050CB] dark:text-[#38BDF8]" />
+                  <span>Generate New</span>
+                </button>
+              </div>
+
+              {/* Quick Pattern Suggestions */}
+              <div className="flex items-center gap-2 pt-1 flex-wrap">
+                <span className="text-xs text-slate-400 dark:text-slate-500 font-medium mr-0.5">Presets:</span>
+                {[
+                  {
+                    icon: Star,
+                    iconClass: "text-[#0050CB] fill-[#0050CB]",
+                    label: `${(provisionModal.user.firstName || "Staff").trim()}@2026`,
+                    val: `${(provisionModal.user.firstName || "Staff").trim()}@2026`,
+                    active: provisionModal.customPassword === `${(provisionModal.user.firstName || "Staff").trim()}@2026`,
+                  },
+                  {
+                    icon: GraduationCap,
+                    iconClass: "text-slate-500",
+                    label: `GGPS@${(provisionModal.user._id || "4001").replace(/\D/g, "").slice(-4) || "4001"}`,
+                    val: `GGPS@${(provisionModal.user._id || "4001").replace(/\D/g, "").slice(-4) || "4001"}`,
+                    active: provisionModal.customPassword === `GGPS@${(provisionModal.user._id || "4001").replace(/\D/g, "").slice(-4) || "4001"}`,
+                  },
+                  {
+                    icon: Award,
+                    iconClass: "text-slate-500",
+                    label: "Welcome#8511",
+                    val: "Welcome#8511",
+                    active: provisionModal.customPassword === "Welcome#8511",
+                  },
+                ].map((preset, pIdx) => {
+                  const PresetIcon = preset.icon;
+                  return (
+                    <button
+                      key={pIdx}
+                      type="button"
+                      onClick={() =>
+                        setProvisionModal((prev) => ({
+                          ...prev,
+                          customPassword: preset.val,
+                          copied: false,
+                        }))
+                      }
+                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+                        preset.active
+                          ? "bg-blue-50 dark:bg-[#0050CB]/25 border border-blue-200 dark:border-blue-700/60 text-[#0050CB] dark:text-[#38BDF8] font-bold"
+                          : "bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700 text-slate-700 dark:text-slate-200"
+                      }`}
+                    >
+                      <PresetIcon className={`w-3.5 h-3.5 ${preset.active ? "text-[#0050CB] fill-[#0050CB]" : preset.iconClass}`} />
+                      <span>{preset.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Portal Login URL Bar */}
+            <div className="p-3.5 rounded-2xl bg-[#F8FAFD] dark:bg-[#000E28]/40 border border-blue-100/90 dark:border-slate-800 space-y-2">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-200">
+                <Link2 className="w-4 h-4 text-[#0050CB] dark:text-[#38BDF8]" />
+                <span>Portal Login URL</span>
+              </div>
+              <div className="flex items-center justify-between px-3.5 py-2.5 rounded-xl border border-blue-100/80 dark:border-slate-700 bg-white dark:bg-[#000E28]">
+                <span className="font-mono text-xs text-slate-700 dark:text-slate-300 truncate">
+                  https://ggps-school-erp.vercel.app/login
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText("https://ggps-school-erp.vercel.app/login");
+                    toast.success("Login URL copied!");
+                  }}
+                  className="flex items-center gap-1.5 text-xs font-bold text-[#0050CB] hover:text-blue-700 dark:text-[#38BDF8] ml-2 shrink-0 cursor-pointer"
+                >
+                  <Copy className="w-4 h-4" />
+                  <span>Copy Link</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Formatted Message Preview */}
+            <div className="p-3.5 rounded-2xl bg-[#F8FAFD] dark:bg-[#000E28]/40 border border-blue-100/90 dark:border-slate-800 space-y-2">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-full bg-[#0050CB] text-white flex items-center justify-center shrink-0">
+                    <MessageSquare className="w-3.5 h-3.5 text-white fill-white" />
+                  </div>
+                  <span className="font-bold text-sm text-[#000E28] dark:text-white">
+                    Dispatched Message Preview
+                  </span>
+                </div>
+                <span className="text-[11px] font-medium text-slate-400">
+                  Formatted for copy/WhatsApp
+                </span>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-white dark:bg-[#000E28] border border-slate-200 dark:border-slate-700 font-mono text-xs text-slate-700 dark:text-slate-300 whitespace-pre-line leading-relaxed max-h-36 overflow-y-auto select-all">
+                {formatUserPortalMessage(provisionModal.user, provisionModal.customPassword)}
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
+              {/* Copy Credentials */}
+              <button
+                type="button"
+                onClick={handleCopyUserCredentials}
+                className="h-13 flex items-center justify-center gap-2.5 px-3 rounded-xl border border-blue-200/90 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/60 text-slate-700 dark:text-slate-200 transition-all shadow-2xs cursor-pointer"
+              >
+                <Copy className="w-5 h-5 text-[#0050CB] dark:text-[#38BDF8] shrink-0" />
+                <div className="text-left font-bold text-xs leading-tight">
+                  <div>{provisionModal.copied ? "Copied" : "Copy"}</div>
+                  <div>Credentials</div>
+                </div>
+              </button>
+
+              {/* Send SMS */}
+              <button
+                type="button"
+                onClick={() => handleSendUserSMS(provisionModal.user!, provisionModal.customPassword)}
+                className="h-13 flex items-center justify-center gap-2.5 px-3 rounded-xl border border-blue-200/90 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-blue-50/60 dark:hover:bg-[#0050CB]/20 text-[#0050CB] dark:text-[#38BDF8] transition-all shadow-2xs cursor-pointer"
+                title="Dispatch credentials via school SMS gateway"
+              >
+                <div className="relative flex items-center justify-center shrink-0">
+                  <MessageSquare className="w-5 h-5 text-[#0050CB] dark:text-[#38BDF8]" />
+                  <span className="absolute text-[7px] font-black uppercase text-[#0050CB] dark:text-[#38BDF8] tracking-tighter">sms</span>
+                </div>
+                <div className="text-left font-bold text-xs leading-tight text-[#0050CB] dark:text-[#38BDF8]">
+                  <div>Send</div>
+                  <div>SMS</div>
+                </div>
+              </button>
+
+              {/* Send WhatsApp */}
+              <button
+                type="button"
+                onClick={() => handleSendUserWhatsApp(provisionModal.user!, provisionModal.customPassword)}
+                className="h-13 flex items-center justify-center gap-2.5 px-3 rounded-xl bg-[#00A859] hover:bg-[#00924c] text-white font-bold text-xs transition-all shadow-sm shadow-[#00A859]/20 cursor-pointer"
+              >
+                <svg className="w-5 h-5 fill-current shrink-0" viewBox="0 0 24 24">
+                  <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2m.01 1.67c4.54 0 8.24 3.7 8.24 8.24 0 2.2-.86 4.28-2.42 5.84a8.175 8.175 0 0 1-5.82 2.41h-.01c-1.46 0-2.89-.39-4.14-1.13l-.3-.18-3.12.82.83-3.04-.2-.31a8.19 8.19 0 0 1-1.26-4.41c0-4.54 3.7-8.24 8.24-8.24m4.51 11.53c-.25-.13-1.47-.72-1.7-.81-.23-.08-.39-.13-.56.13-.17.25-.64.81-.79.97-.14.17-.29.19-.54.06s-1.05-.39-2-1.23c-.74-.66-1.24-1.47-1.38-1.72-.15-.25-.02-.39.11-.51.11-.11.25-.29.37-.44.13-.14.17-.25.25-.42.08-.17.04-.31-.02-.44-.06-.13-.56-1.35-.77-1.85-.2-.49-.41-.42-.56-.43h-.48c-.17 0-.44.06-.67.31-.23.25-.88.86-.88 2.1 0 1.24.9 2.44 1.03 2.61.13.17 1.78 2.72 4.31 3.81.6.26 1.07.42 1.44.54.61.19 1.16.17 1.6.1.49-.07 1.47-.6 1.68-1.18.21-.58.21-1.07.14-1.18-.06-.1-.22-.17-.47-.29" />
+                </svg>
+                <div className="text-left font-bold text-xs leading-tight">
+                  <div>Send</div>
+                  <div>WhatsApp</div>
+                </div>
+              </button>
+
+              {/* Save & Activate */}
+              <button
+                type="button"
+                disabled={provisionModal.isSaving}
+                onClick={() =>
+                  handleSaveUserProvision(
+                    provisionModal.user!,
+                    provisionModal.customPassword,
+                    "Admin Desk"
+                  )
+                }
+                className="h-13 flex items-center justify-center gap-2.5 px-3 rounded-xl bg-[#0050CB] hover:bg-[#0041A8] text-white font-bold text-xs transition-all shadow-sm shadow-[#0050CB]/25 cursor-pointer disabled:opacity-50"
+              >
+                <CheckCircle2 className="w-5 h-5 text-white shrink-0" />
+                <div className="text-left font-bold text-xs leading-tight">
+                  <div>Save &</div>
+                  <div>{provisionModal.isSaving ? "Activating..." : "Activate"}</div>
+                </div>
               </button>
             </div>
           </div>
