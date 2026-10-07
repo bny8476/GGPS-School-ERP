@@ -18,6 +18,7 @@ import { downloadFile } from '@/lib/fileDownload';
 import { printDocument, exportToCSV } from '@/lib/exportUtils';
 import { authFetch } from '@/lib/apiClient';
 import { FieldError } from '@/components/ui/FieldError';
+import { toSchoolISODate } from '@/lib/date/timezone';
 import {
   DirectCollectSchema,
   FeeInvoiceCreationSchema,
@@ -146,6 +147,8 @@ function FeesFinanceContent() {
   const [showReceiptModal, setShowReceiptModal] = useState<{show: boolean, record: any | null}>({show: false, record: null});
   const [showStructureModal, setShowStructureModal] = useState(false);
   const [showScholarshipModal, setShowScholarshipModal] = useState(false);
+
+  const todayStr = useMemo(() => toSchoolISODate(), []);
 
   // Forms
   const [feeForm, setFeeForm] = useState({
@@ -1646,9 +1649,15 @@ function FeesFinanceContent() {
                 <input
                   id="fee-due-date"
                   type="date"
+                  min={todayStr}
                   value={feeForm.dueDate}
                   onChange={(e) => {
-                    setFeeForm({ ...feeForm, dueDate: e.target.value });
+                    const val = e.target.value;
+                    if (val && val < todayStr) {
+                      toast.error("Please pick today or a future due date.");
+                      return;
+                    }
+                    setFeeForm({ ...feeForm, dueDate: val });
                     if (feeErrors.dueDate) setFeeErrors((prev) => ({ ...prev, dueDate: '' }));
                   }}
                   aria-invalid={!!feeErrors.dueDate}

@@ -714,6 +714,7 @@ export default function AdmissionEnquirePage() {
                         <input
                           id="preferredVisitDate"
                           type="date"
+                          min={new Date().toISOString().split("T")[0]}
                           {...register("preferredVisitDate")}
                           className="w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm text-[#000E28] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0050CB]/10 focus:border-[#0050CB]"
                         />

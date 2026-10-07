@@ -2789,6 +2789,7 @@ function AcademicContent() {
                   <input
                     required
                     type="date"
+                    min={yearForm.startDate || undefined}
                     className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 font-bold outline-hidden"
                     value={yearForm.endDate}
                     onChange={(e) => setYearForm({ ...yearForm, endDate: e.target.value })}
@@ -2903,6 +2904,7 @@ function AcademicContent() {
                   <input
                     required
                     type="date"
+                    min={termForm.startDate || undefined}
                     className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 font-bold outline-hidden"
                     value={termForm.endDate}
                     onChange={(e) => setTermForm({ ...termForm, endDate: e.target.value })}

@@ -67,6 +67,10 @@ const nextConfig: NextConfig = {
 
     return [
       {
+        source: "/dashboard/audit",
+        destination: "/dashboard/audit-logs",
+      },
+      {
         source: "/api/:path*",
         destination: `${backendUrl}/api/:path*`,
       },

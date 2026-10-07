@@ -1,7 +1,6 @@
-"use client";
-
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import toast from "react-hot-toast";
 import AppImage from "@/components/ui/AppImage";
 import {
   X,
@@ -17,7 +16,11 @@ import {
   MessageSquare,
   Printer,
   ShieldCheck,
-  AlertCircle
+  AlertCircle,
+  Edit3,
+  Save,
+  Activity,
+  Check
 } from "lucide-react";
 
 export interface StudentProfileData {
@@ -60,6 +63,33 @@ export default function ChildProfileDrawer({
 }: ChildProfileDrawerProps) {
   const [activeTab, setActiveTab] = useState<TabKey>("Overview");
   const [previewDoc, setPreviewDoc] = useState<string | null>(null);
+
+  // Growth & Milestones State
+  const [isEditingGrowth, setIsEditingGrowth] = useState(false);
+  const [heightCm, setHeightCm] = useState("103.2");
+  const [weightKg, setWeightKg] = useState("16.4");
+  const [milestones, setMilestones] = useState([
+    { id: 'm1', label: 'Runs smoothly & maintains balance', domain: 'Gross Motor', done: true },
+    { id: 'm2', label: 'Holds pencil with 3-finger tripod grip', domain: 'Fine Motor', done: true },
+    { id: 'm3', label: 'Counts objects up to 10 with 1-to-1 correspondence', domain: 'Cognitive', done: true },
+    { id: 'm4', label: 'Speaks in full 4-6 word sentences clearly', domain: 'Language', done: true },
+    { id: 'm5', label: 'Takes turns & shares play materials cooperatively', domain: 'Social-Emotional', done: false },
+    { id: 'm6', label: 'Catches a bounced ball with both hands', domain: 'Gross Motor', done: true },
+  ]);
+
+  const bmiValue = useMemo(() => {
+    const h = parseFloat(heightCm) / 100;
+    const w = parseFloat(weightKg);
+    if (!h || !w || h <= 0) return "15.4";
+    return (w / (h * h)).toFixed(1);
+  }, [heightCm, weightKg]);
+
+  const toggleMilestone = (id: string) => {
+    setMilestones(prev =>
+      prev.map(m => m.id === id ? { ...m, done: !m.done } : m)
+    );
+    toast.success('Developmental milestone updated');
+  };
 
   if (!student) return null;
 
@@ -290,26 +320,126 @@ export default function ChildProfileDrawer({
                 </div>
               )}
 
-              {/* TAB 5: GROWTH */}
+              {/* TAB 5: GROWTH & MILESTONES */}
               {activeTab === "Growth" && (
-                <div className="space-y-3">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 space-y-1">
-                      <span className="text-[10px] text-slate-400 font-bold uppercase">Height</span>
-                      <span className="text-base font-black text-slate-800 dark:text-white block">103.2 cm</span>
-                      <span className="text-[10px] text-emerald-600 font-medium">55th WHO Percentile</span>
+                <div className="space-y-4">
+                  {/* Top Summary & Edit Header */}
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-black text-slate-800 dark:text-white text-xs uppercase tracking-wider">
+                        Growth & Health Profile
+                      </h4>
+                      <p className="text-[11px] text-slate-500">WHO Pediatric Growth percentiles & milestone tracker</p>
                     </div>
-                    <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 space-y-1">
+                    <button
+                      onClick={() => {
+                        if (isEditingGrowth) {
+                          setIsEditingGrowth(false);
+                          toast.success(`Updated physical growth record for ${student.name}`);
+                        } else {
+                          setIsEditingGrowth(true);
+                        }
+                      }}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-[#E5EEFF] dark:bg-blue-950/60 text-[#0050CB] dark:text-blue-300 border border-blue-200/80 hover:bg-blue-100 transition-colors cursor-pointer"
+                    >
+                      {isEditingGrowth ? (
+                        <>
+                          <Save className="w-3.5 h-3.5" />
+                          <span>Save Measurements</span>
+                        </>
+                      ) : (
+                        <>
+                          <Edit3 className="w-3.5 h-3.5" />
+                          <span>Update Growth</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Physical Measurements Grid */}
+                  <div className="grid grid-cols-3 gap-2.5">
+                    <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-800 space-y-1">
+                      <span className="text-[10px] text-slate-400 font-bold uppercase">Height</span>
+                      {isEditingGrowth ? (
+                        <div className="flex items-center gap-1">
+                          <input
+                            type="number"
+                            step="0.1"
+                            value={heightCm}
+                            onChange={(e) => setHeightCm(e.target.value)}
+                            className="w-16 px-1.5 py-1 text-sm font-bold bg-white dark:bg-slate-900 border border-slate-300 rounded-lg outline-none"
+                          />
+                          <span className="text-xs font-bold text-slate-500">cm</span>
+                        </div>
+                      ) : (
+                        <span className="text-base font-black text-slate-800 dark:text-white block">{heightCm} cm</span>
+                      )}
+                      <span className="text-[10px] text-emerald-600 font-medium">55th Percentile</span>
+                    </div>
+
+                    <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-800 space-y-1">
                       <span className="text-[10px] text-slate-400 font-bold uppercase">Weight</span>
-                      <span className="text-base font-black text-slate-800 dark:text-white block">16.4 kg</span>
-                      <span className="text-[10px] text-emerald-600 font-medium">50th WHO Percentile</span>
+                      {isEditingGrowth ? (
+                        <div className="flex items-center gap-1">
+                          <input
+                            type="number"
+                            step="0.1"
+                            value={weightKg}
+                            onChange={(e) => setWeightKg(e.target.value)}
+                            className="w-16 px-1.5 py-1 text-sm font-bold bg-white dark:bg-slate-900 border border-slate-300 rounded-lg outline-none"
+                          />
+                          <span className="text-xs font-bold text-slate-500">kg</span>
+                        </div>
+                      ) : (
+                        <span className="text-base font-black text-slate-800 dark:text-white block">{weightKg} kg</span>
+                      )}
+                      <span className="text-[10px] text-emerald-600 font-medium">50th Percentile</span>
+                    </div>
+
+                    <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-800 space-y-1">
+                      <span className="text-[10px] text-slate-400 font-bold uppercase">Calculated BMI</span>
+                      <span className="text-base font-black text-[#0050CB] dark:text-blue-400 block">{bmiValue}</span>
+                      <span className="text-[10px] text-emerald-600 font-medium font-bold">Healthy Range</span>
                     </div>
                   </div>
-                  <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 space-y-1">
-                    <span className="text-[10px] text-slate-400 font-bold uppercase">Developmental Milestones</span>
-                    <p className="text-xs text-slate-700 dark:text-slate-300 font-medium leading-relaxed">
-                      Child runs smoothly, kicks a ball, jumps in place with two feet, and follows three-step directions cheerfully.
-                    </p>
+
+                  {/* Developmental Milestones Checklist */}
+                  <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-800 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-bold text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
+                        <Activity className="w-3.5 h-3.5 text-[#0050CB]" />
+                        Key Developmental Milestones (Early Years)
+                      </span>
+                      <span className="text-[10px] text-[#0050CB] font-bold">
+                        {milestones.filter(m => m.done).length}/{milestones.length} Mastered
+                      </span>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      {milestones.map((m) => (
+                        <label
+                          key={m.id}
+                          onClick={() => toggleMilestone(m.id)}
+                          className="flex items-center justify-between p-2 rounded-xl bg-white dark:bg-slate-900/80 border border-slate-200/60 dark:border-slate-700/60 cursor-pointer hover:bg-blue-50/30 transition-colors"
+                        >
+                          <div className="flex items-center gap-2">
+                            <div className={`w-4 h-4 rounded-md flex items-center justify-center border transition-all ${
+                              m.done
+                                ? 'bg-[#0050CB] border-[#0050CB] text-white'
+                                : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800'
+                            }`}>
+                              {m.done && <Check className="w-3 h-3 stroke-[3]" />}
+                            </div>
+                            <span className={`text-xs font-medium ${m.done ? 'text-slate-800 dark:text-white font-semibold' : 'text-slate-500'}`}>
+                              {m.label}
+                            </span>
+                          </div>
+                          <span className="text-[9px] uppercase font-bold text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">
+                            {m.domain}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
                   </div>
                 </div>
               )}

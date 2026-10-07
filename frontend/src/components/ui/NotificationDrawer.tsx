@@ -90,8 +90,8 @@ const fallbackNotifications: NotificationItem[] = [
     category: 'School',
     priority: 'normal',
     read: true,
-    actionTab: 'SCHOOL WORK',
-    actionLabel: 'View Meeting Agenda',
+    actionTab: 'HOME',
+    actionLabel: 'View Circular',
     createdAt: new Date(Date.now() - 240 * 60 * 1000).toISOString()
   },
   {

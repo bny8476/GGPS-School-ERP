@@ -612,7 +612,7 @@ export default function AdminExecutiveDashboard({
                 </h3>
               </div>
               <Link
-                href="/dashboard/audit"
+                href="/dashboard/audit-logs"
                 className="text-[11px] font-bold text-[#0050CB] hover:underline"
               >
                 View All

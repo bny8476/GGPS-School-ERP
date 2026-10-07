@@ -34,6 +34,7 @@ import {
 import toast from 'react-hot-toast';
 import { printDocument } from '@/lib/exportUtils';
 import AppImage from '@/components/ui/AppImage';
+import ActivitiesWorkspace from './ActivitiesWorkspace';
 
 export type ClassWorkStatus = 'COMPLETED' | 'IN_PROGRESS' | 'UPCOMING';
 
@@ -75,6 +76,7 @@ interface ClassWorkWorkspaceProps {
     rollNo: string;
     photo: string;
   }>;
+  initialSubTab?: 'TIMELINE' | 'ACTIVITIES' | 'STUDENT_TRACKER' | 'BOARD_PHOTOS' | 'PARENT_FEED';
   onNavigateTab?: (tab: any) => void;
 }
 
@@ -134,9 +136,16 @@ const initialClassWorkPeriods: ClassWorkPeriod[] = [
   }
 ];
 
-export default function ClassWorkWorkspace({ students = [], onNavigateTab }: ClassWorkWorkspaceProps) {
+export default function ClassWorkWorkspace({ students = [], initialSubTab, onNavigateTab }: ClassWorkWorkspaceProps) {
   // Navigation & Date State
-  const [activeSubTab, setActiveSubTab] = useState<'TIMELINE' | 'STUDENT_TRACKER' | 'BOARD_PHOTOS' | 'PARENT_FEED'>('TIMELINE');
+  const [activeSubTab, setActiveSubTab] = useState<'TIMELINE' | 'ACTIVITIES' | 'STUDENT_TRACKER' | 'BOARD_PHOTOS' | 'PARENT_FEED'>(
+    initialSubTab || 'TIMELINE'
+  );
+
+  React.useEffect(() => {
+    if (initialSubTab) setActiveSubTab(initialSubTab);
+  }, [initialSubTab]);
+
   const [currentDateIndex, setCurrentDateIndex] = useState(2); // 0: 16 Sep, 1: 17 Sep, 2: 18 Sep (Today)
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -429,6 +438,18 @@ export default function ClassWorkWorkspace({ students = [], onNavigateTab }: Cla
           </button>
 
           <button
+            onClick={() => setActiveSubTab('ACTIVITIES')}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+              activeSubTab === 'ACTIVITIES'
+                ? 'bg-[#0050CB] text-white shadow-xs'
+                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Activities & Sensory Play</span>
+          </button>
+
+          <button
             onClick={() => setActiveSubTab('STUDENT_TRACKER')}
             className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
               activeSubTab === 'STUDENT_TRACKER'
@@ -697,6 +718,18 @@ export default function ClassWorkWorkspace({ students = [], onNavigateTab }: Cla
               );
             })}
           </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* SUB-VIEW 2: ACTIVITIES & SENSORY PLAY                                     */}
+      {/* ========================================================================= */}
+      {activeSubTab === 'ACTIVITIES' && (
+        <div className="space-y-4">
+          <ActivitiesWorkspace
+            students={students}
+            onNavigateTab={onNavigateTab}
+          />
         </div>
       )}
 

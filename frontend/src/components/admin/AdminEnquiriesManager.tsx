@@ -37,6 +37,7 @@ import toast from "react-hot-toast";
 import { apiClient } from "@/lib/apiClient";
 import { getSocket } from "@/lib/socket";
 import { useLanguage } from "@/context/LanguageContext";
+import { toSchoolISODate } from "@/lib/date/timezone";
 import {
   NAME_REGEX,
   EMAIL_REGEX,
@@ -134,6 +135,7 @@ interface EnquiriesResponse {
 export default function AdminEnquiriesManager() {
   const { t } = useLanguage();
   const queryClient = useQueryClient();
+  const todayStr = useMemo(() => toSchoolISODate(), []);
 
   // Search & Filter State
   const [search, setSearch] = useState("");
@@ -1380,8 +1382,16 @@ export default function AdminEnquiriesManager() {
                 </label>
                 <input
                   type="date"
+                  min={todayStr}
                   value={followUpDate}
-                  onChange={(e) => setFollowUpDate(e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val && val < todayStr) {
+                      toast.error("Please pick today or an upcoming follow-up date.");
+                      return;
+                    }
+                    setFollowUpDate(val);
+                  }}
                   className="w-full h-10 px-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs"
                 />
               </div>

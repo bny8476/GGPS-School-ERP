@@ -38,6 +38,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { printDocument } from '@/lib/exportUtils';
 import AppImage from '@/components/ui/AppImage';
+import { toSchoolISODate } from '@/lib/date/timezone';
 
 export type HomeworkStatus = 'ACTIVE' | 'DUE_SOON' | 'COMPLETED' | 'OVERDUE';
 export type SubmissionStatus = 'PENDING' | 'SUBMITTED' | 'REVIEWED' | 'REVISION_REQUESTED';
@@ -304,11 +305,13 @@ export default function HomeworkWorkspace({ students = [], onNavigateTab }: Home
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [lightboxImageUrl, setLightboxImageUrl] = useState('');
 
+  const todayStr = useMemo(() => toSchoolISODate(), []);
+
   // Form State for Assign Homework Modal
   const [newHwTitle, setNewHwTitle] = useState('');
   const [newHwSubject, setNewHwSubject] = useState('English & Phonics');
   const [newHwInstructions, setNewHwInstructions] = useState('');
-  const [newHwDueDate, setNewHwDueDate] = useState('2026-09-24');
+  const [newHwDueDate, setNewHwDueDate] = useState(() => toSchoolISODate());
   const [newHwWorkbookRef, setNewHwWorkbookRef] = useState('');
   const [newHwTargetType, setNewHwTargetType] = useState<'ALL' | 'SELECTED'>('ALL');
   const [newHwDuration, setNewHwDuration] = useState('10–15 mins');
@@ -1427,8 +1430,16 @@ export default function HomeworkWorkspace({ students = [], onNavigateTab }: Home
                   </label>
                   <input
                     type="date"
+                    min={todayStr}
                     value={newHwDueDate}
-                    onChange={(e) => setNewHwDueDate(e.target.value)}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val && val < todayStr) {
+                        toast.error("Please pick today or an upcoming due date.");
+                        return;
+                      }
+                      setNewHwDueDate(val);
+                    }}
                     className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-white"
                   />
                 </div>

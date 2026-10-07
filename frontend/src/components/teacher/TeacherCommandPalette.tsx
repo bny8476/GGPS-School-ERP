@@ -20,7 +20,8 @@ import {
   ArrowRight,
   Sparkles,
   MessageSquare,
-  Plus
+  Plus,
+  Award
 } from "lucide-react";
 import { TeacherTab } from "./TeacherWorkspace";
 
@@ -66,9 +67,20 @@ export default function TeacherCommandPalette({
         },
       },
       {
+        id: "m-classroom",
+        title: "Classroom (Unified Workspace)",
+        subtitle: "Student roster, daily class work, activities & lesson plans",
+        category: "Modules",
+        icon: Users,
+        action: () => {
+          onNavigateTab("CLASSROOM");
+          onClose();
+        },
+      },
+      {
         id: "m-class",
-        title: "My Amazing Class",
-        subtitle: "Student directory, roll-call cards, and class overview",
+        title: "Student Roster & 360° Profiles",
+        subtitle: "Student directory, growth records, and class overview",
         category: "Modules",
         icon: Users,
         action: () => {
@@ -89,8 +101,8 @@ export default function TeacherCommandPalette({
       },
       {
         id: "m-cw",
-        title: "Daily Class Work & Diary",
-        subtitle: "Record topics taught, parent sharing, and photo proofs",
+        title: "Class Work & Activities",
+        subtitle: "Record topics taught, sensory play, parent sharing, and photo proofs",
         category: "Modules",
         icon: FileText,
         action: () => {
@@ -111,12 +123,23 @@ export default function TeacherCommandPalette({
       },
       {
         id: "m-act",
-        title: "Class Activities",
-        subtitle: "Sensory games, arts & craft, rhyme time, and outdoor play",
+        title: "Activities & Sensory Play",
+        subtitle: "Sensory games, arts & craft, rhyme time, and outdoor play in Class Work",
         category: "Modules",
         icon: Smile,
         action: () => {
           onNavigateTab("ACTIVITIES");
+          onClose();
+        },
+      },
+      {
+        id: "m-marks-eval",
+        title: "Marks & Evaluation (Unified)",
+        subtitle: "Continuous rubrics assessment and term exam marks ledger",
+        category: "Modules",
+        icon: Award,
+        action: () => {
+          onNavigateTab("MARKS & EVALUATION");
           onClose();
         },
       },
@@ -133,8 +156,8 @@ export default function TeacherCommandPalette({
       },
       {
         id: "m-cg",
-        title: "Child Growth Profile",
-        subtitle: "WHO percentiles, height, weight, and milestone tracking",
+        title: "Child Growth (Student Profile)",
+        subtitle: "WHO percentiles, height, weight, and milestones in Student 360° Profile",
         category: "Modules",
         icon: TrendingUp,
         action: () => {
@@ -172,6 +195,17 @@ export default function TeacherCommandPalette({
         icon: MessageSquare,
         action: () => {
           onNavigateTab("PARENTS");
+          onClose();
+        },
+      },
+      {
+        id: "m-leave-profile",
+        title: "My Leave & Profile",
+        subtitle: "Faculty leave self-service quota and account settings",
+        category: "Modules",
+        icon: Clock,
+        action: () => {
+          onNavigateTab("LEAVE & PROFILE");
           onClose();
         },
       },

@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import AppImage from "@/components/ui/AppImage";
+import { toSchoolISODate } from "@/lib/date/timezone";
 import {
   Calendar,
   CalendarDays,
@@ -138,6 +139,7 @@ const INITIAL_EVENTS: EventItem[] = [
 ];
 
 export default function EventsManagementPage() {
+  const todayStr = useMemo(() => toSchoolISODate(), []);
   const [events, setEvents] = useState<EventItem[]>(INITIAL_EVENTS);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState<string>("All");
@@ -203,7 +205,7 @@ export default function EventsManagementPage() {
     setFormValues({
       title: "",
       type: "Sports Event",
-      date: new Date().toISOString().split("T")[0],
+      date: todayStr,
       time: "09:00 AM - 02:00 PM",
       location: "School Ground",
       status: "Upcoming",
@@ -252,6 +254,11 @@ export default function EventsManagementPage() {
       });
       setEventErrors(fieldErrors);
       toast.error(Object.values(fieldErrors)[0] || "Please check event details");
+      return;
+    }
+    if (!editingEvent && formValues.date < todayStr) {
+      setEventErrors(prev => ({ ...prev, date: "Event date cannot be in the past." }));
+      toast.error("Please pick today or an upcoming date for new events.");
       return;
     }
     setEventErrors({});
@@ -1048,9 +1055,15 @@ export default function EventsManagementPage() {
                   <input
                     type="date"
                     required
+                    min={editingEvent ? (editingEvent.date < todayStr ? editingEvent.date : todayStr) : todayStr}
                     value={formValues.date}
                     onChange={(e) => {
-                      setFormValues({ ...formValues, date: e.target.value });
+                      const val = e.target.value;
+                      if (!editingEvent && val < todayStr) {
+                        toast.error("Please pick today or an upcoming date.");
+                        return;
+                      }
+                      setFormValues({ ...formValues, date: val });
                       if (eventErrors.date) setEventErrors(prev => ({ ...prev, date: '' }));
                     }}
                     aria-invalid={Boolean(eventErrors.date)}

@@ -257,12 +257,13 @@ export default function ExamsMarksWorkspace({ students = [], onNavigateTab }: Ex
 
   // Modals
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+  const todayStr = useMemo(() => toSchoolISODate(), []);
 
   // Form State for Scheduling New Exam
   const [newExamTitle, setNewExamTitle] = useState('');
   const [newExamSubject, setNewExamSubject] = useState('English & Phonics');
   const [newExamCategory, setNewExamCategory] = useState<'TERM_SUMMATIVE' | 'PERIODIC_DIAGNOSTIC' | 'ORAL_PRACTICAL'>('TERM_SUMMATIVE');
-  const [newExamDate, setNewExamDate] = useState(() => toSchoolISODate());
+  const [newExamDate, setNewExamDate] = useState(todayStr);
   const [newExamTime, setNewExamTime] = useState('09:30 AM - 10:45 AM');
   const [newExamRoom, setNewExamRoom] = useState('Room 102 (Classroom A)');
   const [newExamMaxWritten, setNewExamMaxWritten] = useState(15);
@@ -1437,11 +1438,18 @@ export default function ExamsMarksWorkspace({ students = [], onNavigateTab }: Ex
                     </label>
                     <input
                       type="date"
+                      min={todayStr}
                       value={newExamDate}
-                      onChange={(e) => setNewExamDate(e.target.value)}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val && val < todayStr) {
+                          toast.error("Please pick today or an upcoming exam date.");
+                          return;
+                        }
+                        setNewExamDate(val);
+                      }}
                       className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-white"
-                    >
-                    </input>
+                    />
                   </div>
 
                   <div>
