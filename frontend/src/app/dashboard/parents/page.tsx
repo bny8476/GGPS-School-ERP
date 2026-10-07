@@ -390,17 +390,19 @@ function ParentsPageContent() {
     const targetStudent = studentsList.find(s => s._id === linkStudentForm.studentId);
     if (!targetStudent) return;
 
+    const currentParent = parents.find(p => p._id === showLinkModal.parent?._id) || showLinkModal.parent;
+    const existing = currentParent.students || [];
+    if (existing.some(s => s._id === targetStudent._id)) {
+      setLinkErrors({ studentId: 'Student is already linked to this parent profile' });
+      toast.error('Student is already linked to this parent profile');
+      return;
+    }
+
     setParents(prev => prev.map(p => {
-      if (p._id === showLinkModal.parent?._id) {
-        const existing = p.students || [];
-        if (existing.some(s => s._id === targetStudent._id)) {
-          setLinkErrors({ studentId: 'Student is already linked to this parent profile' });
-          toast.error('Student is already linked to this parent profile');
-          return p;
-        }
+      if (p._id === currentParent._id) {
         return {
           ...p,
-          students: [...existing, {
+          students: [...(p.students || []), {
             _id: targetStudent._id,
             firstName: targetStudent.firstName,
             lastName: targetStudent.lastName,
@@ -413,7 +415,7 @@ function ParentsPageContent() {
       return p;
     }));
 
-    toast.success(`Linked ${targetStudent.firstName} ${targetStudent.lastName} to ${showLinkModal.parent.fatherName || showLinkModal.parent.motherName}`);
+    toast.success(`Linked ${targetStudent.firstName} ${targetStudent.lastName} to ${currentParent.fatherName || currentParent.motherName}`);
     setShowLinkModal({ show: false, parent: null });
   };
 
