@@ -572,6 +572,7 @@ export default function AddStudentModal({
                               : 'border-slate-200 dark:border-slate-700 focus:border-[#0050CB] focus:ring-2 focus:ring-[#0050CB]/30'
                           }`}
                         />
+                        <p className="text-[10px] text-slate-400 mt-1">Child must be at least 3 years old for school enrollment</p>
                         <FieldError error={errors.dateOfBirth} id="dateOfBirth-error" />
                       </div>
                       <div>

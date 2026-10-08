@@ -649,6 +649,17 @@ export const downloadIdCardPDF = async (req: Request, res: Response) => {
       return res.status(404).json({ success: false, message: 'ID card not found' });
     }
 
+    // Role check for Parents
+    if (req.user?.role === 'Parent') {
+      const allowedStudentIds = await getLinkedStudentIdsForParent(req.user.id);
+      const isAllowed = allowedStudentIds.some(
+        (sId) => sId.toString() === (card.studentId?._id || card.studentId).toString()
+      );
+      if (!isAllowed) {
+        return res.status(403).json({ success: false, message: 'Access denied: You cannot download ID cards for other students' });
+      }
+    }
+
     const student: any = card.studentId || {};
     const studentName = `${student.firstName || ''} ${student.lastName || ''}`.trim() || 'Student';
     const parent: any = student.parentId || {};

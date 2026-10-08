@@ -53,7 +53,7 @@ export default function ReportCardModal({ isOpen, onClose, child }: ReportCardMo
   if (!isOpen || !child) return null;
 
   const studentName = `${child.firstName || "Sammy"} ${child.lastName || "Student"}`.trim();
-  const admissionNo = child.admissionNumber || "SEED-001";
+  const admissionNo = (child.admissionNumber ? child.admissionNumber.replace(/-/g, '') : "SEED001");
   const classSection = `${child.grade || "LKG"} - ${child.section || "Section A"}`;
   const dob = child.dob || "15-06-2020";
   const classTeacher = child.teacherName || "Ms. Ananya Roy";

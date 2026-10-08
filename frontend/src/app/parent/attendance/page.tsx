@@ -72,6 +72,8 @@ export default function AttendancePage() {
         const data = await res.json();
         if (Array.isArray(data)) {
           setRawRecords(data);
+        } else if (data.records && Array.isArray(data.records)) {
+          setRawRecords(data.records);
         } else if (data.data && Array.isArray(data.data)) {
           setRawRecords(data.data);
         }
@@ -84,10 +86,6 @@ export default function AttendancePage() {
   useEffect(() => {
     fetchAttendance();
   }, [fetchAttendance]);
-
-  if (!child) {
-    return <ParentEmptyChildState />;
-  }
 
   // Real-time socket sync
   useEffect(() => {
@@ -245,6 +243,10 @@ export default function AttendancePage() {
       { date: fallbackDates[4], status: "Late", color: "text-amber-500", dot: "bg-amber-400", remarks: "Traffic Delay" },
     ];
   }, [rawRecords]);
+
+  if (!child) {
+    return <ParentEmptyChildState />;
+  }
 
   return (
     <div className="space-y-5 pb-16 font-sans text-slate-800 dark:text-slate-100">

@@ -304,7 +304,7 @@ export default function Student360Profile({ params }: { params: Promise<{ id: st
               <div className="flex flex-wrap items-center gap-4 text-xs text-blue-100/80 mt-1.5 font-medium">
                 <span>Student ID: <strong className="text-white font-mono">{student.studentId || 'GGPS2026LKG001'}</strong></span>
                 <span>•</span>
-                <span>Admission: <strong className="text-white font-mono">{student.admissionNumber || 'GGPS2026Admin001'}</strong></span>
+                <span>Admission: <strong className="text-white font-mono">{(student.admissionNumber || 'GGPS2026Admin001').replace(/-/g, '')}</strong></span>
                 <span>•</span>
                 <span>DOB: <strong className="text-white">{student.dateOfBirth ? new Date(student.dateOfBirth).toLocaleDateString('en-GB') : '14 Apr 2022'}</strong></span>
                 <span>•</span>
@@ -391,7 +391,7 @@ export default function Student360Profile({ params }: { params: Promise<{ id: st
               </div>
               <div className="flex justify-between py-2 border-b border-slate-100 dark:border-slate-800/60">
                 <span className="text-slate-500 font-semibold">Permanent Admission No.</span>
-                <span className="font-mono font-bold text-slate-700 dark:text-slate-300">{student.admissionNumber || 'GGPS2026Admin001'}</span>
+                <span className="font-mono font-bold text-slate-700 dark:text-slate-300">{(student.admissionNumber || 'GGPS2026Admin001').replace(/-/g, '')}</span>
               </div>
               <div className="flex justify-between py-2 border-b border-slate-100 dark:border-slate-800/60">
                 <span className="text-slate-500 font-semibold">Academic Class & Section</span>

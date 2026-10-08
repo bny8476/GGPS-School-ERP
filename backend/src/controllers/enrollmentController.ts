@@ -73,6 +73,14 @@ export const getEnrollments = async (req: Request, res: Response) => {
         seenAdmissions.add(s.admissionNumber);
       }
 
+      // Self-heal: remove hyphens from any admission numbers in Student collection
+      for (const s of allStudents) {
+        if (s.admissionNumber && s.admissionNumber.includes('-')) {
+          s.admissionNumber = s.admissionNumber.replace(/-/g, '');
+          await s.save().catch(() => {});
+        }
+      }
+
       if (hasDuplicateAdmissions) {
         const usedAdmissions = new Set<string>();
         let admCounter = 1;
@@ -106,16 +114,24 @@ export const getEnrollments = async (req: Request, res: Response) => {
       .skip(skip)
       .limit(Number(limit));
 
+    // Ensure all returned student admission numbers are stripped of hyphens
+    enrollments.forEach((item: any) => {
+      if (item.studentId && item.studentId.admissionNumber) {
+        item.studentId.admissionNumber = String(item.studentId.admissionNumber).replace(/-/g, '');
+      }
+    });
+
     // Optional text search filter
     if (search && typeof search === 'string') {
       const q = search.toLowerCase();
+      const qClean = q.replace(/-/g, '');
       enrollments = enrollments.filter((item: any) => {
         const student = item.studentId;
         if (!student) return false;
         const name = `${student.firstName || ''} ${student.lastName || ''}`.toLowerCase();
         const adm = (student.admissionNumber || '').toLowerCase();
         const roll = (item.rollNumber || student.rollNumber || '').toLowerCase();
-        return name.includes(q) || adm.includes(q) || roll.includes(q);
+        return name.includes(q) || adm.includes(q) || adm.includes(qClean) || roll.includes(q);
       });
     }
 

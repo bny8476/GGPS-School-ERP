@@ -490,7 +490,9 @@ function AttendanceContent() {
                                 {item.firstName} {item.lastName}
                               </span>
                               <span className="text-[10px] font-mono text-slate-400">
-                                {item.studentId || item.admissionNumber || (typeof item.role === 'object' && item.role !== null ? item.role.name : item.role) || 'Staff Member'}
+                                {item.studentId || item.admissionNumber
+                                  ? String(item.studentId || item.admissionNumber).replace(/-/g, '')
+                                  : (typeof item.role === 'object' && item.role !== null ? item.role.name : item.role) || 'Staff Member'}
                               </span>
                             </div>
                           </div>

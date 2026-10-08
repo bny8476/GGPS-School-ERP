@@ -11,25 +11,33 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import ReportCardModal from "@/components/parent/ReportCardModal";
+import ParentEmptyChildState from "@/components/parent/ParentEmptyChildState";
 import { useParent } from "@/context/ParentContext";
 import { getCurrentAcademicYearFormatted, getAcademicYearDisplayOptions } from "@/lib/date";
 
 export default function AcademicProgressPage() {
-  const { selectedChild } = useParent();
+  const { selectedChild, children = [], isLoadingChildren } = useParent();
   const [selectedTerm, setSelectedTerm] = useState<"All Subjects" | "Term 1" | "Term 2" | "Term 3" | "Term 4">("All Subjects");
   const [selectedAcademicYear, setSelectedAcademicYear] = useState<string>(() => getCurrentAcademicYearFormatted());
   const [isYearDropdownOpen, setIsYearDropdownOpen] = useState<boolean>(false);
   const [isReportCardModalOpen, setIsReportCardModalOpen] = useState<boolean>(false);
 
-  const child = selectedChild || {
-    _id: "c10101010101010101010101",
-    firstName: "Aarav",
-    lastName: "Sharma",
-    grade: "LKG",
-    section: "Section A",
-    rollNumber: "LKG-014",
-    studentPhoto: "/aarav-profile-avatar.png",
-  };
+  if (isLoadingChildren) {
+    return (
+      <div className="w-full min-h-[400px] flex items-center justify-center p-8">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-3 border-[#0050CB] border-t-transparent rounded-full animate-spin" />
+          <p className="text-xs font-bold text-slate-500">Loading academic progress...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const child = selectedChild || children[0] || null;
+
+  if (!child) {
+    return <ParentEmptyChildState />;
+  }
 
   // Top KPI Stats
   const kpiStats = [

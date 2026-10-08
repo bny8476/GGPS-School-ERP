@@ -52,7 +52,7 @@ export default function ChildProfilePage() {
         <div className="flex items-center gap-5">
           <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden shrink-0 border-2 border-white dark:border-slate-700 shadow-md">
             <AppImage
-              src={child.studentPhoto || "/aarav-hero-student.jpg"}
+              src={child.studentPhoto || "/class-hero-girl.jpg"}
               alt={child.firstName}
               fill
               sizes="96px"
@@ -71,10 +71,10 @@ export default function ChildProfilePage() {
               </span>
             </div>
             <p className="text-xs sm:text-sm font-bold text-[#3157D5] dark:text-blue-400">
-              {child.grade} – {child.section} (Roll #{child.rollNumber})
+              {child.grade} – {child.section} {child.rollNumber ? `(Roll #${child.rollNumber})` : ""}
             </p>
             <p className="text-xs text-slate-400 font-mono">
-              Adm No: {child.admissionNumber || "GGPS-2026Admin-001"} • Session 2026–2027
+              Adm No: {child.admissionNumber ? child.admissionNumber.replace(/-/g, '') : "Enrolled"} • Session 2026–2027
             </p>
           </div>
         </div>
@@ -117,17 +117,17 @@ export default function ChildProfilePage() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
                 <span className="text-[10px] font-bold uppercase text-slate-400">Class Mentor</span>
-                <p className="text-sm font-bold text-[#000E28] dark:text-white mt-1">{child.teacherName || "Ms. Ananya Roy"}</p>
+                <p className="text-sm font-bold text-[#000E28] dark:text-white mt-1">{child.teacherName || "Assigned Class Educator"}</p>
                 <p className="text-[11px] text-slate-400">Early Childhood Certified</p>
               </div>
               <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
                 <span className="text-[10px] font-bold uppercase text-slate-400">Blood Group</span>
-                <p className="text-sm font-bold text-rose-600 mt-1">{child.bloodGroup || "O+"}</p>
+                <p className="text-sm font-bold text-rose-600 mt-1">{child.bloodGroup || "On File"}</p>
                 <p className="text-[11px] text-slate-400">Verified via Medical Card</p>
               </div>
               <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
                 <span className="text-[10px] font-bold uppercase text-slate-400">Emergency Phone</span>
-                <p className="text-sm font-bold text-[#000E28] dark:text-white mt-1">{child.emergencyContact || "+91 98765 43210"}</p>
+                <p className="text-sm font-bold text-[#000E28] dark:text-white mt-1">{child.emergencyContact || "Registered on file"}</p>
                 <p className="text-[11px] text-slate-400">Primary Guardian</p>
               </div>
             </div>

@@ -239,11 +239,11 @@ export const seedDatabase = async () => {
 
     // Student (Sammy Student)
     const student = await Student.findOneAndUpdate(
-      { admissionNumber: 'GGPS-2026-LKG-001' },
+      { admissionNumber: { $in: ['GGPS2026LKG001', 'GGPS-2026-LKG-001'] } },
       {
         firstName: 'Sammy',
         lastName: 'Student',
-        admissionNumber: 'GGPS-2026-LKG-001',
+        admissionNumber: 'GGPS2026LKG001',
         studentId: 'GGPS2026LKG001',
         grade: 'LKG',
         parentId: parentProfile._id,
@@ -254,14 +254,14 @@ export const seedDatabase = async () => {
       options
     );
 
-    // Student (Aarav Sharma - TS-2026-0112)
+    // Student (Aarav Sharma - TS20260112)
     const aaravStudent = await Student.findOneAndUpdate(
-      { admissionNumber: 'TS-2026-0112' },
+      { admissionNumber: { $in: ['TS20260112', 'TS-2026-0112'] } },
       {
         firstName: 'Aarav',
         lastName: 'Sharma',
-        admissionNumber: 'TS-2026-0112',
-        studentId: 'TS-2026-0112',
+        admissionNumber: 'TS20260112',
+        studentId: 'TS20260112',
         grade: 'LKG',
         section: 'A',
         parentId: parentProfile._id,

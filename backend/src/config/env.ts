@@ -11,6 +11,8 @@ const envSchema = z.object({
   JWT_SECRET: z.string().min(8).optional(),
   JWT_REFRESH_SECRET: z.string().min(8, 'JWT Refresh Secret must be at least 8 characters').optional(),
   PAYMENT_GATEWAY_SECRET: z.string().min(8).optional(),
+  RAZORPAY_KEY_ID: z.string().optional(),
+  RAZORPAY_KEY_SECRET: z.string().optional(),
   ACCESS_TOKEN_EXPIRES_IN: z.string().default('24h'),
   REFRESH_TOKEN_EXPIRES_IN: z.string().default('7d'),
   CLIENT_URL: z.string().default('http://localhost:3000'),
@@ -42,6 +44,8 @@ const rawEnv = {
   JWT_SECRET: rawSecret || 'super_secret_jwt_school_erp_token_key_2026',
   JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET || (rawSecret ? `${rawSecret}_refresh` : 'super_secret_refresh_token_key_2026'),
   PAYMENT_GATEWAY_SECRET: process.env.PAYMENT_GATEWAY_SECRET || process.env.RAZORPAY_KEY_SECRET || rawSecret || 'super_secret_payment_gateway_key_2026',
+  RAZORPAY_KEY_ID: process.env.RAZORPAY_KEY_ID || process.env.PAYMENT_GATEWAY_KEY_ID || '',
+  RAZORPAY_KEY_SECRET: process.env.RAZORPAY_KEY_SECRET || process.env.PAYMENT_GATEWAY_SECRET || '',
   ACCESS_TOKEN_EXPIRES_IN: process.env.ACCESS_TOKEN_EXPIRES_IN,
   REFRESH_TOKEN_EXPIRES_IN: process.env.REFRESH_TOKEN_EXPIRES_IN,
   CLIENT_URL: process.env.CLIENT_URL || process.env.FRONTEND_URL,
@@ -80,6 +84,8 @@ export const env = {
   JWT_SECRET: parsedEnv.data.JWT_ACCESS_SECRET,
   JWT_REFRESH_SECRET: parsedEnv.data.JWT_REFRESH_SECRET || `${parsedEnv.data.JWT_ACCESS_SECRET}_refresh`,
   PAYMENT_GATEWAY_SECRET: parsedEnv.data.PAYMENT_GATEWAY_SECRET || `${parsedEnv.data.JWT_ACCESS_SECRET}_pay`,
+  RAZORPAY_KEY_ID: parsedEnv.data.RAZORPAY_KEY_ID || 'rzp_test_SpEf15KaCAj2po',
+  RAZORPAY_KEY_SECRET: parsedEnv.data.RAZORPAY_KEY_SECRET || parsedEnv.data.PAYMENT_GATEWAY_SECRET || 'eZyRCiqqgfbu1lNVbB60CAFH',
 };
 
 export default env;

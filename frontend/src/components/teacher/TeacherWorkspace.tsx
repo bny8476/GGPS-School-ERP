@@ -190,7 +190,7 @@ const mockStudentsList: StudentCardData[] = [
   {
     id: 's-01',
     rollNo: '01',
-    admissionNo: 'GGSP-2024-LKG-001',
+    admissionNo: 'GGSP2024LKG001',
     name: 'Aarav Sharma',
     photo: 'https://images.unsplash.com/photo-1543332164-6e82f355badc?w=150&auto=format&fit=crop&q=80',
     status: 'Present',
@@ -213,7 +213,7 @@ const mockStudentsList: StudentCardData[] = [
   {
     id: 's-02',
     rollNo: '02',
-    admissionNo: 'GGSP-2024-LKG-002',
+    admissionNo: 'GGSP2024LKG002',
     name: 'Ananya Patel',
     photo: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80',
     status: 'Present',
@@ -236,7 +236,7 @@ const mockStudentsList: StudentCardData[] = [
   {
     id: 's-03',
     rollNo: '03',
-    admissionNo: 'GGSP-2024-LKG-003',
+    admissionNo: 'GGSP2024LKG003',
     name: 'Vivaan Gupta',
     photo: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80',
     status: 'Present',
@@ -259,7 +259,7 @@ const mockStudentsList: StudentCardData[] = [
   {
     id: 's-04',
     rollNo: '04',
-    admissionNo: 'GGSP-2024-LKG-004',
+    admissionNo: 'GGSP2024LKG004',
     name: 'Diya Verma',
     photo: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=150&auto=format&fit=crop&q=80',
     status: 'Absent',
@@ -284,7 +284,7 @@ const mockStudentsList: StudentCardData[] = [
   {
     id: 's-05',
     rollNo: '05',
-    admissionNo: 'GGSP-2024-LKG-005',
+    admissionNo: 'GGSP2024LKG005',
     name: 'Kabir Mehta',
     photo: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
     status: 'Late',
@@ -308,7 +308,7 @@ const mockStudentsList: StudentCardData[] = [
   {
     id: 's-06',
     rollNo: '06',
-    admissionNo: 'GGSP-2024-LKG-006',
+    admissionNo: 'GGSP2024LKG006',
     name: 'Saanvi Iyer',
     photo: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
     status: 'Present',
@@ -331,7 +331,7 @@ const mockStudentsList: StudentCardData[] = [
   {
     id: 's-07',
     rollNo: '07',
-    admissionNo: 'GGSP-2024-LKG-007',
+    admissionNo: 'GGSP2024LKG007',
     name: 'Ishita Roy',
     photo: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80',
     status: 'Present',
@@ -354,7 +354,7 @@ const mockStudentsList: StudentCardData[] = [
   {
     id: 's-08',
     rollNo: '08',
-    admissionNo: 'GGSP-2024-LKG-008',
+    admissionNo: 'GGSP2024LKG008',
     name: 'Rohan Singh',
     photo: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
     status: 'Present',
@@ -377,7 +377,7 @@ const mockStudentsList: StudentCardData[] = [
   {
     id: 's-09',
     rollNo: '09',
-    admissionNo: 'GGSP-2024-LKG-009',
+    admissionNo: 'GGSP2024LKG009',
     name: 'Reyansh Gupta',
     photo: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=150&auto=format&fit=crop&q=80',
     status: 'Present',
@@ -400,7 +400,7 @@ const mockStudentsList: StudentCardData[] = [
   {
     id: 's-10',
     rollNo: '10',
-    admissionNo: 'GGSP-2024-LKG-010',
+    admissionNo: 'GGSP2024LKG010',
     name: 'Ishita Roy',
     photo: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80',
     status: 'Present',
@@ -2694,7 +2694,6 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
 
   // Header & Theme
   const { theme, toggleTheme } = useTheme();
-  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -2812,7 +2811,7 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
 
     const rows = students.map((s) => [
       `"${s.rollNo}"`,
-      `"${s.admissionNo || 'GGSP-2024-LKG-' + s.rollNo}"`,
+      `"${s.admissionNo || 'GGSP2024LKG' + s.rollNo}"`,
       `"${s.name}"`,
       `"${s.gender}"`,
       `"${s.age}"`,
@@ -3168,10 +3167,12 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
       {/* ========================================================================= */}
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
         {/* Sticky Top Header */}
-        <header className="h-16 shrink-0 bg-white/95 dark:bg-[#111827]/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800 px-4 sm:px-6 flex items-center justify-between shadow-2xs z-30">
-          <div className="flex items-center gap-3">
+        <header className="h-16 shrink-0 bg-white/95 dark:bg-[#111827]/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800 px-4 sm:px-6 flex items-center justify-between gap-3 sm:gap-4 shadow-2xs z-30">
+          {/* Left: Mobile Navigation + Desktop Breadcrumbs */}
+          <div className="flex items-center gap-3 shrink-0">
             {/* Mobile Hamburger Button */}
             <button
+              type="button"
               onClick={() => setIsMobileSidebarOpen(true)}
               className="p-2 md:hidden rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition-colors cursor-pointer"
               title="Open Navigation"
@@ -3185,7 +3186,7 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
               <span className="text-slate-300">/</span>
               <span className="text-slate-400 font-medium">Classroom</span>
               <span className="text-slate-300">/</span>
-              <span className="font-bold text-[#0050CB] dark:text-blue-400 bg-[#E5EEFF] dark:bg-blue-950/40 px-2.5 py-0.5 rounded-md">
+              <span className="font-bold text-[#0050CB] dark:text-blue-400 bg-[#E5EEFF] dark:bg-blue-950/40 px-2.5 py-1 rounded-lg">
                 {(() => {
                   if (activeTab === 'CLASSROOM' || activeTab === 'MY CLASS' || activeTab === 'CLASS WORK' || activeTab === 'LESSON PLAN') {
                     return `Classroom · ${classroomSubTab === 'ROSTER' ? 'Student Roster' : classroomSubTab === 'CLASS WORK' ? 'Class Work & Activities' : 'Lesson Plans'}`;
@@ -3201,11 +3202,13 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
                 })()}
               </span>
             </div>
+          </div>
 
-            {/* Global Search Box with ⌘ K */}
+          {/* Center: Global Search Box with ⌘ K */}
+          <div className="flex-1 max-w-xs sm:max-w-sm lg:max-w-md mx-2">
             <div
               onClick={() => setIsSearchModalOpen(true)}
-              className="flex items-center justify-between w-52 sm:w-80 lg:w-96 h-9 px-3 bg-slate-100/80 dark:bg-slate-800/80 rounded-xl text-xs text-slate-500 dark:text-slate-400 cursor-pointer border border-slate-200/60 dark:border-slate-700/50 hover:bg-slate-200/60 transition-colors"
+              className="flex items-center justify-between w-full h-9 px-3.5 bg-slate-50 dark:bg-slate-800/80 rounded-full text-xs text-slate-400 cursor-pointer border border-slate-200/90 dark:border-slate-700 shadow-2xs hover:bg-slate-100 dark:hover:bg-slate-700/80 transition-all"
             >
               <div className="flex items-center gap-2 truncate">
                 <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
@@ -3217,96 +3220,37 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
             </div>
           </div>
 
-          {/* Right Controls */}
-          <div className="flex items-center gap-3">
+          {/* Right Controls: Equal Spacing & Perfect Center Alignment */}
+          <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
             {/* Notification Bell */}
-            <div className="relative">
-              <NotificationDrawer onNavigateTab={(tab) => handleNavigateTab(tab as any)} />
-            </div>
+            <NotificationDrawer onNavigateTab={(tab) => handleNavigateTab(tab as any)} />
 
             {/* Chat Bubble with Badge */}
-            <Link
-              href="/dashboard/chat"
-              className="relative p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-              title="Messages"
-            >
-              <MessageSquare className="w-4 h-4" />
-              <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[9px] font-black text-white shadow-xs">
+            <div className="relative">
+              <Link
+                href="/dashboard/chat"
+                className="h-9 w-9 flex items-center justify-center bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer border border-slate-200/90 dark:border-slate-700 shadow-2xs"
+                title="Messages"
+              >
+                <MessageSquare className="w-4 h-4 text-slate-500 dark:text-slate-300" />
+              </Link>
+              <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[9px] font-black text-white shadow-xs pointer-events-none">
                 2
               </span>
-            </Link>
+            </div>
 
             {/* Language Switcher */}
             <LanguageSwitcher />
 
             {/* Theme Toggle */}
             <button
+              type="button"
               onClick={toggleTheme}
-              className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+              className="h-9 w-9 flex items-center justify-center bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer border border-slate-200/90 dark:border-slate-700 shadow-2xs"
               title="Toggle Light/Dark Theme"
             >
-              {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+              {theme === 'light' ? <Moon className="w-4 h-4 text-slate-500" /> : <Sun className="w-4 h-4 text-slate-300" />}
             </button>
-
-            {/* Teacher Profile Pill */}
-            <div className="relative">
-              <button
-                onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
-                className="flex items-center gap-2.5 pl-1 pr-2 py-1 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-              >
-                <AppImage
-                  src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80"
-                  alt="Teacher"
-                  fallbackType="avatar"
-                  name="Priya Sharma"
-                  className="w-8 h-8 rounded-full object-cover ring-2 ring-blue-500/20"
-                />
-                <div className="text-left leading-tight hidden sm:block">
-                  <span className="text-xs font-bold text-slate-800 dark:text-white block">Priya Sharma</span>
-                  <span className="text-[10px] font-semibold text-blue-600 dark:text-blue-400 block">LKG - Section A</span>
-                </div>
-                <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
-              </button>
-
-              {/* Profile Dropdown */}
-              {profileDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-52 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-xl p-1.5 z-50 animate-in fade-in zoom-in-95 duration-150">
-                  <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-800">
-                    <p className="text-xs font-bold text-slate-800 dark:text-white">Priya Sharma</p>
-                    <p className="text-[10px] text-slate-400">teacher@school.com</p>
-                  </div>
-                  <div className="py-1 text-xs font-semibold">
-                    <button
-                      onClick={() => {
-                        setActiveTab('HOME');
-                        setProfileDropdownOpen(false);
-                      }}
-                      className="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
-                    >
-                      <Home className="w-3.5 h-3.5" />
-                      <span>Home Dashboard</span>
-                    </button>
-                    <button
-                      onClick={() => {
-                        setActiveTab('MY ACCOUNT');
-                        setProfileDropdownOpen(false);
-                      }}
-                      className="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
-                    >
-                      <Settings className="w-3.5 h-3.5" />
-                      <span>My Account & Settings</span>
-                    </button>
-                    <button
-                      onClick={handleLogout}
-                      className="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer"
-                    >
-                      <LogOut className="w-3.5 h-3.5" />
-                      <span>Sign Out</span>
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
           </div>
         </header>
 
@@ -3826,7 +3770,7 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
 
                               {/* Admission ID */}
                               <td className="py-3 px-4 font-mono font-medium text-slate-600 dark:text-slate-300">
-                                {student.admissionNo || `GGSP-2024-LKG-${student.rollNo}`}
+                                {student.admissionNo || `GGSP2024LKG${student.rollNo}`}
                               </td>
 
                               {/* Age & DOB */}
@@ -7975,7 +7919,7 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
                         type="text"
                         value={editFormData.admissionNo || ''}
                         onChange={(e) => setEditFormData({ ...editFormData, admissionNo: e.target.value })}
-                        placeholder="e.g. GGSP-2024-LKG-001"
+                        placeholder="e.g. GGSP2024LKG001"
                         className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:ring-2 focus:ring-[#0050CB]/20"
                       />
                     </div>

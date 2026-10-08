@@ -5,6 +5,8 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { ChevronRight } from "lucide-react";
 
+import { useParent } from "@/context/ParentContext";
+
 interface ParentKpiRowProps {
   onPayNowClick?: () => void;
   onAssessmentClick?: () => void;
@@ -16,12 +18,30 @@ export default function ParentKpiRow({
   onAssessmentClick,
   className = "",
 }: ParentKpiRowProps) {
+  const { selectedChild, todayAttendance, homeworkList } = useParent();
+
+  const attendanceDisplay =
+    selectedChild?.attendanceRate !== undefined
+      ? `${selectedChild.attendanceRate}%`
+      : todayAttendance.recorded
+      ? todayAttendance.status
+      : "Recorded";
+
+  const pendingTasks =
+    homeworkList.filter((h) => h.status === "Pending").length ||
+    (selectedChild?.pendingHomework ?? 0);
+
+  const feesDisplay =
+    selectedChild?.feesDue && selectedChild.feesDue > 0
+      ? `₹${selectedChild.feesDue.toLocaleString("en-IN")}`
+      : "Settled";
+
   return (
     <div
       className={`grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 items-stretch ${className}`}
     >
       {/* ========================================================
-          CARD 1: ATTENDANCE (94%, Attendance, ↑ +2.4% this month)
+          CARD 1: ATTENDANCE
       ======================================================== */}
       <Link href="/parent/attendance" className="block group h-full">
         <motion.div
@@ -59,7 +79,7 @@ export default function ParentKpiRow({
           {/* Row 2: Metric & Title */}
           <div className="relative z-10 mt-3 min-w-0">
             <div className="text-[26px] sm:text-[28px] lg:text-[30px] font-black text-[#000E28] dark:text-white tracking-tight leading-none font-sans">
-              94%
+              {attendanceDisplay}
             </div>
             <div className="text-[14px] sm:text-[15px] font-bold text-[#001D4A] dark:text-blue-100 tracking-tight leading-tight mt-1.5 whitespace-nowrap">
               Attendance
@@ -69,7 +89,7 @@ export default function ParentKpiRow({
           {/* Row 3: Trend footer */}
           <div className="relative z-10 mt-2.5 pt-0.5 flex items-center justify-between">
             <span className="inline-flex items-center gap-1 text-[11.5px] sm:text-[12px] font-extrabold text-[#059669] dark:text-emerald-400 whitespace-nowrap">
-              <span>↑</span> +2.4% this month
+              {todayAttendance.recorded ? `Today: ${todayAttendance.status}` : "Verified Attendance"}
             </span>
           </div>
         </motion.div>
@@ -109,7 +129,7 @@ export default function ParentKpiRow({
           {/* Row 2: Metric & Title */}
           <div className="relative z-10 mt-3 min-w-0">
             <div className="text-[26px] sm:text-[28px] lg:text-[30px] font-black text-[#E11D48] dark:text-rose-400 tracking-tight leading-none font-sans">
-              2
+              {pendingTasks}
             </div>
             <div className="text-[14px] sm:text-[15px] font-bold text-[#001D4A] dark:text-blue-100 tracking-tight leading-tight mt-1.5 whitespace-nowrap">
               Pending Tasks
@@ -119,14 +139,14 @@ export default function ParentKpiRow({
           {/* Row 3: Trend footer */}
           <div className="relative z-10 mt-2.5 pt-0.5 flex items-center justify-between">
             <span className="inline-flex items-center gap-1 text-[11.5px] sm:text-[12px] font-extrabold text-[#E11D48] dark:text-rose-400 whitespace-nowrap">
-              Due tomorrow
+              {pendingTasks > 0 ? "Pending submission" : "All caught up"}
             </span>
           </div>
         </motion.div>
       </Link>
 
       {/* ========================================================
-          CARD 3: FEES DUE (₹4,500, Fees Due, Due by 30 Sep)
+          CARD 3: FEES DUE
       ======================================================== */}
       <div
         onClick={onPayNowClick}
@@ -153,7 +173,7 @@ export default function ParentKpiRow({
           {/* Row 2: Metric & Title */}
           <div className="relative z-10 mt-3 min-w-0">
             <div className="text-[26px] sm:text-[28px] lg:text-[30px] font-black text-[#000E28] dark:text-white tracking-tight leading-none font-sans">
-              ₹4,500
+              {feesDisplay}
             </div>
             <div className="text-[14px] sm:text-[15px] font-bold text-[#001D4A] dark:text-blue-100 tracking-tight leading-tight mt-1.5 whitespace-nowrap">
               Fees Due
@@ -163,7 +183,7 @@ export default function ParentKpiRow({
           {/* Row 3: Trend footer */}
           <div className="relative z-10 mt-2.5 pt-0.5 flex items-center justify-between">
             <span className="inline-flex items-center gap-1 text-[11.5px] sm:text-[12px] font-extrabold text-[#059669] dark:text-emerald-400 whitespace-nowrap">
-              Due by 30 Sep
+              {selectedChild?.feesDue && selectedChild.feesDue > 0 ? "Payable online" : "All dues cleared"}
             </span>
           </div>
         </motion.div>

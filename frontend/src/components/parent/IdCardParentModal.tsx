@@ -342,7 +342,7 @@ export default function IdCardParentModal({ isOpen, onClose, child }: IdCardPare
                         <div className="w-full grid grid-cols-2 gap-2 text-left bg-slate-50 p-2.5 rounded-xl border border-slate-100 text-[10px]">
                           <div>
                             <span className="text-slate-400 font-semibold uppercase text-[9px] block">Adm No.</span>
-                            <span className="font-bold text-slate-800">{idCard.studentId?.admissionNumber || child.admissionNumber || "GGPS-2024-089"}</span>
+                            <span className="font-bold text-slate-800">{(idCard.studentId?.admissionNumber || child.admissionNumber || "GGPS2024089").replace(/-/g, '')}</span>
                           </div>
                           <div>
                             <span className="text-slate-400 font-semibold uppercase text-[9px] block">Roll No.</span>

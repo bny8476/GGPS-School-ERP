@@ -63,7 +63,7 @@ const SEEDED_AUDIT_LOGS: AuditLogItem[] = [
     role: "Accountant",
     action: "Fee Payment Collected",
     module: "Finance",
-    details: "Processed term fee collection ₹45,000 for Student SEED-001 (Sammy Roy)",
+    details: "Processed term fee collection ₹45,000 for Student SEED001 (Sammy Roy)",
     ip: "192.168.1.112",
     timestamp: "2026-09-26T10:15:00.000Z",
     targetId: "FEE-88219",

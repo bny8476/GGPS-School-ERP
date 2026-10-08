@@ -129,7 +129,13 @@ export const dobSchema = z
     const today = new Date();
     today.setHours(23, 59, 59, 999);
     return d <= today;
-  }, "Date of birth cannot be in the future");
+  }, "Date of birth cannot be in the future")
+  .refine((val) => {
+    const d = new Date(val);
+    const today = new Date();
+    const ageInYears = (today.getTime() - d.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
+    return ageInYears >= 3;
+  }, "Child must be at least 3 years old for school enrollment");
 
 export const optionalDobSchema = z
   .string()
@@ -140,7 +146,14 @@ export const optionalDobSchema = z
     const today = new Date();
     today.setHours(23, 59, 59, 999);
     return !isNaN(d.getTime()) && d <= today;
-  }, "Date of birth cannot be in the future");
+  }, "Date of birth cannot be in the future")
+  .refine((val) => {
+    if (!val) return true;
+    const d = new Date(val);
+    const today = new Date();
+    const ageInYears = (today.getTime() - d.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
+    return ageInYears >= 3;
+  }, "Child must be at least 3 years old for school enrollment");
 
 /**
  * Numeric amount / fee schema:

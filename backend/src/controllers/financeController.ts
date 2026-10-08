@@ -228,12 +228,13 @@ export const createPaymentOrder = async (req: Request, res: Response) => {
     // Role-based child ownership verification for parent
     if (req.user?.role === 'Parent') {
       const parent = await Parent.findOne({ userId: req.user.id });
-      if (parent) {
-        const isDirectChild = await Student.findOne({ _id: fee.studentId, parentId: parent._id });
-        const isJunctionChild = await StudentParent.findOne({ studentId: fee.studentId, parentId: parent._id });
-        if (!isDirectChild && !isJunctionChild) {
-          return res.status(403).json({ success: false, message: 'Access denied: You cannot create orders for other students' });
-        }
+      if (!parent) {
+        return res.status(403).json({ success: false, message: 'Access denied: Parent profile not found' });
+      }
+      const isDirectChild = await Student.findOne({ _id: fee.studentId, parentId: parent._id });
+      const isJunctionChild = await StudentParent.findOne({ studentId: fee.studentId, parentId: parent._id, status: { $ne: 'inactive' } });
+      if (!isDirectChild && !isJunctionChild) {
+        return res.status(403).json({ success: false, message: 'Access denied: You cannot create orders for other students' });
       }
     }
 
@@ -244,14 +245,16 @@ export const createPaymentOrder = async (req: Request, res: Response) => {
     const remainingBalance = Math.max(0, fee.totalAmount - (fee.amountPaid || 0));
     const orderAmount = req.body.amount ? Math.min(Number(req.body.amount), remainingBalance) : remainingBalance;
 
-    const gatewayOrderId = `ORD_${Date.now()}_${Math.floor(Math.random() * 9000 + 1000)}`;
-    const orderTimestamp = Date.now();
+    const orderResult = await paymentGatewayService.createOrder({
+      amount: orderAmount,
+      currency: 'INR',
+      receipt: `rcpt_${String(fee._id).slice(-8)}`,
+      notes: { feeId: String(fee._id), studentId: String(fee.studentId) },
+    });
 
-    // Generate cryptographic order signature
-    const orderSignature = crypto
-      .createHmac('sha256', env.PAYMENT_GATEWAY_SECRET)
-      .update(`${feeId}:${gatewayOrderId}:${orderAmount}`)
-      .digest('hex');
+    const gatewayOrderId = orderResult.orderId;
+    const orderTimestamp = Date.now();
+    const orderSignature = orderResult.signature;
 
     // Audit record in PaymentTransaction collection
     await PaymentTransaction.create({
@@ -271,7 +274,9 @@ export const createPaymentOrder = async (req: Request, res: Response) => {
         feeId: fee._id,
         gatewayOrderId,
         amount: orderAmount,
+        amountInPaise: Math.round(orderAmount * 100),
         currency: 'INR',
+        keyId: paymentGatewayService.getKeyId(),
         orderTimestamp,
         orderSignature,
       },
@@ -302,12 +307,13 @@ export const payFee = async (req: Request, res: Response) => {
     // Role-based child ownership verification for parent
     if (req.user?.role === 'Parent') {
       const parent = await Parent.findOne({ userId: req.user.id });
-      if (parent) {
-        const isDirectChild = await Student.findOne({ _id: fee.studentId, parentId: parent._id });
-        const isJunctionChild = await StudentParent.findOne({ studentId: fee.studentId, parentId: parent._id });
-        if (!isDirectChild && !isJunctionChild) {
-          return res.status(403).json({ success: false, message: 'Access denied: You cannot pay fees for other students' });
-        }
+      if (!parent) {
+        return res.status(403).json({ success: false, message: 'Access denied: Parent profile not found' });
+      }
+      const isDirectChild = await Student.findOne({ _id: fee.studentId, parentId: parent._id });
+      const isJunctionChild = await StudentParent.findOne({ studentId: fee.studentId, parentId: parent._id, status: { $ne: 'inactive' } });
+      if (!isDirectChild && !isJunctionChild) {
+        return res.status(403).json({ success: false, message: 'Access denied: You cannot pay fees for other students' });
       }
     }
 
@@ -750,11 +756,13 @@ export const downloadFeeInvoicePDF = async (req: Request, res: Response) => {
     // Role check for Parents
     if (req.user?.role === 'Parent') {
       const parent = await Parent.findOne({ userId: req.user.id });
-      if (parent) {
-        const student = await Student.findOne({ _id: fee.studentId, parentId: parent._id });
-        if (!student) {
-          return res.status(403).json({ success: false, message: 'Access denied: Invoice does not belong to your ward' });
-        }
+      if (!parent) {
+        return res.status(403).json({ success: false, message: 'Access denied: Parent profile not found' });
+      }
+      const isDirectChild = await Student.findOne({ _id: fee.studentId, parentId: parent._id });
+      const isJunctionChild = await StudentParent.findOne({ studentId: fee.studentId, parentId: parent._id, status: { $ne: 'inactive' } });
+      if (!isDirectChild && !isJunctionChild) {
+        return res.status(403).json({ success: false, message: 'Access denied: Invoice does not belong to your ward' });
       }
     }
 
@@ -793,6 +801,19 @@ export const downloadPaymentReceiptPDF = async (req: Request, res: Response) => 
 
     if (!fee) {
       return res.status(404).json({ success: false, message: 'Payment receipt record not found' });
+    }
+
+    // Role check for Parents
+    if (req.user?.role === 'Parent') {
+      const parent = await Parent.findOne({ userId: req.user.id });
+      if (!parent) {
+        return res.status(403).json({ success: false, message: 'Access denied: Parent profile not found' });
+      }
+      const isDirectChild = await Student.findOne({ _id: fee.studentId, parentId: parent._id });
+      const isJunctionChild = await StudentParent.findOne({ studentId: fee.studentId, parentId: parent._id, status: { $ne: 'inactive' } });
+      if (!isDirectChild && !isJunctionChild) {
+        return res.status(403).json({ success: false, message: 'Access denied: Receipt does not belong to your ward' });
+      }
     }
 
     // Locate exact payment entry if multiple

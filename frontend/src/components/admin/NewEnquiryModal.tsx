@@ -15,7 +15,8 @@ import {
   FileText, 
   CheckCircle2, 
   Clock,
-  Compass
+  Compass,
+  AlertCircle
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { apiClient } from "@/lib/apiClient";
@@ -56,7 +57,15 @@ const newEnquirySchema = z.object({
     .min(2, "Child name must be at least 2 characters")
     .max(80, "Name cannot exceed 80 characters")
     .regex(NAME_REGEX, "Name can contain only letters, spaces, hyphens, apostrophes, and periods (no numbers)"),
-  dateOfBirth: z.string().optional(),
+  dateOfBirth: z
+    .string()
+    .optional()
+    .refine((val) => {
+      if (!val) return true;
+      return validateDOB(val).valid;
+    }, {
+      message: "Child must be at least 3 years old for school enrollment",
+    }),
   gender: z.enum(["Male", "Female", "Other"]),
   classApplied: z.string().min(1, "Please select the class applying for"),
   academicYear: z.string(),
@@ -88,18 +97,6 @@ const CLASS_OPTIONS = [
   "Pre-KG",
   "LKG",
   "UKG",
-  "Class 1",
-  "Class 2",
-  "Class 3",
-  "Class 4",
-  "Class 5",
-  "Class 6",
-  "Class 7",
-  "Class 8",
-  "Class 9",
-  "Class 10",
-  "Class 11",
-  "Class 12",
 ];
 
 const SOURCE_OPTIONS = [
@@ -149,6 +146,28 @@ export default function NewEnquiryModal({
   const parentNameValue = watch("parentName");
   const childNameValue = watch("childName");
   const phoneValue = watch("phone");
+  const dateOfBirthValue = watch("dateOfBirth");
+
+  const maxDobDate = React.useMemo(() => {
+    const d = new Date();
+    d.setFullYear(d.getFullYear() - 3);
+    return d.toISOString().split("T")[0];
+  }, []);
+
+  const ageInfo = React.useMemo(() => {
+    if (!dateOfBirthValue) return null;
+    const dob = new Date(dateOfBirthValue);
+    if (isNaN(dob.getTime())) return null;
+    const now = new Date();
+    const diffMs = now.getTime() - dob.getTime();
+    if (diffMs < 0) return { text: "Future date", isEligible: false };
+    const years = Math.floor(diffMs / (1000 * 60 * 60 * 24 * 365.25));
+    const months = Math.floor((diffMs % (1000 * 60 * 60 * 24 * 365.25)) / (1000 * 60 * 60 * 24 * 30.4375));
+    return {
+      text: `${years}y ${months}m`,
+      isEligible: years >= 3,
+    };
+  }, [dateOfBirthValue]);
 
   if (!isOpen) return null;
 
@@ -174,9 +193,11 @@ export default function NewEnquiryModal({
         message: data.notes?.trim() || `Admission enquiry for ${data.childName} (${data.classApplied})`,
       };
 
-      const res: any = await apiClient.post("/api/admissions/enquiries", payload);
+      const res: any = await apiClient.post("/api/v1/admissions/enquiries", payload);
+      const rawRef = res?.enquiryId || res?.applicationNumber || "Created";
+      const cleanRef = String(rawRef).replace(/-/g, '');
       toast.success(
-        `Enquiry logged successfully! Ref: ${res?.enquiryId || res?.applicationNumber || "Created"}`
+        `Enquiry logged successfully! Ref: ${cleanRef}`
       );
       reset();
       onSuccess(res);
@@ -311,15 +332,39 @@ export default function NewEnquiryModal({
               </div>
 
               <div className="sm:col-span-1">
-                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  Date of Birth
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="font-bold text-slate-700 dark:text-slate-300">
+                    Date of Birth
+                  </label>
+                  {ageInfo && (
+                    <span
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                        ageInfo.isEligible
+                          ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
+                          : "bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-200 dark:border-rose-800"
+                      }`}
+                    >
+                      Age: {ageInfo.text}
+                    </span>
+                  )}
+                </div>
                 <input
                   type="date"
                   {...register("dateOfBirth")}
-                  max={new Date().toISOString().split("T")[0]}
-                  className="w-full h-9 px-3 rounded-xl bg-slate-50 dark:bg-[#07152F] border border-slate-200 dark:border-slate-700 text-xs text-[#000E28] dark:text-white"
+                  max={maxDobDate}
+                  className={`w-full h-9 px-3 rounded-xl bg-slate-50 dark:bg-[#07152F] border text-xs text-[#000E28] dark:text-white transition-all ${
+                    errors.dateOfBirth ? "border-rose-400 focus:ring-1 focus:ring-rose-400" : "border-slate-200 dark:border-slate-700"
+                  }`}
                 />
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">
+                  Child must be at least 3 years old for school enrollment.
+                </p>
+                {errors.dateOfBirth && (
+                  <p className="text-[11px] text-rose-500 font-semibold mt-1 flex items-center gap-1">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    {errors.dateOfBirth.message}
+                  </p>
+                )}
               </div>
 
               <div className="sm:col-span-1">

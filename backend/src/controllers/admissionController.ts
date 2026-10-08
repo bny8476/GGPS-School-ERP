@@ -23,6 +23,7 @@ import {
 import { emailService } from '../services/emailService';
 import { emitToRole, emitToUser, broadcastEvent } from '../socket';
 import { escapeRegex } from '../utils/sanitizers';
+import { normalizePhoneNumber } from '../validators/commonValidators';
 
 // @desc    Get all admissions (with search, filter, pagination)
 // @route   GET /api/admissions
@@ -311,7 +312,8 @@ export const approveAdmission = async (req: Request, res: Response) => {
 
     // 5. Generate Authoritative Unique Identifiers
     const studentId = await generateNextStudentID(yearStr, className);
-    const admissionNumber = admission.applicationNumber || (await generateNextAdmissionNumber(yearStr, className));
+    const rawAdm = admission.applicationNumber || (await generateNextAdmissionNumber(yearStr, className));
+    const admissionNumber = String(rawAdm).replace(/-/g, '');
     const rollNumber = await generateNextRollNumber(yearStr, className, sectionName);
 
     // 6. Create Student Record
@@ -515,8 +517,10 @@ export const createEnquiry = async (req: Request, res: Response) => {
     const body = req.body || {};
 
     const parentName = String(body.parentName || body.parent?.name || '').trim();
-    const phone = String(body.phone || body.contactNumber || body.parent?.phone || '').trim();
-    const email = String(body.email || body.parent?.email || '').trim().toLowerCase();
+    const rawPhone = String(body.phone || body.contactNumber || body.parent?.phone || '').trim();
+    const phone = String(normalizePhoneNumber(rawPhone) || rawPhone).trim();
+    const rawEmail = String(body.email || body.parent?.email || '').trim().toLowerCase();
+    const email = rawEmail || undefined;
     const relationship = String(body.relationship || body.parent?.relationship || 'Parent').trim();
 
     let childName = String(body.childName || body.child?.name || '').trim();
@@ -526,13 +530,19 @@ export const createEnquiry = async (req: Request, res: Response) => {
       childName = `${first} ${last}`.trim();
     }
 
-    const dateOfBirth = body.dateOfBirth || body.child?.dateOfBirth;
+    const parseSafeDate = (d: any): Date | undefined => {
+      if (!d) return undefined;
+      const parsed = new Date(d);
+      return isNaN(parsed.getTime()) ? undefined : parsed;
+    };
+
+    const dateOfBirth = parseSafeDate(body.dateOfBirth || body.child?.dateOfBirth);
     const gender = body.gender || body.child?.gender || 'Other';
     const classApplied = String(body.classApplied || body.gradeAppliedFor || body.child?.classApplied || 'LKG').trim();
     const academicYear = String(body.academicYear || '2026–2027').trim();
     const preferredContactMethod = String(body.preferredContactMethod || 'Phone').trim();
     const message = String(body.message || body.notes || '').trim();
-    const preferredVisitDate = body.preferredVisitDate ? new Date(body.preferredVisitDate) : undefined;
+    const preferredVisitDate = parseSafeDate(body.preferredVisitDate);
     const source = String(body.source || 'Website').trim();
 
     // Server-side validation
@@ -565,43 +575,48 @@ export const createEnquiry = async (req: Request, res: Response) => {
       });
     }
 
-    // 2. Concurrency-safe atomic sequence generation: GGPS-ENQ-{YEAR}-{0001}
+    // 2. Concurrency-safe atomic sequence generation: GGPSENQ{YEAR}{0001}
     const enquiryId = await generateNextEnquiryNumber(academicYear);
 
     // 3. Persist in MongoDB
     const validContactMethod = ['Phone', 'WhatsApp', 'Email'].includes(preferredContactMethod)
       ? (preferredContactMethod as 'Phone' | 'WhatsApp' | 'Email')
       : 'Phone';
-    const validSource = [
-      'Website',
-      'Home Page',
-      'Admission Page',
-      'Referral',
-      'Phone',
-      'Walk-in',
-      'Direct',
-      'Social Media',
-      'Other',
-    ].includes(source)
-      ? source
-      : 'Website';
+    const validSource = source || 'Website';
 
-    const initialStatus = body.status || 'NEW';
+    const ALLOWED_STATUSES = [
+      'NEW',
+      'CONTACTED',
+      'FOLLOW_UP',
+      'QUALIFIED',
+      'APPLICATION_STARTED',
+      'CONVERTED',
+      'CLOSED',
+      'LOST',
+      'New',
+      'Contacted',
+      'Follow-up',
+      'Qualified',
+      'Application Started',
+      'Converted',
+      'Closed',
+    ];
+    const initialStatus = ALLOWED_STATUSES.includes(body.status) ? body.status : 'NEW';
     const initialNotes = body.notes ? [{ text: String(body.notes).trim(), createdAt: new Date() }] : [];
-    const followUpDate = body.followUpDate ? new Date(body.followUpDate) : undefined;
+    const followUpDate = parseSafeDate(body.followUpDate);
 
     const enquiry = await AdmissionEnquiry.create({
       enquiryId,
       academicYear,
       parent: {
         name: parentName,
-        email,
+        email: email || undefined,
         phone,
         relationship: relationship || 'Parent',
       },
       child: {
         name: childName,
-        dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
+        dateOfBirth,
         classApplied,
         gender: ['Male', 'Female', 'Other'].includes(gender) ? gender : 'Other',
       },
@@ -727,9 +742,10 @@ export const createEnquiry = async (req: Request, res: Response) => {
       applicationNumber: enquiryId,
       data: enquiry,
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Create enquiry error:', error);
-    res.status(400).json({ success: false, message: 'Invalid enquiry data', error });
+    const message = error?.message || 'Invalid enquiry data';
+    res.status(400).json({ success: false, message, error });
   }
 };
 
@@ -739,15 +755,21 @@ export const getEnquiryById = async (req: Request, res: Response) => {
   try {
     const { enquiryId } = req.params;
     const cleanId = String(enquiryId || '').trim();
+    const cleanIdWithoutHyphens = cleanId.replace(/-/g, '');
     const enquiry = await AdmissionEnquiry.findOne({
       $or: [
         { enquiryId: cleanId },
+        { enquiryId: cleanIdWithoutHyphens },
         { _id: mongoose.isValidObjectId(cleanId) ? cleanId : null },
       ],
     });
 
     if (!enquiry) {
       return res.status(404).json({ success: false, message: 'Enquiry record not found' });
+    }
+
+    if (enquiry.enquiryId) {
+      enquiry.enquiryId = enquiry.enquiryId.replace(/-/g, '');
     }
 
     res.status(200).json({ success: true, data: enquiry });
@@ -792,11 +814,25 @@ export const getEnquiries = async (req: Request, res: Response) => {
       }
     }
 
+    // Self-heal legacy enquiries with hyphens in DB
+    try {
+      const legacyWithHyphens = await AdmissionEnquiry.find({ enquiryId: /-/ }).limit(50);
+      for (const enq of legacyWithHyphens) {
+        enq.enquiryId = enq.enquiryId.replace(/-/g, '');
+        await enq.save().catch(() => {});
+      }
+    } catch {
+      // Continue gracefully
+    }
+
     if (search) {
       const q = String(search).trim();
+      const qClean = q.replace(/-/g, '');
       const searchRegex = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+      const cleanRegex = new RegExp(qClean.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
       filter.$or = [
         { enquiryId: searchRegex },
+        { enquiryId: cleanRegex },
         { 'parent.name': searchRegex },
         { 'parent.phone': searchRegex },
         { 'parent.email': searchRegex },
@@ -814,7 +850,7 @@ export const getEnquiries = async (req: Request, res: Response) => {
       const seedYear = '2026–2027';
       await AdmissionEnquiry.create([
         {
-          enquiryId: 'GGPS-ENQ-2026-0001',
+          enquiryId: 'GGPSENQ20260001',
           academicYear: seedYear,
           parent: { name: 'Rahul Kumar', email: 'rahul.kumar@gmail.com', phone: '+91 98401 22334', relationship: 'Father' },
           child: { name: 'Arun Kumar', classApplied: 'LKG', dateOfBirth: new Date('2022-04-15'), gender: 'Male' },
@@ -826,7 +862,7 @@ export const getEnquiries = async (req: Request, res: Response) => {
           notes: [],
         },
         {
-          enquiryId: 'GGPS-ENQ-2026-0002',
+          enquiryId: 'GGPSENQ20260002',
           academicYear: seedYear,
           parent: { name: 'Pooja Chopra', email: 'pooja.c@example.com', phone: '+91 98223 99881', relationship: 'Mother' },
           child: { name: 'Reyansh Chopra', classApplied: 'PreKG', dateOfBirth: new Date('2023-08-10'), gender: 'Male' },
@@ -840,7 +876,7 @@ export const getEnquiries = async (req: Request, res: Response) => {
           notes: [{ text: 'Called parent; very receptive. Invited to campus tour.', createdAt: new Date() }],
         },
         {
-          enquiryId: 'GGPS-ENQ-2026-0003',
+          enquiryId: 'GGPSENQ20260003',
           academicYear: seedYear,
           parent: { name: 'Amit Bhasin', email: 'amit.bhasin@example.com', phone: '+91 99114 77665', relationship: 'Father' },
           child: { name: 'Samaira Bhasin', classApplied: 'UKG', dateOfBirth: new Date('2021-01-20'), gender: 'Female' },
@@ -853,7 +889,7 @@ export const getEnquiries = async (req: Request, res: Response) => {
           notes: [],
         },
         {
-          enquiryId: 'GGPS-ENQ-2026-0004',
+          enquiryId: 'GGPSENQ20260004',
           academicYear: seedYear,
           parent: { name: 'Farhan Siddiqui', email: 'farhan.s@example.com', phone: '+91 97110 55443', relationship: 'Father' },
           child: { name: 'Zoya Siddiqui', classApplied: 'PreKG', dateOfBirth: new Date('2023-05-18'), gender: 'Female' },
@@ -888,9 +924,15 @@ export const getEnquiries = async (req: Request, res: Response) => {
       closed: closedCount,
     };
 
+    const sanitizedEnquiries = enquiries.map((enq: any) => {
+      const obj = enq.toObject ? enq.toObject() : { ...enq };
+      if (obj.enquiryId) obj.enquiryId = String(obj.enquiryId).replace(/-/g, '');
+      return obj;
+    });
+
     res.status(200).json({
       success: true,
-      data: enquiries,
+      data: sanitizedEnquiries,
       total,
       page: pageNum,
       limit: limitNum,
@@ -915,15 +957,22 @@ export const getEnquiries = async (req: Request, res: Response) => {
 export const getEnquiryDetail = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+    const cleanId = String(id || '').trim();
+    const cleanIdClean = cleanId.replace(/-/g, '');
     const enquiry = await AdmissionEnquiry.findOne({
       $or: [
-        { _id: mongoose.isValidObjectId(id) ? id : null },
-        { enquiryId: id },
+        { _id: mongoose.isValidObjectId(cleanId) ? cleanId : null },
+        { enquiryId: cleanId },
+        { enquiryId: cleanIdClean },
       ],
     });
 
     if (!enquiry) {
       return res.status(404).json({ success: false, message: 'Enquiry record not found' });
+    }
+
+    if (enquiry.enquiryId) {
+      enquiry.enquiryId = enquiry.enquiryId.replace(/-/g, '');
     }
 
     const userObj = (req as any).user;

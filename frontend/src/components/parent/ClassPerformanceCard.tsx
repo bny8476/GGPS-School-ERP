@@ -54,6 +54,7 @@ const SUBJECTS_DATA: SubjectPerformance[] = [
 ];
 
 interface ClassPerformanceCardProps {
+  subjects?: SubjectPerformance[];
   onViewDetailsClick?: () => void;
   className?: string;
 }
@@ -88,10 +89,12 @@ function AnimatedPercentage({ value, delay }: { value: number; delay: number }) 
 }
 
 export default function ClassPerformanceCard({
+  subjects,
   onViewDetailsClick,
   className = "",
 }: ClassPerformanceCardProps) {
   const prefersReducedMotion = useReducedMotion();
+  const items = subjects && subjects.length > 0 ? subjects : SUBJECTS_DATA;
 
   return (
     <motion.div
@@ -131,7 +134,7 @@ export default function ClassPerformanceCard({
 
       {/* Four Evenly Spaced Performance Columns */}
       <div className="grid grid-cols-4 gap-2.5 sm:gap-3.5 pt-1 items-end justify-items-center relative z-10">
-        {SUBJECTS_DATA.map((subject, idx) => {
+        {items.map((subject, idx) => {
           const delay = 0.15 + idx * 0.1;
 
           return (

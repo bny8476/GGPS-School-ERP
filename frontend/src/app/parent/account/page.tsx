@@ -31,41 +31,35 @@ export default function ParentAccountPage() {
   const [showNewPassword, setShowNewPassword] = useState(false);
 
   const [form, setForm] = useState({
-    motherName: parentProfile?.motherName || "Latha",
-    fatherName: parentProfile?.fatherName || "Suresh",
-    primaryEmail: parentProfile?.primaryEmail || "parent@school.com",
-    motherContact: parentProfile?.motherContact || "+91 98765 43211",
-    fatherContact: parentProfile?.fatherContact || "+91 98765 43210",
-    whatsappNumber: parentProfile?.whatsappNumber || "+91 98765 43210",
-    address: parentProfile?.address || "House 42, Palm Meadows, Whitefield, Bengaluru, Karnataka 560066",
+    motherName: parentProfile?.motherName || "",
+    fatherName: parentProfile?.fatherName || "",
+    primaryEmail: parentProfile?.primaryEmail || "",
+    motherContact: parentProfile?.motherContact || "",
+    fatherContact: parentProfile?.fatherContact || "",
+    whatsappNumber: parentProfile?.whatsappNumber || "",
+    address: parentProfile?.address || "",
   });
+
+  React.useEffect(() => {
+    if (parentProfile) {
+      setForm({
+        motherName: parentProfile.motherName || "",
+        fatherName: parentProfile.fatherName || "",
+        primaryEmail: parentProfile.primaryEmail || "",
+        motherContact: parentProfile.motherContact || "",
+        fatherContact: parentProfile.fatherContact || "",
+        whatsappNumber: parentProfile.whatsappNumber || "",
+        address: parentProfile.address || "",
+      });
+    }
+  }, [parentProfile]);
 
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: "",
     newPassword: "",
   });
 
-  // Default children matching reference card if context is loading
-  const displayChildren = children && children.length > 0 ? children : [
-    {
-      _id: "c1",
-      firstName: "Aarav",
-      lastName: "Sharma",
-      grade: "LKG",
-      section: "Section A",
-      rollNumber: "14",
-      studentPhoto: "/aarav-profile-avatar.png",
-    },
-    {
-      _id: "c2",
-      firstName: "Ananya",
-      lastName: "Sharma",
-      grade: "UKG",
-      section: "Section B",
-      rollNumber: "07",
-      studentPhoto: "/hero-girl-student.png",
-    }
-  ];
+  const displayChildren = children && children.length > 0 ? children : [];
 
   const handleSaveContact = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -186,45 +180,49 @@ export default function ParentAccountPage() {
             </div>
 
             <div className="space-y-2.5">
-              {displayChildren.map((child: any, idx: number) => {
-                const childPhoto = idx === 0 
-                  ? (child.studentPhoto || "/aarav-profile-avatar.png")
-                  : (child.studentPhoto || "/hero-girl-student.png");
-                
-                return (
-                  <div
-                    key={child._id || idx}
-                    className="p-3 rounded-2xl bg-white dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 hover:border-blue-200 dark:hover:border-slate-700 shadow-[0_2px_10px_rgba(0,14,40,0.02)] transition-all flex items-center justify-between group"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-10 h-10 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 shrink-0">
-                        <AppImage
-                          src={childPhoto}
-                          alt={child.firstName}
-                          fallbackType="avatar"
-                          name={`${child.firstName} ${child.lastName || ""}`}
-                          className="w-full h-full object-cover"
-                        />
+              {displayChildren.length === 0 ? (
+                <div className="p-4 text-center rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
+                  <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                    No student profiles linked to this parent account yet.
+                  </p>
+                </div>
+              ) : (
+                displayChildren.map((child: any, idx: number) => {
+                  return (
+                    <div
+                      key={child._id || idx}
+                      className="p-3 rounded-2xl bg-white dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 hover:border-blue-200 dark:hover:border-slate-700 shadow-[0_2px_10px_rgba(0,14,40,0.02)] transition-all flex items-center justify-between group"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-10 h-10 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 shrink-0">
+                          <AppImage
+                            src={child.studentPhoto}
+                            alt={child.firstName}
+                            fallbackType="avatar"
+                            name={`${child.firstName} ${child.lastName || ""}`}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs font-black text-[#000E28] dark:text-white truncate">
+                            {child.firstName} {child.lastName || ""}
+                          </p>
+                          <p className="text-[11px] font-medium text-slate-400 dark:text-slate-500 truncate">
+                            {child.grade ? `${child.grade} - ${child.section || "A"}` : "Class not assigned"}
+                          </p>
+                        </div>
                       </div>
-                      <div className="min-w-0">
-                        <p className="text-xs font-black text-[#000E28] dark:text-white truncate">
-                          {child.firstName} {child.lastName || "Sharma"}
-                        </p>
-                        <p className="text-[11px] font-medium text-slate-400 dark:text-slate-500 truncate">
-                          {child.grade} - {child.section || "Section A"}
-                        </p>
-                      </div>
-                    </div>
 
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className="px-2.5 py-1 rounded-full bg-[#E5EEFF] dark:bg-[#0050CB]/25 text-[#0050CB] dark:text-blue-300 font-extrabold text-[10px]">
-                        Roll #{child.rollNumber || (idx === 0 ? "14" : "07")}
-                      </span>
-                      <ChevronRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-[#0050CB] group-hover:translate-x-0.5 transition-all" />
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="px-2.5 py-1 rounded-full bg-[#E5EEFF] dark:bg-[#0050CB]/25 text-[#0050CB] dark:text-blue-300 font-extrabold text-[10px]">
+                          {child.rollNumber ? `Roll #${child.rollNumber}` : (child.admissionNumber ? `ID #${child.admissionNumber}` : "Student")}
+                        </span>
+                        <ChevronRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-[#0050CB] group-hover:translate-x-0.5 transition-all" />
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })
+              )}
             </div>
           </div>
 

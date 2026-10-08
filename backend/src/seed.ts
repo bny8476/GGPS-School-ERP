@@ -225,11 +225,11 @@ const seedDB = async () => {
     // 9. Create Student (Record Only, not an auth account)
     console.log('Seeding Student & Academic Relationships...');
     const student = await Student.findOneAndUpdate(
-      { admissionNumber: 'SEED-001' },
+      { admissionNumber: { $in: ['SEED001', 'SEED-001'] } },
       {
         firstName: 'Sammy',
         lastName: 'Student',
-        admissionNumber: 'SEED-001',
+        admissionNumber: 'SEED001',
         grade: 'LKG',
         parentId: parentProfile._id,
         status: 'Active',
@@ -239,7 +239,7 @@ const seedDB = async () => {
       options
     );
     if (!student) throw new Error('Failed to create student');
-    console.log('✓ Student created: Sammy Student (SEED-001)');
+    console.log('✓ Student created: Sammy Student (SEED001)');
 
     // 10. StudentParent Junction (M:N Multi-Child / Multi-Guardian)
     await StudentParent.findOneAndUpdate(

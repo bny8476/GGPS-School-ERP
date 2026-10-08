@@ -22,12 +22,14 @@ import { apiClient } from "@/lib/apiClient";
 import {
   NAME_REGEX,
   EMAIL_REGEX,
+  PHONE_REGEX,
   TEN_DIGIT_PHONE_REGEX,
   preventNonAlphaKey,
   sanitizeNameInput,
   sanitizePhoneInput,
   handleNamePaste,
   handlePhonePaste,
+  validateDOB,
 } from "@/lib/validationUtils";
 
 const newApplicationSchema = z.object({
@@ -45,7 +47,12 @@ const newApplicationSchema = z.object({
     .min(1, "Last name is required")
     .max(50, "Last name cannot exceed 50 characters")
     .regex(NAME_REGEX, "Last name can contain only letters, spaces, hyphens, apostrophes, and periods (no numbers)"),
-  dateOfBirth: z.string().min(1, "Date of birth is required"),
+  dateOfBirth: z
+    .string()
+    .min(1, "Date of birth is required")
+    .refine((val) => validateDOB(val).valid, {
+      message: "Child must be at least 3 years old for school enrollment",
+    }),
   gender: z.enum(["Male", "Female", "Other"]),
   classApplied: z.string().min(1, "Class applied for is required"),
   academicYear: z.string(),
@@ -64,7 +71,7 @@ const newApplicationSchema = z.object({
     .string()
     .trim()
     .length(10, "Phone number must be exactly 10 digits")
-    .regex(TEN_DIGIT_PHONE_REGEX, "Enter a valid 10-digit mobile number starting with 6, 7, 8, or 9"),
+    .regex(PHONE_REGEX, "Enter a valid 10-digit mobile number starting with 6, 7, 8, or 9"),
   email: z
     .string()
     .trim()
@@ -83,7 +90,7 @@ const newApplicationSchema = z.object({
   // Additional Information
   medicalNotes: z.string().trim().optional(),
   notes: z.string().trim().optional(),
-  source: z.string(),
+  source: z.string().optional(),
   referral: z.string().trim().optional(),
 });
 
@@ -99,26 +106,13 @@ const CLASS_OPTIONS = [
   "Pre-KG",
   "LKG",
   "UKG",
-  "Class 1",
-  "Class 2",
-  "Class 3",
-  "Class 4",
-  "Class 5",
-  "Class 6",
-  "Class 7",
-  "Class 8",
-  "Class 9",
-  "Class 10",
-  "Class 11",
-  "Class 12",
 ];
 
 const REQUIRED_DOCS = [
   "Birth Certificate",
-  "Parent ID Proof (Aadhaar / Passport)",
-  "Address Proof (Utility Bill / Rent Agreement)",
-  "Previous School Records / Report Card",
-  "Transfer Certificate (TC)",
+  "Child's Passport-Size Photographs",
+  "Proof of Residential Address",
+  "Parent / Guardian Identification & Contact Details",
 ];
 
 export default function NewApplicationModal({
@@ -126,15 +120,15 @@ export default function NewApplicationModal({
   onClose,
   onSuccess,
 }: NewApplicationModalProps) {
-  const [activeTab, setActiveTab] = useState<1 | 2 | 3 | 4>(1);
+  const [activeTab, setActiveTab] = useState<1 | 2 | 3>(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedDocuments, setSelectedDocuments] = useState<Record<string, boolean>>({
     "Birth Certificate": true,
-    "Parent ID Proof (Aadhaar / Passport)": true,
-    "Address Proof (Utility Bill / Rent Agreement)": false,
-    "Previous School Records / Report Card": false,
-    "Transfer Certificate (TC)": false,
+    "Child's Passport-Size Photographs": true,
+    "Proof of Residential Address": true,
+    "Parent / Guardian Identification & Contact Details": true,
   });
+  const [uploadedFiles, setUploadedFiles] = useState<Record<string, { name: string; size: string; file?: File }>>({});
 
   const {
     register,
@@ -176,10 +170,65 @@ export default function NewApplicationModal({
   const childLastName = watch("childLastName");
   const parentName = watch("parentName");
   const phone = watch("phone");
+  const dateOfBirth = watch("dateOfBirth");
+
+  const maxDobDate = React.useMemo(() => {
+    const d = new Date();
+    d.setFullYear(d.getFullYear() - 3);
+    return d.toISOString().split("T")[0];
+  }, []);
+
+  const ageInfo = React.useMemo(() => {
+    if (!dateOfBirth) return null;
+    const dob = new Date(dateOfBirth);
+    if (isNaN(dob.getTime())) return null;
+    const now = new Date();
+    const diffMs = now.getTime() - dob.getTime();
+    if (diffMs < 0) return { text: "Future date", isEligible: false };
+    const years = Math.floor(diffMs / (1000 * 60 * 60 * 24 * 365.25));
+    const months = Math.floor((diffMs % (1000 * 60 * 60 * 24 * 365.25)) / (1000 * 60 * 60 * 24 * 30.4375));
+    return {
+      text: `${years}y ${months}m`,
+      isEligible: years >= 3,
+    };
+  }, [dateOfBirth]);
+
+  const handleFileUpload = (docName: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("File size cannot exceed 10MB");
+      return;
+    }
+
+    const sizeFormatted =
+      file.size > 1024 * 1024
+        ? `${(file.size / (1024 * 1024)).toFixed(1)} MB`
+        : `${Math.round(file.size / 1024)} KB`;
+
+    setUploadedFiles((prev) => ({
+      ...prev,
+      [docName]: { name: file.name, size: sizeFormatted, file },
+    }));
+    setSelectedDocuments((prev) => ({
+      ...prev,
+      [docName]: true,
+    }));
+    toast.success(`Attached ${file.name}`);
+  };
+
+  const removeUploadedFile = (docName: string) => {
+    setUploadedFiles((prev) => {
+      const next = { ...prev };
+      delete next[docName];
+      return next;
+    });
+  };
 
   if (!isOpen) return null;
 
-  const handleNextTab = async (nextStep: 1 | 2 | 3 | 4) => {
+  const handleNextTab = async (nextStep: 1 | 2 | 3) => {
     let isValid = true;
     if (activeTab === 1) {
       isValid = await trigger(["childFirstName", "childLastName", "dateOfBirth", "gender", "classApplied"]);
@@ -194,11 +243,20 @@ export default function NewApplicationModal({
   const onSubmit = async (data: NewApplicationFormData) => {
     setIsSubmitting(true);
     try {
-      const docPayload = Object.entries(selectedDocuments).map(([name, isChecked]) => ({
-        name,
-        status: isChecked ? "Uploaded" : "Pending",
-        url: isChecked ? `/docs/sample-${name.toLowerCase().replace(/[^a-z0-9]/g, "-")}.pdf` : undefined,
-      }));
+      const docPayload = REQUIRED_DOCS.map((name) => {
+        const fileInfo = uploadedFiles[name];
+        const isChecked = selectedDocuments[name] || !!fileInfo;
+        return {
+          name,
+          status: isChecked ? "Uploaded" : "Pending",
+          url: fileInfo
+            ? `/uploads/admissions/${encodeURIComponent(fileInfo.name)}`
+            : isChecked
+            ? `/docs/sample-${name.toLowerCase().replace(/[^a-z0-9]/g, "-")}.pdf`
+            : undefined,
+          remarks: fileInfo ? `Attached file: ${fileInfo.name} (${fileInfo.size})` : undefined,
+        };
+      });
 
       const payload = {
         childFirstName: data.childFirstName.trim(),
@@ -224,8 +282,8 @@ export default function NewApplicationModal({
         tcAvailable: data.tcAvailable,
         medicalNotes: data.medicalNotes?.trim() || undefined,
         notes: data.notes?.trim() || undefined,
-        source: data.source,
-        referral: data.referral?.trim() || undefined,
+        source: data.source || "Direct",
+        referral: undefined,
         documents: docPayload,
         stage: "Application",
         status: "Submitted",
@@ -243,7 +301,13 @@ export default function NewApplicationModal({
       onClose();
     } catch (err: any) {
       console.error("Application submission failed", err);
-      toast.error(err.message || "Failed to submit application. Please review fields.");
+      const msg = err.message || "Failed to submit application. Please review fields.";
+      toast.error(msg);
+      if (msg.toLowerCase().includes("mobile") || msg.toLowerCase().includes("phone") || msg.toLowerCase().includes("parent")) {
+        setActiveTab(2);
+      } else if (msg.toLowerCase().includes("child") || msg.toLowerCase().includes("birth") || msg.toLowerCase().includes("age") || msg.toLowerCase().includes("class")) {
+        setActiveTab(1);
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -280,9 +344,8 @@ export default function NewApplicationModal({
         <div className="px-6 py-2.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-[#001438]/30 flex items-center gap-2 overflow-x-auto custom-scrollbar">
           {[
             { step: 1, label: "1. Child Information", icon: User },
-            { step: 2, label: "2. Parent / Guardian", icon: Users },
-            { step: 3, label: "3. Academic History", icon: GraduationCap },
-            { step: 4, label: "4. Documents & Additional", icon: ShieldCheck },
+            { step: 2, label: "2. Parent Information", icon: Users },
+            { step: 3, label: "3. Documents & Additional Details", icon: ShieldCheck },
           ].map((tab) => {
             const Icon = tab.icon;
             const isCurrent = activeTab === tab.step;
@@ -365,18 +428,39 @@ export default function NewApplicationModal({
 
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                 <div className="sm:col-span-2">
-                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    Date of Birth <span className="text-[#FF690C]">*</span>
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="font-bold text-slate-700 dark:text-slate-300">
+                      Date of Birth <span className="text-[#FF690C]">*</span>
+                    </label>
+                    {ageInfo && (
+                      <span
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                          ageInfo.isEligible
+                            ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
+                            : "bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-200 dark:border-rose-800"
+                        }`}
+                      >
+                        Age: {ageInfo.text}
+                      </span>
+                    )}
+                  </div>
                   <input
                     type="date"
                     {...register("dateOfBirth")}
-                    max={new Date().toISOString().split("T")[0]}
-                    className={`w-full h-9 px-3 rounded-xl bg-slate-50 dark:bg-[#07152F] border text-xs text-[#000E28] dark:text-white ${
-                      errors.dateOfBirth ? "border-rose-400" : "border-slate-200 dark:border-slate-700"
+                    max={maxDobDate}
+                    className={`w-full h-9 px-3 rounded-xl bg-slate-50 dark:bg-[#07152F] border text-xs text-[#000E28] dark:text-white transition-all ${
+                      errors.dateOfBirth ? "border-rose-400 focus:ring-1 focus:ring-rose-400" : "border-slate-200 dark:border-slate-700"
                     }`}
                   />
-                  {errors.dateOfBirth && <p className="text-[11px] text-rose-500 font-semibold mt-0.5">{errors.dateOfBirth.message}</p>}
+                  <p className="text-[10.5px] text-slate-400 dark:text-slate-500 mt-1">
+                    Child must be at least 3 years old for school enrollment.
+                  </p>
+                  {errors.dateOfBirth && (
+                    <p className="text-[11px] text-rose-500 font-semibold mt-1 flex items-center gap-1">
+                      <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                      {errors.dateOfBirth.message}
+                    </p>
+                  )}
                 </div>
 
                 <div className="sm:col-span-1">
@@ -426,8 +510,8 @@ export default function NewApplicationModal({
           {/* STEP 2: PARENT INFO */}
           {activeTab === 2 && (
             <div className="space-y-4 animate-in fade-in duration-200">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="sm:col-span-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="sm:col-span-2">
                   <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
                     Primary Parent / Guardian Name <span className="text-[#FF690C]">*</span>
                   </label>
@@ -470,19 +554,6 @@ export default function NewApplicationModal({
                     className="w-full h-9 px-3 rounded-xl bg-slate-50 dark:bg-[#07152F] border border-slate-200 dark:border-slate-700 text-xs text-[#000E28] dark:text-white"
                   />
                 </div>
-
-                <div>
-                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    Guardian Name (if applicable)
-                  </label>
-                  <input
-                    type="text"
-                    {...register("guardianName")}
-                    onKeyDown={preventNonAlphaKey}
-                    placeholder="Guardian name"
-                    className="w-full h-9 px-3 rounded-xl bg-slate-50 dark:bg-[#07152F] border border-slate-200 dark:border-slate-700 text-xs text-[#000E28] dark:text-white"
-                  />
-                </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -496,12 +567,18 @@ export default function NewApplicationModal({
                     value={phone}
                     onChange={(e) => setValue("phone", sanitizePhoneInput(e.target.value), { shouldValidate: true })}
                     onPaste={(e) => handlePhonePaste(e, (v) => setValue("phone", v, { shouldValidate: true }))}
-                    placeholder="10-digit mobile"
-                    className={`w-full h-9 px-3 rounded-xl bg-slate-50 dark:bg-[#07152F] border text-xs text-[#000E28] dark:text-white font-mono ${
-                      errors.phone ? "border-rose-400" : "border-slate-200 dark:border-slate-700"
+                    placeholder="e.g. 9876543210 (starts with 6-9)"
+                    className={`w-full h-9 px-3 rounded-xl bg-slate-50 dark:bg-[#07152F] border text-xs text-[#000E28] dark:text-white font-mono transition-all ${
+                      errors.phone ? "border-rose-400 focus:ring-1 focus:ring-rose-400" : "border-slate-200 dark:border-slate-700"
                     }`}
                   />
-                  {errors.phone && <p className="text-[11px] text-rose-500 font-semibold mt-0.5">{errors.phone.message}</p>}
+                  {errors.phone ? (
+                    <p className="text-[11px] text-rose-500 font-semibold mt-0.5">{errors.phone.message}</p>
+                  ) : (
+                    <p className="text-[10.5px] text-slate-400 dark:text-slate-500 mt-0.5">
+                      Must be a valid 10-digit mobile number starting with 6, 7, 8, or 9
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -534,36 +611,148 @@ export default function NewApplicationModal({
             </div>
           )}
 
-          {/* STEP 3: ACADEMIC HISTORY */}
+          {/* STEP 3: DOCUMENTS & ADDITIONAL DETAILS */}
           {activeTab === 3 && (
             <div className="space-y-4 animate-in fade-in duration-200">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="sm:col-span-2">
-                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    Previous School Attended
-                  </label>
-                  <input
-                    type="text"
-                    {...register("previousSchool")}
-                    placeholder="e.g. St. Xavier International Academy"
-                    className="w-full h-9 px-3 rounded-xl bg-slate-50 dark:bg-[#07152F] border border-slate-200 dark:border-slate-700 text-xs text-[#000E28] dark:text-white"
-                  />
-                </div>
+              {/* Documents Checklist & Upload */}
+              <div>
+                <h4 className="font-bold text-slate-800 dark:text-white mb-2 flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4 text-[#0050CB]" />
+                  <span>Mandatory Documents & Upload</span>
+                </h4>
+                <div className="space-y-2.5">
+                  {REQUIRED_DOCS.map((docName) => {
+                    const fileInfo = uploadedFiles[docName];
+                    const isChecked = selectedDocuments[docName] || !!fileInfo;
 
-                <div>
-                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    Previous Class / Grade
-                  </label>
-                  <input
-                    type="text"
-                    {...register("previousClass")}
-                    placeholder="e.g. Nursery / Class 1"
-                    className="w-full h-9 px-3 rounded-xl bg-slate-50 dark:bg-[#07152F] border border-slate-200 dark:border-slate-700 text-xs text-[#000E28] dark:text-white"
-                  />
+                    return (
+                      <div
+                        key={docName}
+                        className={`p-3.5 rounded-xl border transition-all ${
+                          fileInfo
+                            ? "bg-emerald-50/40 dark:bg-emerald-950/20 border-emerald-300 dark:border-emerald-800"
+                            : isChecked
+                            ? "bg-white dark:bg-[#000E28] border-blue-200 dark:border-blue-900/60"
+                            : "bg-slate-50 dark:bg-[#07152F] border-slate-200 dark:border-slate-800"
+                        }`}
+                      >
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                          <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={(e) =>
+                                setSelectedDocuments((prev) => ({
+                                  ...prev,
+                                  [docName]: e.target.checked,
+                                }))
+                              }
+                              className="w-4 h-4 rounded text-[#0050CB] focus:ring-[#0050CB]"
+                            />
+                            <div>
+                              <span className="font-bold text-slate-800 dark:text-slate-100 text-xs block">
+                                {docName} <span className="text-[#FF690C]">*</span>
+                              </span>
+                              <span className="text-[10.5px] text-slate-400 dark:text-slate-500">
+                                Accepted: PDF, JPG, PNG (Max 10MB)
+                              </span>
+                            </div>
+                          </label>
+
+                          <div className="flex items-center gap-2 self-start sm:self-center">
+                            {fileInfo ? (
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-lg bg-emerald-100/70 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 border border-emerald-300/50 dark:border-emerald-700/50">
+                                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                                  <span className="max-w-[140px] truncate">{fileInfo.name}</span>
+                                  <span className="text-[9.5px] opacity-75">({fileInfo.size})</span>
+                                </span>
+                                <label className="cursor-pointer inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-semibold transition-colors">
+                                  <Upload className="w-3 h-3 text-[#0050CB]" />
+                                  <span>Change</span>
+                                  <input
+                                    type="file"
+                                    accept=".pdf,.jpg,.jpeg,.png"
+                                    className="hidden"
+                                    onChange={(e) => handleFileUpload(docName, e)}
+                                  />
+                                </label>
+                                <button
+                                  type="button"
+                                  onClick={() => removeUploadedFile(docName)}
+                                  className="p-1 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                                  title="Remove attached file"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2">
+                                <span
+                                  className={`text-[10px] font-bold px-2 py-0.5 rounded ${
+                                    isChecked
+                                      ? "bg-[#E5EEFF] text-[#0050CB] dark:bg-[#0050CB]/20 dark:text-[#38BDF8]"
+                                      : "bg-slate-100 dark:bg-slate-800 text-slate-500"
+                                  }`}
+                                >
+                                  {isChecked ? "Pending Upload" : "Not Provided"}
+                                </span>
+                                <label className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#0050CB] hover:bg-[#0041A8] text-white text-xs font-bold transition-all shadow-xs shadow-[#0050CB]/20">
+                                  <Upload className="w-3.5 h-3.5" />
+                                  <span>Upload Document</span>
+                                  <input
+                                    type="file"
+                                    accept=".pdf,.jpg,.jpeg,.png"
+                                    className="hidden"
+                                    onChange={(e) => handleFileUpload(docName, e)}
+                                  />
+                                </label>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
+              {/* Previous Playschool / Daycare (Optional for Transfers) */}
+              <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-[#07152F]/40 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-bold text-slate-800 dark:text-white flex items-center gap-1.5 text-xs">
+                    <GraduationCap className="w-4 h-4 text-[#0050CB]" />
+                    <span>Previous Playschool / Daycare (Optional for Transfers)</span>
+                  </h4>
+                  <span className="text-[10px] text-slate-400 font-medium">Leave blank if first-time schooling</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      Previous Playschool / Center
+                    </label>
+                    <input
+                      type="text"
+                      {...register("previousSchool")}
+                      placeholder="e.g. Little Stars Montessori / Daycare"
+                      className="w-full h-9 px-3 rounded-xl bg-white dark:bg-[#000E28] border border-slate-200 dark:border-slate-700 text-xs text-[#000E28] dark:text-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      Previous Level / Class
+                    </label>
+                    <input
+                      type="text"
+                      {...register("previousClass")}
+                      placeholder="e.g. Playgroup / Pre-KG"
+                      className="w-full h-9 px-3 rounded-xl bg-white dark:bg-[#000E28] border border-slate-200 dark:border-slate-700 text-xs text-[#000E28] dark:text-white"
+                    />
+                  </div>
+                </div>
+
                 <div>
                   <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
                     Previous Academic Year
@@ -571,65 +760,13 @@ export default function NewApplicationModal({
                   <input
                     type="text"
                     {...register("previousAcademicYear")}
-                    placeholder="2025-2026"
-                    className="w-full h-9 px-3 rounded-xl bg-slate-50 dark:bg-[#07152F] border border-slate-200 dark:border-slate-700 text-xs text-[#000E28] dark:text-white font-mono"
+                    placeholder="2025–2026"
+                    className="w-full h-9 px-3 rounded-xl bg-white dark:bg-[#000E28] border border-slate-200 dark:border-slate-700 text-xs text-[#000E28] dark:text-white font-mono"
                   />
                 </div>
-
-                <div className="pt-5">
-                  <label className="flex items-center gap-2 cursor-pointer p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#07152F]">
-                    <input
-                      type="checkbox"
-                      {...register("tcAvailable")}
-                      className="w-4 h-4 rounded text-[#0050CB] focus:ring-[#0050CB]"
-                    />
-                    <span className="font-bold text-slate-700 dark:text-slate-200">
-                      Transfer Certificate (TC) Available
-                    </span>
-                  </label>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* STEP 4: DOCUMENTS & ADDITIONAL */}
-          {activeTab === 4 && (
-            <div className="space-y-4 animate-in fade-in duration-200">
-              <div>
-                <h4 className="font-bold text-slate-800 dark:text-white mb-2 flex items-center gap-1.5">
-                  <ShieldCheck className="w-4 h-4 text-[#0050CB]" />
-                  <span>Mandatory Documents Checklist</span>
-                </h4>
-                <div className="space-y-2 border border-slate-200 dark:border-slate-700 rounded-xl p-3 bg-slate-50/50 dark:bg-[#07152F]/50">
-                  {REQUIRED_DOCS.map((docName) => (
-                    <label
-                      key={docName}
-                      className="flex items-center justify-between p-2 rounded-lg bg-white dark:bg-[#000E28] border border-slate-200 dark:border-slate-800 cursor-pointer hover:border-[#0050CB]/40 transition-colors"
-                    >
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={!!selectedDocuments[docName]}
-                          onChange={(e) =>
-                            setSelectedDocuments((prev) => ({
-                              ...prev,
-                              [docName]: e.target.value === "on" ? e.target.checked : false,
-                            }))
-                          }
-                          className="w-4 h-4 rounded text-[#0050CB] focus:ring-[#0050CB]"
-                        />
-                        <span className="font-semibold text-slate-700 dark:text-slate-200">{docName}</span>
-                      </div>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
-                        selectedDocuments[docName] ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"
-                      }`}>
-                        {selectedDocuments[docName] ? "Uploaded / Attached" : "Pending Submission"}
-                      </span>
-                    </label>
-                  ))}
-                </div>
               </div>
 
+              {/* Medical & Special Notes */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
@@ -652,36 +789,6 @@ export default function NewApplicationModal({
                     rows={2}
                     placeholder="Special educator requirements, sibling discount..."
                     className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-[#07152F] border border-slate-200 dark:border-slate-700 text-xs text-[#000E28] dark:text-white resize-none"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    Application Source
-                  </label>
-                  <select
-                    {...register("source")}
-                    className="w-full h-9 px-2 rounded-xl bg-slate-50 dark:bg-[#07152F] border border-slate-200 dark:border-slate-700 text-xs text-[#000E28] dark:text-white font-bold"
-                  >
-                    <option value="Direct">Direct Campus Office</option>
-                    <option value="Website">School Portal</option>
-                    <option value="Referral">Existing Parent Referral</option>
-                    <option value="Social Media">Social Campaign</option>
-                    <option value="Other">Other</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    Referral Name / ID
-                  </label>
-                  <input
-                    type="text"
-                    {...register("referral")}
-                    placeholder="e.g. Sibling Admission No or Teacher Name"
-                    className="w-full h-9 px-3 rounded-xl bg-slate-50 dark:bg-[#07152F] border border-slate-200 dark:border-slate-700 text-xs text-[#000E28] dark:text-white"
                   />
                 </div>
               </div>
@@ -712,7 +819,7 @@ export default function NewApplicationModal({
                 Cancel
               </button>
 
-              {activeTab < 4 ? (
+              {activeTab < 3 ? (
                 <button
                   type="button"
                   onClick={() => handleNextTab((activeTab + 1) as any)}

@@ -26,6 +26,31 @@ interface FeePaymentModalProps {
   onPaymentSuccess?: () => void;
 }
 
+const loadRazorpayScript = (): Promise<boolean> => {
+  return new Promise((resolve) => {
+    if (typeof window === "undefined") {
+      resolve(false);
+      return;
+    }
+    if ((window as any).Razorpay) {
+      resolve(true);
+      return;
+    }
+    const existing = document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]');
+    if (existing) {
+      existing.addEventListener("load", () => resolve(true));
+      existing.addEventListener("error", () => resolve(false));
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
+
 export default function FeePaymentModal({
   isOpen,
   onClose,
@@ -72,61 +97,126 @@ export default function FeePaymentModal({
 
   const activeInv = invoices.find((i) => i.id === selectedInvoice) || defaultInvoice || invoices[0];
 
-  const handleStartProcessing = () => {
+  const handleStartProcessing = async () => {
     setStep(4);
-    // Real payment gateway transaction integration
-    setTimeout(async () => {
-      try {
-        const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-        const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
-        const authHeaders: Record<string, string> = {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        };
+    try {
+      // 1. Load Razorpay Checkout SDK
+      const isLoaded = await loadRazorpayScript();
+      if (!isLoaded) {
+        toast.error("Could not load Razorpay payment gateway. Please check your internet connection.");
+        setStep(3);
+        return;
+      }
 
-        // 1. Create verified payment order from backend
-        let gatewayOrderId = `ORD_${Date.now()}`;
-        let gatewaySignature = "";
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+      const authHeaders: Record<string, string> = {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      };
 
-        const orderRes = await authFetch(`${apiBase}/api/v1/finance/fees/${activeInv.id}/create-payment-order`, {
-          method: "POST",
-          headers: authHeaders,
-          credentials: "include",
-          body: JSON.stringify({ amount: activeInv.amount }),
-        }).catch(() => null);
+      // 2. Create authenticated payment order on school backend
+      const orderRes = await authFetch(`${apiBase}/api/v1/finance/fees/${activeInv.id}/create-payment-order`, {
+        method: "POST",
+        headers: authHeaders,
+        credentials: "include",
+        body: JSON.stringify({ amount: activeInv.amount }),
+      });
 
-        if (orderRes && orderRes.ok) {
-          const orderJson = await orderRes.json();
-          if (orderJson?.data) {
-            gatewayOrderId = orderJson.data.gatewayOrderId;
-            gatewaySignature = orderJson.data.orderSignature;
+      if (!orderRes.ok) {
+        const errJson = await orderRes.json().catch(() => null);
+        throw new Error(errJson?.message || "Failed to initiate payment order");
+      }
+
+      const orderJson = await orderRes.json();
+      const orderData = orderJson?.data;
+      if (!orderData?.gatewayOrderId) {
+        throw new Error("Invalid order received from payment server");
+      }
+
+      const razorpayKey =
+        orderData.keyId ||
+        process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ||
+        "rzp_test_SpEf15KaCAj2po";
+
+      // 3. Open official Razorpay Checkout modal
+      const options = {
+        key: razorpayKey,
+        amount: orderData.amountInPaise || Math.round(activeInv.amount * 100),
+        currency: orderData.currency || "INR",
+        name: "GGPS School ERP",
+        description: `${activeInv.title} - ${childName}`,
+        order_id: orderData.gatewayOrderId,
+        handler: async function (response: any) {
+          try {
+            setStep(4);
+            toast.loading("Verifying payment with school finance gateway...", { id: "razorpay-confirm" });
+
+            // 4. Settle fee on backend with verified cryptographic signature
+            const payRes = await authFetch(`${apiBase}/api/v1/finance/fees/${activeInv.id}/pay`, {
+              method: "POST",
+              headers: authHeaders,
+              credentials: "include",
+              body: JSON.stringify({
+                amount: activeInv.amount,
+                paymentMethod: "RAZORPAY / ONLINE",
+                gatewayOrderId: response.razorpay_order_id || orderData.gatewayOrderId,
+                gatewayPaymentId: response.razorpay_payment_id,
+                gatewaySignature: response.razorpay_signature,
+                signature: response.razorpay_signature,
+              }),
+            });
+
+            toast.dismiss("razorpay-confirm");
+
+            if (!payRes.ok) {
+              const payErr = await payRes.json().catch(() => null);
+              throw new Error(payErr?.message || "Payment signature verification failed");
+            }
+
+            const payJson = await payRes.json();
+            const genReceipt =
+              payJson?.receipt?.receiptNumber || `GGPS-REC-${Date.now().toString().slice(-6)}`;
+
+            setReceiptNumber(genReceipt);
+            setStep(5);
+            if (onPaymentSuccess) onPaymentSuccess();
+            toast.success("Payment verified and confirmed via Razorpay!");
+          } catch (err: any) {
+            toast.dismiss("razorpay-confirm");
+            toast.error(err?.message || "Payment confirmation failed. Please contact school finance office.");
+            setStep(3);
           }
-        }
+        },
+        prefill: {
+          name: childName,
+        },
+        notes: {
+          feeId: activeInv.id,
+          studentName: childName,
+          invoice: activeInv.title,
+        },
+        theme: {
+          color: "#0050CB",
+        },
+        modal: {
+          ondismiss: function () {
+            toast("Razorpay checkout closed by user");
+            setStep(3);
+          },
+        },
+      };
 
-        const gatewayPaymentId = `PAY_${Date.now()}_${Math.floor(Math.random() * 9000 + 1000)}`;
-
-        // 2. Settle fee with verified gateway signature
-        const payRes = await authFetch(`${apiBase}/api/v1/finance/fees/${activeInv.id}/pay`, {
-          method: "POST",
-          headers: authHeaders,
-          credentials: "include",
-          body: JSON.stringify({
-            amount: activeInv.amount,
-            paymentMethod: paymentMethod.toUpperCase(),
-            gatewayOrderId,
-            gatewayPaymentId,
-            gatewaySignature,
-            signature: gatewaySignature,
-          }),
-        }).catch(() => null);
-      } catch (_) {}
-
-      const genReceipt = `GGPS-REC-${Date.now().toString().slice(-6)}`;
-      setReceiptNumber(genReceipt);
-      setStep(5);
-      if (onPaymentSuccess) onPaymentSuccess();
-      toast.success("Payment confirmed successfully!");
-    }, 2200);
+      const rzp = new (window as any).Razorpay(options);
+      rzp.on("payment.failed", function (response: any) {
+        toast.error(`Payment failed: ${response.error?.description || "Transaction declined"}`);
+        setStep(3);
+      });
+      rzp.open();
+    } catch (err: any) {
+      toast.error(err?.message || "Could not launch Razorpay checkout");
+      setStep(3);
+    }
   };
 
   const handleDownloadReceipt = () => {
@@ -300,15 +390,21 @@ Authorized By:  GGPS Finance Directorate
           {/* STEP 3: Payment Method */}
           {step === 3 && (
             <div className="space-y-4">
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Select your preferred family payment channel:
-              </p>
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Select preferred payment mode:
+                </p>
+                <span className="text-[10.5px] font-bold px-2.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/60 text-[#0050CB] dark:text-blue-300 border border-blue-200 dark:border-blue-900/40 flex items-center gap-1">
+                  <ShieldCheck className="w-3 h-3 text-[#0050CB]" />
+                  Razorpay Secured
+                </span>
+              </div>
 
               <div className="space-y-2.5">
                 {[
-                  { id: "upi", name: "Instant UPI / QR Code", desc: "Google Pay, PhonePe, Paytm, BHIM", icon: Smartphone },
-                  { id: "card", name: "Debit / Credit Card", desc: "Visa, MasterCard, RuPay (Zero surcharge)", icon: CreditCard },
-                  { id: "netbanking", name: "Net Banking", desc: "All major Indian banks supported", icon: Building2 },
+                  { id: "upi", name: "Instant UPI & QR Code", desc: "Google Pay, PhonePe, Paytm, BHIM, UPI ID", icon: Smartphone },
+                  { id: "card", name: "Debit & Credit Cards", desc: "Visa, MasterCard, RuPay, Diners (Zero surcharge)", icon: CreditCard },
+                  { id: "netbanking", name: "Net Banking & Wallets", desc: "All 50+ Indian commercial & private banks", icon: Building2 },
                 ].map((method) => {
                   const Icon = method.icon;
                   return (
@@ -316,7 +412,7 @@ Authorized By:  GGPS Finance Directorate
                       key={method.id}
                       className={`flex items-center justify-between p-3.5 rounded-2xl border cursor-pointer transition-all ${
                         paymentMethod === method.id
-                          ? "border-[#0050CB] bg-[#E5EEFF]/40 dark:bg-[#0050CB]/15 shadow-sm"
+                          ? "border-[#0050CB] bg-[#E5EEFF]/50 dark:bg-[#0050CB]/15 shadow-xs"
                           : "border-slate-200 dark:border-slate-800 hover:border-slate-300"
                       }`}
                     >
@@ -326,7 +422,7 @@ Authorized By:  GGPS Finance Directorate
                           name="method"
                           checked={paymentMethod === method.id}
                           onChange={() => setPaymentMethod(method.id as any)}
-                          className="accent-[#0050CB] w-4 h-4"
+                          className="accent-[#0050CB] w-4 h-4 cursor-pointer"
                         />
                         <div>
                           <p className="text-xs font-bold text-[#000E28] dark:text-white flex items-center gap-2">
@@ -344,15 +440,16 @@ Authorized By:  GGPS Finance Directorate
               <div className="pt-3 flex items-center justify-between">
                 <button
                   onClick={() => setStep(2)}
-                  className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-1.5"
+                  className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-1.5 cursor-pointer"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" /> Back
                 </button>
                 <button
                   onClick={handleStartProcessing}
-                  className="px-6 py-2.5 rounded-xl bg-[#0050CB] hover:bg-[#0040A5] text-white text-xs font-bold flex items-center gap-2 transition-all shadow-md"
+                  className="px-6 py-2.5 rounded-xl bg-[#0050CB] hover:bg-[#0040A5] text-white text-xs font-bold flex items-center gap-2 transition-all shadow-md cursor-pointer"
                 >
-                  Pay ₹{activeInv.amount.toLocaleString()} Now
+                  <ShieldCheck className="w-4 h-4" />
+                  Pay ₹{activeInv.amount.toLocaleString()} with Razorpay
                 </button>
               </div>
             </div>

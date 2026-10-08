@@ -164,7 +164,7 @@ export const getParents = async (req: Request, res: Response): Promise<void> => 
             grade: s.grade || 'LKG',
             section: s.section || 'A',
             studentId: s.studentId || s.admissionNumber || 'GGPS2026LKG001',
-            admissionNumber: s.admissionNumber || s.studentId || 'GGPS2026Admin001',
+            admissionNumber: String(s.admissionNumber || s.studentId || 'GGPS2026Admin001').replace(/-/g, ''),
           });
         });
 
@@ -179,7 +179,7 @@ export const getParents = async (req: Request, res: Response): Promise<void> => 
               grade: s.grade || 'LKG',
               section: s.section || 'A',
               studentId: s.studentId || s.admissionNumber || 'GGPS2026LKG001',
-              admissionNumber: s.admissionNumber || s.studentId || 'GGPS2026Admin001',
+              admissionNumber: String(s.admissionNumber || s.studentId || 'GGPS2026Admin001').replace(/-/g, ''),
             });
           }
         });
@@ -438,7 +438,7 @@ export const linkChildToParent = async (req: Request, res: Response): Promise<vo
         student = await Student.create({
           firstName: req.body.firstName || 'Aarav',
           lastName: req.body.lastName || 'Sharma',
-          admissionNumber: req.body.admissionNumber || 'GGPS2026Admin001',
+          admissionNumber: req.body.admissionNumber ? String(req.body.admissionNumber).replace(/-/g, '') : 'GGPS2026Admin001',
           studentId: req.body.studentId || 'GGPS2026LKG001',
           grade: req.body.grade || 'LKG',
           status: 'Active',

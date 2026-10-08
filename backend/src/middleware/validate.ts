@@ -25,8 +25,8 @@ export const validate = (schema: ZodSchema) => {
           };
         });
 
-        // Compose user-friendly summary without technical jargon
-        const summaryMessage = fieldErrors.map((f) => f.message).join('. ');
+        // Compose user-friendly summary without technical jargon (deduplicated)
+        const summaryMessage = [...new Set(fieldErrors.map((f) => f.message))].join('. ');
 
         res.status(400).json({
           success: false,

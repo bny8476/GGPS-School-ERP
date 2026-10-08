@@ -40,8 +40,8 @@ const MASTER_EVENTS: SchoolEvent[] = [
     category: "Sports & Fitness",
     categoryBg: "bg-[#E8FAF0] dark:bg-emerald-950/60 text-[#10B981] dark:text-emerald-300",
     dotColor: "bg-emerald-500",
-    dateKey: "2026-09-10",
-    date: "Thu, 10 Sep 2026",
+    dateKey: "2026-10-24",
+    date: "Sat, 24 Oct 2026",
     time: "08:30 AM – 01:00 PM",
     location: "GGPS Central Athletic Stadium",
     audience: "All Parents & Students",
@@ -63,7 +63,7 @@ const MASTER_EVENTS: SchoolEvent[] = [
     audience: "Parents & Students (Grades 6-12)",
     description: "Students compete in traditional Indian classical vocals, instrumental accompaniments, and choral ensemble performances.",
     image: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&auto=format&fit=crop&q=80",
-    status: "upcoming",
+    status: "past",
   },
   {
     id: "ev-sep-16",
@@ -78,7 +78,7 @@ const MASTER_EVENTS: SchoolEvent[] = [
     audience: "All Parents & Students",
     description: "Celebrating national linguistic heritage with student poetry recitations, stage plays, and literary honors.",
     image: "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=600&auto=format&fit=crop&q=80",
-    status: "upcoming",
+    status: "past",
   },
   {
     id: "ev-1",
@@ -86,8 +86,8 @@ const MASTER_EVENTS: SchoolEvent[] = [
     category: "Parent Engagement",
     categoryBg: "bg-[#F3EBFD] dark:bg-purple-950/60 text-[#7C3AED] dark:text-purple-300",
     dotColor: "bg-[#0050CB]",
-    dateKey: "2026-09-24",
-    date: "Sat, 24 Sep 2026",
+    dateKey: "2026-10-17",
+    date: "Sat, 17 Oct 2026",
     time: "09:00 AM – 05:30 PM",
     location: "Pre-Primary & Primary Wings",
     audience: "Parents Only",
@@ -108,7 +108,7 @@ const MASTER_EVENTS: SchoolEvent[] = [
     audience: "All Parents & Students",
     description: "Engaging debates on modern technology ethics, environmental conservation, and civic responsibility.",
     image: "https://images.unsplash.com/photo-1475721027785-f74eccf877e2?w=600&auto=format&fit=crop&q=80",
-    status: "upcoming",
+    status: "past",
   },
   {
     id: "ev-sep-27",
@@ -123,7 +123,7 @@ const MASTER_EVENTS: SchoolEvent[] = [
     audience: "Parents, Faculty & Students",
     description: "Promoting cardio fitness and healthy outdoor lifestyle with a scenic 3km jog and family yoga stretch session.",
     image: "/sports-day-track.jpg",
-    status: "upcoming",
+    status: "past",
   },
   {
     id: "ev-sep-29",
@@ -138,7 +138,7 @@ const MASTER_EVENTS: SchoolEvent[] = [
     audience: "Enrolled Drama Students",
     description: "Auditions for the annual school musical production with guest theatre directors and voice coaches.",
     image: "https://images.unsplash.com/photo-1469488865564-c2de10f69f96?w=600&auto=format&fit=crop&q=80",
-    status: "upcoming",
+    status: "past",
   },
   {
     id: "ev-sep-30",
@@ -153,7 +153,7 @@ const MASTER_EVENTS: SchoolEvent[] = [
     audience: "Grades 4 through 10",
     description: "Speed math tricks, geometric puzzle challenges, and junior logic tests celebrating mathematical excellence.",
     image: "https://images.unsplash.com/photo-1509228468518-180dd4864904?w=600&auto=format&fit=crop&q=80",
-    status: "upcoming",
+    status: "past",
   },
   {
     id: "ev-2",
@@ -168,7 +168,7 @@ const MASTER_EVENTS: SchoolEvent[] = [
     audience: "All Parents & Students",
     description: "Our young scientists showcase their innovative ideas and creative projects. All parents are invited to explore the interactive booths.",
     image: "https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=600&auto=format&fit=crop&q=80",
-    status: "upcoming",
+    status: "past",
   },
   {
     id: "ev-oct-15",
@@ -198,6 +198,21 @@ const MASTER_EVENTS: SchoolEvent[] = [
     audience: "All Parents & Students",
     description: "Join us for a day of joy, culture and togetherness as we celebrate the festival of lights with musical performances and sweet distribution.",
     image: "https://images.unsplash.com/photo-1605656816944-971cd5c1407f?w=600&auto=format&fit=crop&q=80",
+    status: "upcoming",
+  },
+  {
+    id: "ev-nov-14",
+    title: "Children's Day Grand Carnival & Cultural Gala",
+    category: "Cultural",
+    categoryBg: "bg-[#FFF2E7] dark:bg-amber-950/60 text-[#FF690C] dark:text-amber-300",
+    dotColor: "bg-purple-500",
+    dateKey: "2026-11-14",
+    date: "Sat, 14 Nov 2026",
+    time: "09:30 AM – 03:30 PM",
+    location: "Main School Grounds & Amphitheatre",
+    audience: "All Parents & Students",
+    description: "Annual Children's Day fiesta featuring student stage performances, science fun stalls, food kiosks, and interactive parent-child games.",
+    image: "https://images.unsplash.com/photo-1511578314322-379afb476865?w=600&auto=format&fit=crop&q=80",
     status: "upcoming",
   },
   {
@@ -247,13 +262,24 @@ export default function SchoolEventsPage() {
   const [activeTab, setActiveTab] = useState<"Upcoming" | "All Events" | "Past Events">("Upcoming");
   const [currentYear, setCurrentYear] = useState<number>(() => new Date().getFullYear());
   const [currentMonth, setCurrentMonth] = useState<number>(() => new Date().getMonth());
-  const [selectedDateKey, setSelectedDateKey] = useState<string | null>(() => {
+
+  const todayKey = useMemo(() => {
     const d = new Date();
     const y = d.getFullYear();
     const m = String(d.getMonth() + 1).padStart(2, "0");
     const day = String(d.getDate()).padStart(2, "0");
     return `${y}-${m}-${day}`;
-  });
+  }, []);
+
+  const todayDisplayStr = useMemo(() => {
+    return new Date().toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  }, []);
+
+  const [selectedDateKey, setSelectedDateKey] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [stayUpdatedEnabled, setStayUpdatedEnabled] = useState(true);
 
@@ -415,15 +441,22 @@ export default function SchoolEventsPage() {
   };
 
   const handleResetToCurrent = () => {
-    setCurrentYear(2026);
-    setCurrentMonth(8); // September
-    setSelectedDateKey("2026-09-10");
+    const now = new Date();
+    setCurrentYear(now.getFullYear());
+    setCurrentMonth(now.getMonth());
+    setSelectedDateKey(todayKey);
     setSelectedCategory(null);
-    toast.success("Returned to September 2026");
+    toast.success(`Jumped to today (${todayDisplayStr})`);
   };
 
   // Day click handler
   const handleDayClick = (item: typeof calendarDays[0]) => {
+    // Disable clicks on previous completed dates
+    if (item.dateKey < todayKey) {
+      toast("Past dates cannot be selected");
+      return;
+    }
+
     if (selectedDateKey === item.dateKey) {
       setSelectedDateKey(null);
       toast("Cleared date filter");
@@ -452,44 +485,53 @@ export default function SchoolEventsPage() {
     return eventsByDate[selectedDateKey] || [];
   }, [selectedDateKey, eventsByDate]);
 
-  // Filtered upcoming events for the 3-column grid
+  // Filtered upcoming events for the 3-column grid (only events from today onwards)
   const filteredUpcomingCards = useMemo(() => {
     return MASTER_EVENTS.filter((ev) => {
-      if (ev.status !== "upcoming") return false;
+      const isUpcoming = ev.dateKey >= todayKey;
+      if (!isUpcoming) return false;
       if (ev.isFeatured) return false; // Featured is shown in hero card
       if (selectedCategory && ev.category !== selectedCategory) return false;
       if (selectedDateKey && ev.dateKey !== selectedDateKey) return false;
       return true;
     });
-  }, [selectedCategory, selectedDateKey]);
+  }, [todayKey, selectedCategory, selectedDateKey]);
 
-  // Featured event visibility based on filter
+  // Featured event visibility based on filter (upcoming featured event)
   const featuredEvent = useMemo(() => {
-    const feat = MASTER_EVENTS.find((ev) => ev.isFeatured);
+    const feat =
+      MASTER_EVENTS.find((ev) => ev.isFeatured && ev.dateKey >= todayKey) ||
+      MASTER_EVENTS.find((ev) => ev.dateKey >= todayKey);
     if (!feat) return null;
     if (activeTab === "Past Events") return null;
     if (selectedCategory && feat.category !== selectedCategory) return null;
     if (selectedDateKey && feat.dateKey !== selectedDateKey) return null;
     return feat;
-  }, [activeTab, selectedCategory, selectedDateKey]);
+  }, [activeTab, selectedCategory, selectedDateKey, todayKey]);
 
-  // Filtered past events
+  // Filtered past events (strictly before today)
   const filteredPastEvents = useMemo(() => {
     return MASTER_EVENTS.filter((ev) => {
-      if (ev.status !== "past") return false;
+      const isPast = ev.dateKey < todayKey;
+      if (!isPast) return false;
       if (selectedCategory && ev.category !== selectedCategory) return false;
       if (selectedDateKey && ev.dateKey !== selectedDateKey) return false;
       return true;
     });
-  }, [selectedCategory, selectedDateKey]);
+  }, [todayKey, selectedCategory, selectedDateKey]);
 
-  // KPI Metrics
-  const stats = [
-    { label: "Upcoming", count: 12, icon: CalendarIcon, color: "text-[#0050CB]", bg: "bg-[#E5EEFF] dark:bg-blue-950/60", tab: "Upcoming" as const },
-    { label: "Total Events", count: 28, icon: Users, color: "text-emerald-600", bg: "bg-emerald-50 dark:bg-emerald-950/60", tab: "All Events" as const },
-    { label: "Past Events", count: 6, icon: Clock, color: "text-purple-600", bg: "bg-purple-50 dark:bg-purple-950/60", tab: "Past Events" as const },
-    { label: "Featured", count: 4, icon: Star, color: "text-amber-500", bg: "bg-amber-50 dark:bg-amber-950/60", tab: "Upcoming" as const },
-  ];
+  // Dynamic KPI Metrics based on real-time current date
+  const stats = useMemo(() => {
+    const upcomingCount = MASTER_EVENTS.filter((ev) => ev.dateKey >= todayKey).length;
+    const pastCount = MASTER_EVENTS.filter((ev) => ev.dateKey < todayKey).length;
+    const featuredCount = MASTER_EVENTS.filter((ev) => ev.isFeatured && ev.dateKey >= todayKey).length;
+    return [
+      { label: "Upcoming", count: upcomingCount, icon: CalendarIcon, color: "text-[#0050CB]", bg: "bg-[#E5EEFF] dark:bg-blue-950/60", tab: "Upcoming" as const },
+      { label: "Total Events", count: MASTER_EVENTS.length, icon: Users, color: "text-emerald-600", bg: "bg-emerald-50 dark:bg-emerald-950/60", tab: "All Events" as const },
+      { label: "Past Events", count: pastCount, icon: Clock, color: "text-purple-600", bg: "bg-purple-50 dark:bg-purple-950/60", tab: "Past Events" as const },
+      { label: "Featured", count: featuredCount || 1, icon: Star, color: "text-amber-500", bg: "bg-amber-50 dark:bg-amber-950/60", tab: "Upcoming" as const },
+    ];
+  }, [todayKey]);
 
   return (
     <div className="space-y-5 pb-16 max-w-[1440px] mx-auto font-sans text-slate-800 dark:text-slate-100">
@@ -989,10 +1031,11 @@ export default function SchoolEventsPage() {
               <button
                 type="button"
                 onClick={handleResetToCurrent}
-                title="Jump to September 2026 (Today)"
-                className="text-xs font-bold text-slate-400 hover:text-[#0050CB] transition-colors cursor-pointer px-1.5 py-0.5 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/30"
+                title={`Jump to Today (${todayDisplayStr})`}
+                className="flex items-center gap-1.5 text-[11px] font-black text-[#0050CB] dark:text-blue-300 bg-[#E5EEFF] dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 px-2 py-0.5 rounded-full transition-all cursor-pointer shadow-2xs"
               >
-                &lt; • &gt;
+                <span className="w-1.5 h-1.5 rounded-full bg-[#0050CB] dark:bg-blue-400 animate-pulse" />
+                Today
               </button>
 
               <div className="flex items-center gap-2">
@@ -1033,27 +1076,43 @@ export default function SchoolEventsPage() {
                 const dayEvents = item.events;
                 const hasEvents = dayEvents.length > 0;
                 const isSelected = selectedDateKey === item.dateKey;
+                const isPast = item.dateKey < todayKey;
+                const isToday = item.dateKey === todayKey;
 
                 return (
                   <button
                     key={idx}
                     type="button"
+                    disabled={isPast}
                     onClick={() => handleDayClick(item)}
-                    className={`relative h-8.5 w-8.5 mx-auto rounded-full flex flex-col items-center justify-center transition-all cursor-pointer ${
-                      isSelected
-                        ? "bg-[#0050CB] text-white shadow-sm shadow-blue-500/40 font-black scale-105"
+                    title={
+                      isToday
+                        ? `${formatDateString(item.dateKey)} (Today - Current Date)`
+                        : isPast
+                        ? `${formatDateString(item.dateKey)} (Completed / Past Date)`
+                        : formatDateString(item.dateKey)
+                    }
+                    className={`relative h-8.5 w-8.5 mx-auto rounded-full flex flex-col items-center justify-center transition-all ${
+                      isPast
+                        ? "text-slate-300 dark:text-slate-600/60 cursor-not-allowed opacity-35 select-none hover:bg-transparent"
+                        : isSelected
+                        ? "bg-[#0050CB] text-white shadow-md shadow-blue-500/30 font-black scale-105 cursor-pointer ring-2 ring-[#0050CB] ring-offset-1 dark:ring-offset-[#07142F]"
+                        : isToday
+                        ? "ring-2 ring-[#0050CB] ring-offset-1 dark:ring-offset-[#07142F] font-black text-[#0050CB] dark:text-blue-300 bg-[#E5EEFF]/80 dark:bg-blue-950/60 hover:bg-[#E5EEFF] cursor-pointer"
                         : item.isCurrentMonth
                         ? hasEvents
-                          ? "text-[#000E28] dark:text-white font-bold hover:bg-blue-50 dark:hover:bg-blue-900/30"
-                          : "text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/60"
-                        : "text-slate-300 dark:text-slate-600 font-normal hover:bg-slate-50 dark:hover:bg-slate-850"
+                          ? "text-[#000E28] dark:text-white font-bold hover:bg-blue-50 dark:hover:bg-blue-900/30 cursor-pointer"
+                          : "text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/60 cursor-pointer"
+                        : "text-slate-300 dark:text-slate-600 font-normal hover:bg-slate-50 dark:hover:bg-slate-850 cursor-pointer"
                     }`}
                   >
-                    <span className="leading-none text-[12px]">{item.day}</span>
+                    <span className={`leading-none text-[12px] ${isPast ? "line-through decoration-slate-300/80 dark:decoration-slate-600/80" : ""}`}>
+                      {item.day}
+                    </span>
                     
                     {/* Small Colored Dot indicator(s) under day */}
                     {hasEvents && !isSelected && (
-                      <div className="flex items-center justify-center gap-0.5 mt-0.5">
+                      <div className={`flex items-center justify-center gap-0.5 mt-0.5 ${isPast ? "opacity-25 grayscale" : ""}`}>
                         {dayEvents.slice(0, 2).map((ev, i) => (
                           <span
                             key={i}
@@ -1077,6 +1136,22 @@ export default function SchoolEventsPage() {
                   </button>
                 );
               })}
+            </div>
+
+            {/* Status Legend */}
+            <div className="flex items-center justify-between text-[10.5px] text-slate-400 font-bold px-1 pt-1.5 border-t border-slate-100 dark:border-slate-800/80">
+              <span className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
+                <span className="w-2.5 h-2.5 rounded-full border-2 border-[#0050CB] bg-[#E5EEFF] dark:bg-blue-950 inline-block" />
+                Today
+              </span>
+              <span className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#0050CB] inline-block" />
+                Event
+              </span>
+              <span className="flex items-center gap-1.5 text-slate-400 dark:text-slate-500 opacity-60">
+                <span className="w-2.5 h-2.5 rounded-full bg-slate-200 dark:bg-slate-700 inline-block" />
+                Completed
+              </span>
             </div>
 
             {/* Selected Date Events Drawer */}

@@ -532,6 +532,7 @@ export default function AdmissionsPage() {
                       }`}
                     />
                   </div>
+                  <p className="text-[10px] text-slate-400 mt-1">Child must be at least 3 years old for school enrollment</p>
                   {errors.dateOfBirth && (
                     <p className="text-[11px] text-rose-500 font-semibold mt-1">
                       {errors.dateOfBirth}

@@ -135,8 +135,8 @@ export async function generateNextAdmissionNumber(
 
 /**
  * Concurrency-safe atomic generation of Admission Enquiry Reference:
- * Format: GGPS-ENQ-{ACADEMIC_YEAR}-{SEQUENCE}
- * Example: GGPS-ENQ-2026-0001
+ * Format: GGPSENQ{ACADEMIC_YEAR}{SEQUENCE}
+ * Example: GGPSENQ20260001
  */
 export async function generateNextEnquiryNumber(
   rawYear?: string,
@@ -147,7 +147,7 @@ export async function generateNextEnquiryNumber(
 
   const seqNumber = await getNextSequence(key, session);
   const seq = String(seqNumber).padStart(4, '0');
-  return `GGPS-ENQ-${year}-${seq}`;
+  return `GGPSENQ${year}${seq}`;
 }
 
 /**

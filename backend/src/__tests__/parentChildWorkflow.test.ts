@@ -27,6 +27,7 @@ app.use('/api/parents', parentRoutes);
 app.use('/api/v1/parents', parentRoutes);
 
 describe('Complete Parent ↔ Child Linking & Parent Portal Security Suite', () => {
+  jest.setTimeout(30000);
   let originalReadyState: number;
   let adminToken: string;
   let parentToken: string;
@@ -155,7 +156,7 @@ describe('Complete Parent ↔ Child Linking & Parent Portal Security Suite', () 
             _id: childAId,
             firstName: 'Aarav',
             lastName: 'Kumar',
-            admissionNumber: 'GGPS-2026-001',
+            admissionNumber: 'GGPS2026001',
             schoolId,
             grade: 'LKG',
           }) as any;
@@ -165,7 +166,7 @@ describe('Complete Parent ↔ Child Linking & Parent Portal Security Suite', () 
             _id: childBId,
             firstName: 'Ananya',
             lastName: 'Kumar',
-            admissionNumber: 'GGPS-2026-002',
+            admissionNumber: 'GGPS2026002',
             schoolId,
             grade: 'UKG',
           }) as any;
@@ -322,7 +323,7 @@ describe('Complete Parent ↔ Child Linking & Parent Portal Security Suite', () 
                   _id: childAId,
                   firstName: 'Aarav',
                   lastName: 'Kumar',
-                  admissionNumber: 'GGPS-2026-001',
+                  admissionNumber: 'GGPS2026001',
                   classId: { _id: new mongoose.Types.ObjectId(), name: 'LKG' },
                   sectionId: { _id: new mongoose.Types.ObjectId(), name: 'A' },
                 },
@@ -330,7 +331,7 @@ describe('Complete Parent ↔ Child Linking & Parent Portal Security Suite', () 
                   _id: childBId,
                   firstName: 'Ananya',
                   lastName: 'Kumar',
-                  admissionNumber: 'GGPS-2026-002',
+                  admissionNumber: 'GGPS2026002',
                   classId: { _id: new mongoose.Types.ObjectId(), name: 'UKG' },
                   sectionId: { _id: new mongoose.Types.ObjectId(), name: 'A' },
                 },

@@ -112,7 +112,7 @@ export default function ParentDashboard() {
                 </div>
 
                 <h1 className="text-xl sm:text-2xl md:text-[24px] font-black text-[#000E28] tracking-tight leading-tight flex items-center gap-1.5 mt-2" suppressHydrationWarning>
-                  <span suppressHydrationWarning>Welcome back, {parentProfile?.motherName?.split(" ")[0] || "Priya"} 👋</span>
+                  <span suppressHydrationWarning>Welcome back, {parentProfile?.fatherName?.split(" ")[0] || parentProfile?.motherName?.split(" ")[0] || "Parent"} 👋</span>
                 </h1>
 
                 <p className="text-xs sm:text-[13px] font-bold text-[#102A5C] dark:text-blue-100 leading-snug mt-1">
@@ -163,9 +163,7 @@ export default function ParentDashboard() {
             <div className="flex items-center gap-2 flex-wrap">
               {children.map((c) => {
                 const isSelected = (selectedChild?._id || children[0]?._id) === c._id;
-                const photo =
-                  c.studentPhoto ||
-                  (c.firstName === "Ananya" ? "/ananya-student.jpg" : "/aarav-profile-avatar.png");
+                const photo = c.studentPhoto || "/class-hero-girl.jpg";
                 return (
                   <button
                     key={c._id}
@@ -194,7 +192,7 @@ export default function ParentDashboard() {
                         isSelected ? "bg-white/20 text-white" : "bg-blue-100 text-[#0050CB]"
                       }`}
                     >
-                      {c.attendanceRate || 94}%
+                      {c.attendanceRate !== undefined ? `${c.attendanceRate}%` : "Recorded"}
                     </span>
                     {isSelected && <CheckCircle2 className="w-3.5 h-3.5 text-white shrink-0 ml-0.5" />}
                   </button>
@@ -271,12 +269,7 @@ export default function ParentDashboard() {
               <div className="relative shrink-0">
                 <div className="relative w-[70px] h-[70px] rounded-full overflow-hidden border-2 border-white dark:border-white/20 shadow-md shadow-blue-500/10">
                   <AppImage
-                    src={
-                      child.studentPhoto ||
-                      (child.firstName === "Ananya"
-                        ? "/ananya-student.jpg"
-                        : "/aarav-profile-avatar.png")
-                    }
+                    src={child.studentPhoto || "/class-hero-girl.jpg"}
                     alt={`${child.firstName} ${child.lastName}`}
                     fill
                     sizes="70px"
@@ -297,7 +290,7 @@ export default function ParentDashboard() {
                   </span>
                 </div>
                 <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mt-0.5">
-                  {child.grade} - {child.section} • Roll #{child.rollNumber || "01"}
+                  {child.grade} - {child.section} {child.rollNumber ? `• Roll #${child.rollNumber}` : ""}
                 </p>
               </div>
             </div>
@@ -307,16 +300,18 @@ export default function ParentDashboard() {
               <div className="flex items-center justify-between py-1 border-b border-blue-50 dark:border-white/5">
                 <span className="text-slate-500 dark:text-slate-400">Class Teacher</span>
                 <span className="font-bold text-[#0050CB] dark:text-blue-300">
-                  {child.teacherName || "Ms. Ananya Roy"}
+                  {child.teacherName || "Assigned Educator"}
                 </span>
               </div>
               <div className="flex items-center justify-between py-1 border-b border-blue-50 dark:border-white/5">
                 <span className="text-slate-500 dark:text-slate-400">Admission No</span>
-                <span className="font-mono">{child.admissionNumber || "GGPS-2024-089"}</span>
+                <span className="font-mono">
+                  {child.admissionNumber ? child.admissionNumber.replace(/-/g, '') : (child.rollNumber ? `#${child.rollNumber}` : 'Enrolled')}
+                </span>
               </div>
               <div className="flex items-center justify-between py-1">
                 <span className="text-slate-500 dark:text-slate-400">Emergency Contact</span>
-                <span>{child.emergencyContact || "+91 98765 43210"}</span>
+                <span>{child.emergencyContact || "Registered on file"}</span>
               </div>
             </div>
 

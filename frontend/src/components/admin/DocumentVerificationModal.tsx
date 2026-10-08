@@ -37,10 +37,9 @@ interface DocItem {
 
 const DEFAULT_DOCUMENTS = [
   "Birth Certificate",
-  "Parent ID Proof (Aadhaar / Passport)",
-  "Address Proof (Utility Bill / Rent Agreement)",
-  "Previous School Records / Report Card",
-  "Transfer Certificate (TC)",
+  "Child's Passport-Size Photographs",
+  "Proof of Residential Address",
+  "Parent / Guardian Identification & Contact Details",
 ];
 
 export default function DocumentVerificationModal({

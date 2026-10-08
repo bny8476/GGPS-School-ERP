@@ -407,15 +407,6 @@ export default function Home() {
                 <ArrowRight className="w-3.5 h-3.5 relative z-10 transition-transform duration-200 group-hover:translate-x-1" strokeWidth={2.2} />
                 <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/25 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out" />
               </Link>
-
-              {/* Secondary CTA: Start Admission Enquiry (Positioned to the right) */}
-              <Link
-                href="/enquire"
-                className="group inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3.5 py-2 sm:px-4 sm:py-2 rounded-full bg-white dark:bg-slate-900 hover:bg-[#E5EEFF] dark:hover:bg-slate-800 border border-blue-200 dark:border-slate-700 hover:border-[#0050CB] text-[#0050CB] dark:text-[#38BDF8] font-bold text-xs sm:text-[13px] transition-all duration-200 hover:-translate-y-0.5 active:scale-95 shadow-2xs cursor-pointer whitespace-nowrap"
-              >
-                <span>{t('hero.startAdmissionEnquiry', 'Start Admission Enquiry')}</span>
-                <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-1" />
-              </Link>
             </motion.div>
 
             {/* Trust Micro-Badges Row */}

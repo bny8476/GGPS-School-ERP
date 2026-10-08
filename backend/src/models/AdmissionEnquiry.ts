@@ -62,7 +62,7 @@ export interface IAdmissionEnquiry extends Document {
 
   parent: {
     name: string;
-    email: string;
+    email?: string;
     phone: string;
     relationship?: string;
   };
@@ -175,10 +175,15 @@ const AdmissionEnquirySchema: Schema = new Schema(
       },
       email: {
         type: String,
-        required: [true, 'Email address is required'],
+        required: false,
         trim: true,
         lowercase: true,
-        match: [/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/, 'Enter a valid email address'],
+        validate: {
+          validator: function (v: string) {
+            return !v || /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(v);
+          },
+          message: 'Enter a valid email address',
+        },
         index: true,
       },
       phone: {
@@ -195,7 +200,7 @@ const AdmissionEnquirySchema: Schema = new Schema(
         type: String,
         required: [true, "Child's name is required"],
         trim: true,
-        minlength: [2, "Child's name must be at least 2 characters"],
+        minlength: [1, "Child's name must be at least 1 character"],
         maxlength: [80, "Child's name cannot exceed 80 characters"],
         match: [/^(?=.*[a-zA-Z])[a-zA-Z\s'.-]+$/, "Child's name can contain only letters, spaces, hyphens, apostrophes, and periods"],
         index: true,
@@ -226,18 +231,8 @@ const AdmissionEnquirySchema: Schema = new Schema(
     preferredVisitDate: { type: Date },
     source: {
       type: String,
-      enum: [
-        'Website',
-        'Home Page',
-        'Admission Page',
-        'Referral',
-        'Phone',
-        'Walk-in',
-        'Direct',
-        'Social Media',
-        'Other',
-      ],
       default: 'Website',
+      trim: true,
       index: true,
     },
     status: {

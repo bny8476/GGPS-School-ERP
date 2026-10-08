@@ -89,7 +89,6 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
-  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [campusDropdownOpen, setCampusDropdownOpen] = useState(false);
   const [academicYearDropdownOpen, setAcademicYearDropdownOpen] = useState(false);
   const [selectedCampus, setSelectedCampus] = useState('GGPS Main Campus');
@@ -754,67 +753,6 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                 {timeStr}
               </span>
             </Link>
-
-            {/* Admin Profile Dropdown Pill (Compact) */}
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
-                className="flex items-center gap-1.5 h-9 pl-1 pr-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200/90 dark:border-slate-700 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 shadow-2xs transition-colors cursor-pointer"
-              >
-                <div className="relative h-7 w-7 rounded-full overflow-hidden bg-slate-200 ring-1 ring-slate-200 shrink-0">
-                  <AppImage
-                    src="/aarav-profile-avatar.png"
-                    alt="Admin"
-                    fallbackType="avatar"
-                    name="Admin"
-                    className="object-cover w-full h-full"
-                  />
-                </div>
-                <span className="text-xs font-bold text-slate-900 dark:text-white">
-                  Admin
-                </span>
-                <ChevronDown className="w-3 h-3 text-slate-400 shrink-0" />
-              </button>
-
-              {/* Profile Dropdown Menu */}
-              {profileDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-[#08152F] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl py-2 z-50 animate-in fade-in zoom-in-95 duration-150">
-                  <div className="px-4 py-2 border-b border-slate-100 dark:border-slate-800">
-                    <p className="text-xs font-black text-[#000E28] dark:text-white">
-                      {user?.firstName} {user?.lastName}
-                    </p>
-                    <p className="text-[11px] text-slate-400 truncate">{user?.email}</p>
-                  </div>
-                  <Link
-                    href="/dashboard/settings"
-                    onClick={() => setProfileDropdownOpen(false)}
-                    className="flex items-center gap-2.5 px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60"
-                  >
-                    <Settings className="w-4 h-4 text-slate-400" />
-                    <span>System Settings</span>
-                  </Link>
-                  <Link
-                    href="/dashboard/audit-logs"
-                    onClick={() => setProfileDropdownOpen(false)}
-                    className="flex items-center gap-2.5 px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60"
-                  >
-                    <ShieldCheck className="w-4 h-4 text-slate-400" />
-                    <span>Security Audit Logs</span>
-                  </Link>
-                  <div className="border-t border-slate-100 dark:border-slate-800 mt-1 pt-1">
-                    <button
-                      type="button"
-                      onClick={handleLogout}
-                      className="w-full flex items-center gap-2.5 px-4 py-2 text-xs font-bold text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-left cursor-pointer"
-                    >
-                      <LogOut className="w-4 h-4 text-rose-500" />
-                      <span>Sign Out</span>
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
           </div>
         </header>
 

@@ -2078,7 +2078,7 @@ Need help? Contact School IT Desk at +91 98765 43210.`;
                         {inspectLinkedChildren.map((link) => {
                           const st = link.studentId || {};
                           const stName = typeof st === "object" ? `${st.firstName || ""} ${st.lastName || ""}`.trim() : "Student";
-                          const admNo = typeof st === "object" ? st.admissionNumber || st.studentId || "" : "";
+                          const admNo = typeof st === "object" ? String(st.admissionNumber || st.studentId || "").replace(/-/g, '') : "";
                           const clsName = typeof st === "object" && typeof st.classId === "object" && st.classId ? st.classId.name : typeof st === "object" ? st.grade || "" : "";
                           const secName = typeof st === "object" && typeof st.sectionId === "object" && st.sectionId ? st.sectionId.name : "";
                           const childId = typeof st === "object" && st._id ? st._id : link._id;
@@ -2163,7 +2163,7 @@ Need help? Contact School IT Desk at +91 98765 43210.`;
                                   {st.firstName} {st.lastName}
                                 </p>
                                 <p className="text-[10px] text-slate-400 truncate">
-                                  Adm: {st.admissionNumber || st.studentId || "N/A"}
+                                  Adm: {String(st.admissionNumber || st.studentId || "N/A").replace(/-/g, '')}
                                 </p>
                               </div>
                               <button
@@ -2682,7 +2682,7 @@ Need help? Contact School IT Desk at +91 98765 43210.`;
                                 {st.firstName} {st.lastName}
                               </p>
                               <p className="text-[10px] text-slate-400">
-                                Adm: {st.admissionNumber || st.studentId || "N/A"}{" "}
+                                Adm: {String(st.admissionNumber || st.studentId || "N/A").replace(/-/g, '')}{" "}
                                 {cls && `• Class: ${cls}`} {sec && `• Sec: ${sec}`}
                               </p>
                             </div>

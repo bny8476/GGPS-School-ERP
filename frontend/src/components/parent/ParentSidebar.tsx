@@ -122,7 +122,8 @@ export default function ParentSidebar({
 }: ParentSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { unreadMessageCount, unreadNotificationCount } = useParent();
+  const { unreadMessageCount, unreadNotificationCount, children, homeworkList } = useParent();
+  const pendingHomeworkCount = homeworkList.filter((h) => h.status === 'Pending').length;
 
   interface NavSection {
     title: string;
@@ -142,10 +143,10 @@ export default function ParentSidebar({
       title: "Daily Essentials",
       items: [
         { label: "Home", href: "/parent", icon: Home },
-        { label: "My Children", href: "/parent/children", icon: Users, badge: "2" },
+        { label: "My Children", href: "/parent/children", icon: Users, badge: children.length > 0 ? String(children.length) : undefined },
         { label: "Daily Diary", href: "/parent/diary", icon: DailyDiaryIcon },
         { label: "Attendance", href: "/parent/attendance", icon: AttendanceBagIcon },
-        { label: "Homework", href: "/parent/homework", icon: HomeworkIcon, badge: "3" },
+        { label: "Homework", href: "/parent/homework", icon: HomeworkIcon, badge: pendingHomeworkCount > 0 ? String(pendingHomeworkCount) : undefined },
         { label: "Timetable", href: "/parent/timetable", icon: TimetableIcon },
       ],
     },
@@ -166,7 +167,7 @@ export default function ParentSidebar({
           icon: CommunicationIcon, 
           badge: unreadMessageCount > 0 ? (unreadMessageCount > 99 ? "99+" : String(unreadMessageCount)) : undefined 
         },
-        { label: "School Events", href: "/parent/events", icon: SchoolEventsIcon, badge: "4" },
+        { label: "School Events", href: "/parent/events", icon: SchoolEventsIcon },
         { 
           label: "Notifications", 
           href: "/parent/notifications", 
@@ -178,7 +179,7 @@ export default function ParentSidebar({
     {
       title: "Finance & Records",
       items: [
-        { label: "Fees & Payments", href: "/parent/fees", icon: FeesIcon, badge: "1" },
+        { label: "Fees & Payments", href: "/parent/fees", icon: FeesIcon },
         { label: "Documents", href: "/parent/documents", icon: DocumentsIcon },
         { label: "My Account", href: "/parent/account", icon: User },
       ],

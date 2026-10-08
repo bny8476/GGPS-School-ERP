@@ -630,7 +630,7 @@ function ParentsPageContent() {
   const formatPortalMessage = (parent: ParentRecord, student: any, password: string) => {
     const guardianName = parent.fatherName || parent.motherName || parent.guardianName || 'Parent Guardian';
     const studentName = student ? `${student.firstName} ${student.lastName}` : 'your child';
-    const admNo = student?.studentId || student?.admissionNumber || 'GGPS-2026';
+    const admNo = String(student?.studentId || student?.admissionNumber || 'GGPS2026').replace(/-/g, '');
     const loginUrl = 'https://ggps-school-erp.vercel.app/login';
     const username = parent.primaryEmail || parent.whatsappNumber || parent.fatherContact || 'Registered Email';
     const phone = parent.whatsappNumber || parent.fatherContact || parent.motherContact || '';

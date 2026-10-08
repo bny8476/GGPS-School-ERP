@@ -176,11 +176,11 @@ function StudentsDirectoryContent() {
             </Link>
             <div className="flex items-center gap-2 mt-0.5">
               <span className="font-mono text-[11px] font-bold text-[#0050CB] dark:text-[#38BDF8]">
-                {row.studentId || row.admissionNumber || 'GGPS2026LKG001'}
+                {(row.studentId || row.admissionNumber || 'GGPS2026LKG001').replace(/-/g, '')}
               </span>
               {row.admissionNumber && row.studentId && row.admissionNumber !== row.studentId && (
                 <span className="font-mono text-[10px] text-slate-400">
-                  ({row.admissionNumber})
+                  ({row.admissionNumber.replace(/-/g, '')})
                 </span>
               )}
               {row.bloodGroup && (
@@ -495,7 +495,7 @@ function StudentsDirectoryContent() {
                         {student.firstName} {student.lastName}
                       </h4>
                       <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400">
-                        {student.admissionNumber || 'GGPS-2026-000'}
+                        {student.admissionNumber ? student.admissionNumber.replace(/-/g, '') : 'GGPS2026000'}
                       </span>
                     </div>
                   </div>

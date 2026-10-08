@@ -381,8 +381,6 @@ function AdmissionsContent() {
       <AdminPageHeader
         title="Admissions & Applicant CRM"
         subtitle="Track prospective admissions, campus tours, entrance evaluations, and confirmed enrollments."
-        badge="Intake 2026-27"
-        badgeVariant="orange"
         breadcrumbs={[
           { label: 'Admin Desk', href: '/dashboard' },
           { label: 'Admissions' }
@@ -715,7 +713,7 @@ function AdmissionsContent() {
                   className="w-full h-8 px-2 rounded-lg bg-slate-50 dark:bg-[#001438] border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-800 dark:text-slate-200"
                 >
                   <option value="ALL">All Classes</option>
-                  {['Pre-KG', 'LKG', 'UKG', 'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10', 'Class 11', 'Class 12'].map(c => (
+                  {['Pre-KG', 'LKG', 'UKG'].map(c => (
                     <option key={c} value={c}>{c}</option>
                   ))}
                 </select>

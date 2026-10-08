@@ -135,9 +135,9 @@ function FeesFinanceContent() {
 
   // Scholarships State
   const [scholarships, setScholarships] = useState<ScholarshipRecord[]>([
-    { id: 'sch-1', studentName: 'Diya Patel', admissionNo: 'GGPS-2026-UKG-014', grade: 'UKG', category: 'Sibling Discount (Second Child)', discountPercentage: 15, annualBenefit: 5700, approvedBy: 'Principal Office', status: 'Active' },
-    { id: 'sch-2', studentName: 'Ananya Iyer', admissionNo: 'GGPS-2026-PKG-003', grade: 'Pre-KG', category: 'Staff Ward Concession', discountPercentage: 50, annualBenefit: 16500, approvedBy: 'Board of Trustees', status: 'Active' },
-    { id: 'sch-3', studentName: 'Vihaan Verma', admissionNo: 'GGPS-2026-UKG-022', grade: 'UKG', category: 'Early Enrollee Concession', discountPercentage: 20, annualBenefit: 7600, approvedBy: 'Admissions Desk', status: 'Active' },
+    { id: 'sch-1', studentName: 'Diya Patel', admissionNo: 'GGPS2026UKG014', grade: 'UKG', category: 'Sibling Discount (Second Child)', discountPercentage: 15, annualBenefit: 5700, approvedBy: 'Principal Office', status: 'Active' },
+    { id: 'sch-2', studentName: 'Ananya Iyer', admissionNo: 'GGPS2026PKG003', grade: 'Pre-KG', category: 'Staff Ward Concession', discountPercentage: 50, annualBenefit: 16500, approvedBy: 'Board of Trustees', status: 'Active' },
+    { id: 'sch-3', studentName: 'Vihaan Verma', admissionNo: 'GGPS2026UKG022', grade: 'UKG', category: 'Early Enrollee Concession', discountPercentage: 20, annualBenefit: 7600, approvedBy: 'Admissions Desk', status: 'Active' },
   ]);
 
   // Modals
@@ -306,7 +306,7 @@ function FeesFinanceContent() {
 
       const newRecord: FeeRecord = {
         _id: 'f_' + Date.now(),
-        studentId: { firstName: 'Student', lastName: 'Record', admissionNumber: 'GGPS-2026-NEW' },
+        studentId: { firstName: 'Student', lastName: 'Record', admissionNumber: 'GGPS2026NEW' },
         grade: feeForm.grade,
         feeType: feeForm.feeType.trim(),
         totalAmount: amt,
@@ -417,7 +417,7 @@ function FeesFinanceContent() {
     if (!updated) {
       const newRec: FeeRecord = {
         _id: 'f_' + Date.now(),
-        studentId: { firstName: collectForm.studentName || 'Student', lastName: '', admissionNumber: 'GGPS-2026-WALKIN' },
+        studentId: { firstName: collectForm.studentName || 'Student', lastName: '', admissionNumber: 'GGPS2026WALKIN' },
         grade: collectForm.grade,
         feeType: 'Tuition Fee Direct Collection',
         totalAmount: amt,
@@ -573,7 +573,7 @@ function FeesFinanceContent() {
     const newSch: ScholarshipRecord = {
       id: 'sch-' + Date.now(),
       studentName: trimmedName,
-      admissionNo: scholarshipForm.admissionNo || `GGPS-2026-${Math.floor(100 + Math.random() * 900)}`,
+      admissionNo: scholarshipForm.admissionNo ? scholarshipForm.admissionNo.replace(/-/g, '') : `GGPS2026${Math.floor(100 + Math.random() * 900)}`,
       grade: scholarshipForm.grade,
       category: scholarshipForm.category,
       discountPercentage: pct,
@@ -669,7 +669,7 @@ function FeesFinanceContent() {
               {row.studentId ? `${row.studentId.firstName} ${row.studentId.lastName}` : 'Enrolled Student'}
             </span>
             <span className="text-[11px] text-slate-500">
-              Class {row.grade || 'Pre-KG'} • {row.studentId?.admissionNumber || 'ADM-GGPS'}
+              Class {row.grade || 'Pre-KG'} • {row.studentId?.admissionNumber ? row.studentId.admissionNumber.replace(/-/g, '') : 'ADMGGPS'}
             </span>
           </div>
         </div>
@@ -1297,7 +1297,7 @@ function FeesFinanceContent() {
                       <td className="py-3.5 px-4 font-bold text-[#000E28] dark:text-white">
                         {studentName}
                         <span className="block text-[11px] font-normal text-slate-500 font-mono">
-                          {f.studentId?.admissionNumber || 'GGPS-2026'}
+                          {f.studentId?.admissionNumber ? f.studentId.admissionNumber.replace(/-/g, '') : 'GGPS2026'}
                         </span>
                       </td>
                       <td className="py-3.5 px-3 font-semibold text-slate-700 dark:text-slate-300">

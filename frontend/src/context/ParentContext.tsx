@@ -142,134 +142,17 @@ interface ParentContextType {
   updateHomeworkStatus: (homeworkId: string, status: 'Pending' | 'Submitted' | 'Completed') => Promise<boolean>;
 }
 
-const DEFAULT_CHILDREN: Child[] = [];
-
-const DEFAULT_PARENT_PROFILE: ParentProfile = {
-  fatherName: "Vikram Sharma",
-  motherName: "Priya Sharma",
-  primaryEmail: "priya.sharma@family.com",
-  fatherContact: "+91 98765 43210",
-  motherContact: "+91 98765 43211",
-  whatsappNumber: "+91 98765 43211",
-  address: "Tower 4, Apt 802, Prestige Greenfield Residences, Bangalore 560103",
-};
-
-const DEFAULT_ATTENDANCE: TodayAttendanceInfo = {
-  recorded: true,
-  status: 'Present',
+const EMPTY_ATTENDANCE: TodayAttendanceInfo = {
+  recorded: false,
+  status: 'Not Marked',
   date: new Date(),
-  checkInTime: '8:42 AM',
-  teacherName: 'Ms. Ananya Roy',
-  className: 'LKG',
-  sectionName: 'Section A',
-  teacherRemark: 'Arrived enthusiastically for morning assembly',
 };
-
-const DEFAULT_CLASSWORK: ClassWorkItem[] = [
-  {
-    _id: 'cw-1',
-    subject: 'English',
-    topic: 'Alphabet A–E',
-    whatWasTaught: 'Children practiced identifying letters A–E.',
-    classroomActivity: 'Letter matching game with wooden alphabet flashcards.',
-    teacherRemark: 'Lesson completed with excellent active participation.',
-    teacherName: 'Ms. Ananya Roy',
-    date: new Date(),
-  },
-  {
-    _id: 'cw-2',
-    subject: 'Maths',
-    topic: 'Counting 1 to 10',
-    whatWasTaught: 'Count and sort colorful beads and blocks in small groups.',
-    classroomActivity: 'Bead necklace counting activity & block towers.',
-    teacherRemark: 'Great counting and grouping skills shown by the learners today.',
-    teacherName: 'Ms. Ananya Roy',
-    date: new Date(),
-  },
-];
-
-const DEFAULT_ACTIVITIES: ClassroomActivityItem[] = [
-  {
-    _id: 'act-1',
-    category: 'Art & Craft',
-    title: 'Rainbow Drawing Activity',
-    description: 'Children created colorful rainbow drawings today using watercolor sponge rollers and cotton clouds.',
-    icon: '🎨',
-    teacherName: 'Ms. Ananya Roy',
-    date: new Date(),
-  },
-  {
-    _id: 'act-2',
-    category: 'Story Time',
-    title: 'The Little Seed',
-    description: 'Interactive puppet storytelling exploring how seeds grow with rain, soil, and golden sunshine.',
-    icon: '📚',
-    teacherName: 'Ms. Ananya Roy',
-    date: new Date(),
-  },
-  {
-    _id: 'act-3',
-    category: 'Rhymes',
-    title: 'Twinkle Twinkle Little Star',
-    description: 'Rhythm, star wand gestures, and clapping beats in melodic group harmony.',
-    icon: '🎵',
-    teacherName: 'Ms. Ananya Roy',
-    date: new Date(),
-  },
-];
-
-const DEFAULT_DIARY: DailyDiaryInfo = {
-  date: new Date(),
-  todayLearning: 'English alphabet practice and story time.',
-  todayActivity: 'Rainbow drawing.',
-  homework: 'Practice A–E.',
-  teacherNote: 'Children participated actively today.',
-  teacherName: 'Ms. Ananya Roy',
-  mood: 'Happy',
-  activities: ['Rainbow drawing', 'Alphabet A–E practice', 'Little Seed story'],
-};
-
-const DEFAULT_REMARKS: TeacherRemarkItem[] = [
-  {
-    _id: 'rem-1',
-    studentId: 'c10101010101010101010101',
-    studentName: 'Aarav Sharma',
-    teacherName: 'Ms. Ananya Roy',
-    date: new Date(),
-    content: 'Aarav participated very well in today’s story activity.',
-    category: 'Appreciation',
-    parentReply: '',
-  },
-];
-
-const DEFAULT_HOMEWORK: HomeworkItem[] = [
-  {
-    _id: 'hw-1',
-    subject: 'English',
-    title: 'Practice letters A–E',
-    description: 'Trace uppercase and lowercase letters A to E in your four-line handwriting workbook.',
-    instructions: 'Slow and neat handwriting along the dotted paths.',
-    dueDate: new Date(Date.now() + 86400000),
-    teacherName: 'Ms. Ananya Roy',
-    status: 'Pending',
-  },
-  {
-    _id: 'hw-2',
-    subject: 'Maths',
-    title: 'Count 5 favorite toys',
-    description: 'Count 5 favorite toys at home with parents and draw 5 colorful stars.',
-    instructions: 'Point at each toy while saying numbers aloud.',
-    dueDate: new Date(Date.now() + 2 * 86400000),
-    teacherName: 'Ms. Ananya Roy',
-    status: 'Pending',
-  },
-];
 
 const ParentContext = createContext<ParentContextType | undefined>(undefined);
 
 export function ParentProvider({ children: reactChildren }: { children: React.ReactNode }) {
   const [user, setUser] = useState<any>(null);
-  const [parentProfile, setParentProfile] = useState<ParentProfile | null>(DEFAULT_PARENT_PROFILE);
+  const [parentProfile, setParentProfile] = useState<ParentProfile | null>(null);
 
   // Sync user and profile from localStorage on client mount after hydration
   useEffect(() => {
@@ -280,9 +163,13 @@ export function ParentProvider({ children: reactChildren }: { children: React.Re
         setUser(parsed);
         if (parsed.firstName) {
           setParentProfile((prev) => ({
-            ...(prev || DEFAULT_PARENT_PROFILE),
-            motherName: `${parsed.firstName} ${parsed.lastName || ''}`.trim() || (prev ? prev.motherName : DEFAULT_PARENT_PROFILE.motherName),
-            primaryEmail: parsed.email || (prev ? prev.primaryEmail : DEFAULT_PARENT_PROFILE.primaryEmail),
+            fatherName: prev?.fatherName || `${parsed.firstName} ${parsed.lastName || ''}`.trim() || 'Parent',
+            motherName: prev?.motherName || 'Mother / Guardian',
+            primaryEmail: prev?.primaryEmail || parsed.email || '',
+            fatherContact: prev?.fatherContact || parsed.phoneNumber || '',
+            motherContact: prev?.motherContact || '',
+            whatsappNumber: prev?.whatsappNumber || parsed.phoneNumber || '',
+            address: prev?.address || 'Registered Address',
           }));
         }
       }
@@ -294,12 +181,12 @@ export function ParentProvider({ children: reactChildren }: { children: React.Re
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
 
   // Real-Time Classroom States
-  const [todayAttendance, setTodayAttendance] = useState<TodayAttendanceInfo>(DEFAULT_ATTENDANCE);
-  const [todayClassWork, setTodayClassWork] = useState<ClassWorkItem[]>(DEFAULT_CLASSWORK);
-  const [todayActivities, setTodayActivities] = useState<ClassroomActivityItem[]>(DEFAULT_ACTIVITIES);
-  const [todayDiary, setTodayDiary] = useState<DailyDiaryInfo | null>(DEFAULT_DIARY);
-  const [teacherRemarks, setTeacherRemarks] = useState<TeacherRemarkItem[]>(DEFAULT_REMARKS);
-  const [homeworkList, setHomeworkList] = useState<HomeworkItem[]>(DEFAULT_HOMEWORK);
+  const [todayAttendance, setTodayAttendance] = useState<TodayAttendanceInfo>(EMPTY_ATTENDANCE);
+  const [todayClassWork, setTodayClassWork] = useState<ClassWorkItem[]>([]);
+  const [todayActivities, setTodayActivities] = useState<ClassroomActivityItem[]>([]);
+  const [todayDiary, setTodayDiary] = useState<DailyDiaryInfo | null>(null);
+  const [teacherRemarks, setTeacherRemarks] = useState<TeacherRemarkItem[]>([]);
+  const [homeworkList, setHomeworkList] = useState<HomeworkItem[]>([]);
   const [unreadNotificationCount, setUnreadNotificationCount] = useState<number>(0);
   const [unreadMessageCount, setUnreadMessageCount] = useState<number>(0);
 
@@ -344,7 +231,7 @@ export function ParentProvider({ children: reactChildren }: { children: React.Re
   // Load child-specific classroom data from API
   const refreshChildData = useCallback(async (childId: string) => {
     if (!childId) {
-      setTodayAttendance(DEFAULT_ATTENDANCE);
+      setTodayAttendance(EMPTY_ATTENDANCE);
       setTodayClassWork([]);
       setTodayActivities([]);
       setTodayDiary(null);
@@ -490,7 +377,7 @@ export function ParentProvider({ children: reactChildren }: { children: React.Re
             _id: s._id,
             firstName: s.firstName || 'Student',
             lastName: s.lastName || '',
-            admissionNumber: s.admissionNumber || s.studentId || '',
+            admissionNumber: String(s.admissionNumber || s.studentId || '').replace(/-/g, ''),
             grade: className,
             section: sectionName.startsWith('Section') ? sectionName : `Section ${sectionName}`,
             classId: s.classId,
@@ -498,7 +385,7 @@ export function ParentProvider({ children: reactChildren }: { children: React.Re
             rollNumber: s.rollNumber || '',
             studentPhoto: s.studentPhoto || '/class-hero-girl.jpg',
             bloodGroup: s.bloodGroup || 'O+',
-            emergencyContact: s.emergencyContact || DEFAULT_PARENT_PROFILE.motherContact,
+            emergencyContact: s.emergencyContact || parentProfile?.fatherContact || '',
             medicalNotes: s.medicalNotes || 'No specific medical allergies recorded.',
             teacherName: s.teacherName || 'Assigned Educator',
             attendanceRate: s.attendanceRate ?? 95,
@@ -515,52 +402,14 @@ export function ParentProvider({ children: reactChildren }: { children: React.Re
         setSelectedChildId(activeId);
         refreshChildData(activeId);
       } else {
-        // Check if admin linked students in this browser session
-        let localChildren: Child[] = [];
-        if (typeof window !== 'undefined') {
-          try {
-            const stored = JSON.parse(localStorage.getItem('ggps_parent_links_map') || '{}');
-            const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-            const email = (currentUser.email || '').toLowerCase();
-            const list = stored[email] || stored['sharma.family@example.com'] || stored['p-1'] || [];
-            if (Array.isArray(list) && list.length > 0) {
-              localChildren = list.map((s: any) => ({
-                _id: s._id || 'std_01',
-                firstName: s.firstName || 'Aarav',
-                lastName: s.lastName || 'Sharma',
-                admissionNumber: s.admissionNumber || s.studentId || 'GGPS2026Admin001',
-                grade: s.grade || 'LKG',
-                section: s.section || 'Section A',
-                rollNumber: s.rollNumber || '01',
-                studentPhoto: '/class-hero-girl.jpg',
-                bloodGroup: 'O+',
-                emergencyContact: DEFAULT_PARENT_PROFILE.fatherContact,
-                medicalNotes: 'No allergies recorded.',
-                teacherName: 'Ms. Ananya Roy',
-                attendanceRate: 96,
-                pendingHomework: 1,
-                feesDue: 0,
-                recentActivity: 'Alphabet activity',
-              }));
-            }
-          } catch {}
-        }
-
-        if (localChildren.length > 0) {
-          setChildrenList(localChildren);
-          const activeId = localChildren[0]._id;
-          setSelectedChildId(activeId);
-          refreshChildData(activeId);
-        } else {
-          setChildrenList([]);
-          setSelectedChildId('');
-          setTodayAttendance(DEFAULT_ATTENDANCE);
-          setTodayClassWork([]);
-          setTodayActivities([]);
-          setTodayDiary(null);
-          setTeacherRemarks([]);
-          setHomeworkList([]);
-        }
+        setChildrenList([]);
+        setSelectedChildId('');
+        setTodayAttendance(EMPTY_ATTENDANCE);
+        setTodayClassWork([]);
+        setTodayActivities([]);
+        setTodayDiary(null);
+        setTeacherRemarks([]);
+        setHomeworkList([]);
       }
     } catch (e) {
       console.warn('Parent data sync notice:', e);

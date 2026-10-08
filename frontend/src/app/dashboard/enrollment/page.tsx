@@ -598,7 +598,7 @@ export default function EnrollmentPage() {
                             </div>
                           </td>
                           <td className="py-3 px-4 font-mono font-bold text-slate-700 dark:text-slate-300">
-                            {student?.admissionNumber || '—'}
+                            {student?.admissionNumber ? student.admissionNumber.replace(/-/g, '') : '—'}
                           </td>
                           <td className="py-3 px-4">
                             <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 font-bold text-slate-800 dark:text-slate-200">
@@ -1000,7 +1000,7 @@ export default function EnrollmentPage() {
                       </div>
                       <div className="text-[11px] text-slate-500 dark:text-slate-400 flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
                         <span>
-                          Adm No: <strong className="font-mono text-slate-700 dark:text-slate-300">{currentSelectedStudent?.admissionNumber || '—'}</strong>
+                          Adm No: <strong className="font-mono text-slate-700 dark:text-slate-300">{currentSelectedStudent?.admissionNumber ? currentSelectedStudent.admissionNumber.replace(/-/g, '') : '—'}</strong>
                         </span>
                         {reassignTarget.enrollment?.classId?.name && (
                           <span className="text-slate-400">
@@ -1039,7 +1039,7 @@ export default function EnrollmentPage() {
                     <option value="">Choose student...</option>
                     {students.map((s) => (
                       <option key={s._id} value={s._id}>
-                        {s.firstName} {s.lastName} ({s.admissionNumber})
+                        {s.firstName} {s.lastName} ({s.admissionNumber ? s.admissionNumber.replace(/-/g, '') : ''})
                       </option>
                     ))}
                   </select>

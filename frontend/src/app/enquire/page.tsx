@@ -155,11 +155,12 @@ export default function AdmissionEnquirePage() {
         throw new Error(result.message || "Unable to submit your enquiry. Please try again.");
       }
 
-      const generatedId =
+      const rawId =
         result.enquiryId ||
         result.data?.enquiryId ||
         result.enquiryReference ||
-        `GGPS-ENQ-2026-0001`;
+        `GGPSENQ20260001`;
+      const generatedId = String(rawId).replace(/-/g, '');
 
       if (result.isDuplicate) {
         setDuplicateWarning(
@@ -421,7 +422,7 @@ export default function AdmissionEnquirePage() {
                     Your Unique Enquiry ID
                   </span>
                   <div className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-[#0050CB] dark:text-[#38BDF8]">
-                    {submissionSuccess.enquiryId}
+                    {submissionSuccess.enquiryId ? submissionSuccess.enquiryId.replace(/-/g, '') : ''}
                   </div>
                   <p className="text-[11px] text-slate-400">
                     Please keep this ID for your reference and during campus visit.
@@ -638,6 +639,7 @@ export default function AdmissionEnquirePage() {
                               : "border-slate-200 dark:border-slate-700 focus:border-[#0050CB] focus:ring-[#0050CB]/10"
                           }`}
                         />
+                        <p className="text-[10px] text-slate-400 mt-0.5">Child must be at least 3 years old for school enrollment</p>
                         {errors.dateOfBirth && (
                           <p className="text-[11px] text-rose-500 font-semibold">{errors.dateOfBirth.message}</p>
                         )}

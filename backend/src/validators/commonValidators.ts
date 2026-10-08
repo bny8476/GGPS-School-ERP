@@ -37,19 +37,24 @@ export const emailValidator = z
   .max(100, 'Email cannot exceed 100 characters')
   .regex(EMAIL_REGEX, 'Enter a valid email address');
 
-export const optionalEmailValidator = z
-  .string()
-  .trim()
-  .toLowerCase()
-  .optional()
-  .refine((val) => !val || EMAIL_REGEX.test(val), {
-    message: 'Enter a valid email address',
-  });
+export const optionalEmailValidator = z.preprocess(
+  (val) => {
+    if (val === null || val === undefined || val === '') return undefined;
+    return typeof val === 'string' ? val.trim().toLowerCase() : val;
+  },
+  z
+    .string()
+    .refine((val) => !val || EMAIL_REGEX.test(val), {
+      message: 'Enter a valid email address',
+    })
+    .optional()
+);
 
 /**
  * Normalizes phone number strings by stripping formatting and standard country code prefixes (+91).
  */
 export const normalizePhoneNumber = (val: unknown): unknown => {
+  if (typeof val === 'number') val = String(val);
   if (typeof val !== 'string') return val;
   const cleaned = val.trim().replace(/[\s\-\(\)\.]/g, '');
   if (cleaned.startsWith('+91') && cleaned.length === 13) {
@@ -57,6 +62,9 @@ export const normalizePhoneNumber = (val: unknown): unknown => {
   }
   if (cleaned.startsWith('91') && cleaned.length === 12) {
     return cleaned.slice(2);
+  }
+  if (cleaned.startsWith('0') && cleaned.length === 11) {
+    return cleaned.slice(1);
   }
   if (cleaned.startsWith('+')) {
     return cleaned.slice(1);
@@ -112,7 +120,7 @@ export const strongPasswordValidator = z
   .regex(/[@$!%*?&#^()_+\-=[\]{};':"\\|,.<>/?]/, 'Password must include at least one special character');
 
 /**
- * Reusable date of birth validator (cannot be in the future)
+ * Reusable date of birth validator (cannot be in the future, must be at least 3 years old)
  */
 export const dobValidator = z
   .string()
@@ -126,19 +134,38 @@ export const dobValidator = z
     const today = new Date();
     today.setHours(23, 59, 59, 999);
     return d <= today;
-  }, 'Date of birth cannot be in the future');
-
-export const optionalDobValidator = z
-  .string()
-  .or(z.date())
-  .optional()
+  }, 'Date of birth cannot be in the future')
   .refine((val) => {
-    if (!val) return true;
     const d = new Date(val);
     const today = new Date();
-    today.setHours(23, 59, 59, 999);
-    return !isNaN(d.getTime()) && d <= today;
-  }, 'Date of birth cannot be in the future');
+    const ageInYears = (today.getTime() - d.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
+    return ageInYears >= 3;
+  }, 'Child must be at least 3 years old for school enrollment');
+
+export const optionalDobValidator = z.preprocess(
+  (val) => {
+    if (val === null || val === undefined || val === '') return undefined;
+    return val;
+  },
+  z
+    .string()
+    .or(z.date())
+    .optional()
+    .refine((val) => {
+      if (!val) return true;
+      const d = new Date(val as string | Date);
+      const today = new Date();
+      today.setHours(23, 59, 59, 999);
+      return !isNaN(d.getTime()) && d <= today;
+    }, 'Date of birth cannot be in the future')
+    .refine((val) => {
+      if (!val) return true;
+      const d = new Date(val as string | Date);
+      const today = new Date();
+      const ageInYears = (today.getTime() - d.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
+      return ageInYears >= 3;
+    }, 'Child must be at least 3 years old for school enrollment')
+);
 
 /**
  * Reusable positive number validator

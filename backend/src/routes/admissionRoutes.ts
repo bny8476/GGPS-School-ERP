@@ -46,13 +46,15 @@ const staffAuth = [protect, authorize('Admin', 'Receptionist', 'SuperAdmin', 'Pr
 // 1. ADMISSION ENQUIRIES WORKFLOW
 // ==========================================
 
-// Public enquiry endpoints
+// Public enquiry creation endpoint
 router.post('/enquiries', enquiryLimiter, validate(createEnquirySchema), createEnquiry);
-router.get('/enquiries/:enquiryId', getEnquiryById);
 
-// Admin / Staff enquiry management endpoints
+// Admin / Staff enquiry management endpoints (literal paths first)
 router.get('/enquiries', staffAuth, getEnquiries);
 router.get('/enquiries/detail/:id', staffAuth, getEnquiryDetail);
+
+// Public / Staff enquiry lookup by enquiry ID (parameterized path)
+router.get('/enquiries/:enquiryId', getEnquiryById);
 router.patch('/enquiries/:id', staffAuth, updateEnquiry);
 router.patch('/enquiries/:id/status', staffAuth, updateEnquiryStatus);
 router.patch('/enquiries/:id/assignment', staffAuth, assignEnquiry);

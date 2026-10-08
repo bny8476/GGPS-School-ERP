@@ -126,9 +126,24 @@ const AdmissionSchema: Schema = new Schema(
       type: String,
       trim: true,
       lowercase: true,
-      match: [/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/, 'Enter a valid email address'],
+      validate: {
+        validator: function (v: string) {
+          return !v || /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(v);
+        },
+        message: 'Enter a valid email address',
+      },
     },
-    parentEmail: { type: String, trim: true, lowercase: true },
+    parentEmail: {
+      type: String,
+      trim: true,
+      lowercase: true,
+      validate: {
+        validator: function (v: string) {
+          return !v || /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(v);
+        },
+        message: 'Enter a valid email address',
+      },
+    },
     address: { type: String, trim: true, maxlength: 300 },
     gradeAppliedFor: { type: String, required: true, trim: true },
     academicYear: { type: String, trim: true },

@@ -17,6 +17,8 @@ export const globalSearch = async (req: Request, res: Response) => {
     }
 
     const regex = new RegExp(escapeRegex(q), 'i');
+    const cleanQ = q.replace(/-/g, '');
+    const cleanRegex = new RegExp(escapeRegex(cleanQ), 'i');
     const results: any[] = [];
 
     // 1. Search Students
@@ -25,6 +27,7 @@ export const globalSearch = async (req: Request, res: Response) => {
         { firstName: regex },
         { lastName: regex },
         { admissionNumber: regex },
+        { admissionNumber: cleanRegex },
         { rollNumber: regex },
         { grade: regex },
       ],
@@ -33,10 +36,11 @@ export const globalSearch = async (req: Request, res: Response) => {
       .limit(6);
 
     for (const s of students) {
+      const cleanAdm = (s.admissionNumber || '').replace(/-/g, '');
       results.push({
         id: `st-${s._id}`,
         title: `${s.firstName} ${s.lastName || ''}`.trim(),
-        subtitle: `${s.admissionNumber || 'No ID'} • Class ${s.grade || 'N/A'}${s.rollNumber ? ` • Roll #${s.rollNumber}` : ''}`,
+        subtitle: `${cleanAdm || 'No ID'} • Class ${s.grade || 'N/A'}${s.rollNumber ? ` • Roll #${s.rollNumber}` : ''}`,
         category: 'Students',
         href: `/dashboard/students`,
         icon: 'GraduationCap',
@@ -47,6 +51,7 @@ export const globalSearch = async (req: Request, res: Response) => {
     const enquiries = await AdmissionEnquiry.find({
       $or: [
         { enquiryId: regex },
+        { enquiryId: cleanRegex },
         { 'child.name': regex },
         { 'parent.name': regex },
         { 'parent.phone': regex },
@@ -60,9 +65,10 @@ export const globalSearch = async (req: Request, res: Response) => {
       const childName = enq.child?.name || 'Applicant';
       const parentName = enq.parent?.name || 'Parent';
       const className = enq.child?.classApplied || 'LKG';
+      const cleanEnqId = (enq.enquiryId || '').replace(/-/g, '');
       results.push({
         id: `enq-${enq._id}`,
-        title: `${enq.enquiryId}: ${childName}`,
+        title: `${cleanEnqId}: ${childName}`,
         subtitle: `Parent: ${parentName} • Status: ${enq.status} • Class: ${className}`,
         category: 'Admissions',
         href: `/dashboard/admissions/enquiries`,

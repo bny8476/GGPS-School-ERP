@@ -639,6 +639,7 @@ export default function EnrollChildModal({
                       errors.dob ? 'border-rose-400 focus:ring-2 focus:ring-rose-500/20' : 'border-slate-200 dark:border-slate-700'
                     }`}
                   />
+                  <p className="text-[10px] text-slate-400 mt-1">Child must be at least 3 years old for school enrollment</p>
                   {errors.dob && <p className="text-[11px] text-rose-500 font-semibold mt-1">{errors.dob}</p>}
                 </div>
 

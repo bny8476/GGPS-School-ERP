@@ -265,8 +265,8 @@ export function validateDOB(dateStr: string): { valid: boolean; error?: string }
   }
 
   const ageInYears = (today.getTime() - dob.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
-  if (ageInYears < 1.5) {
-    return { valid: false, error: 'Child must be at least 1.5 years old for school enrollment' };
+  if (ageInYears < 3) {
+    return { valid: false, error: 'Child must be at least 3 years old for school enrollment' };
   }
   if (ageInYears > 25) {
     return { valid: false, error: 'Please enter a realistic school student date of birth' };

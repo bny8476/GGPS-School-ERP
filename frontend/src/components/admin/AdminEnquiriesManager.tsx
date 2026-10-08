@@ -48,6 +48,7 @@ import {
   sanitizePhoneInput,
   handleNamePaste,
   handlePhonePaste,
+  validateDOB,
 } from "@/lib/validationUtils";
 
 export interface EnquiryItem {
@@ -391,7 +392,8 @@ export default function AdminEnquiriesManager() {
       const cleanPhone = selectedEnquiry.parent.phone.replace(/[^0-9]/g, "");
       window.open(`https://wa.me/${cleanPhone}?text=Hello%20${encodeURIComponent(selectedEnquiry.parent.name)},%20this%20is%20GGPS%20School%20Admissions%20Desk.`);
     } else if (method === "Email" && selectedEnquiry.parent?.email) {
-      window.open(`mailto:${selectedEnquiry.parent.email}?subject=GGPS%20School%20Admission%20Enquiry%20${selectedEnquiry.enquiryId}`);
+      const cleanRef = selectedEnquiry.enquiryId ? selectedEnquiry.enquiryId.replace(/-/g, '') : '';
+      window.open(`mailto:${selectedEnquiry.parent.email}?subject=GGPS%20School%20Admission%20Enquiry%20${cleanRef}`);
     }
 
     if (selectedEnquiry.status === "NEW") {
@@ -732,7 +734,7 @@ export default function AdminEnquiriesManager() {
                       >
                         {/* ID */}
                         <td className="py-3.5 px-4 font-mono font-bold text-[#0050CB] dark:text-[#38BDF8]">
-                          {enq.enquiryId}
+                          {enq.enquiryId ? enq.enquiryId.replace(/-/g, '') : ''}
                         </td>
 
                         {/* Parent */}
@@ -857,7 +859,7 @@ export default function AdminEnquiriesManager() {
                 >
                   <div className="flex items-center justify-between">
                     <span className="font-mono font-bold text-xs text-[#0050CB] dark:text-[#38BDF8]">
-                      {enq.enquiryId}
+                      {enq.enquiryId ? enq.enquiryId.replace(/-/g, '') : ''}
                     </span>
                     {getStatusBadge(enq.status)}
                   </div>
@@ -952,7 +954,7 @@ export default function AdminEnquiriesManager() {
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="font-mono font-black text-lg text-[#0050CB] dark:text-[#38BDF8]">
-                      {selectedEnquiry.enquiryId}
+                      {selectedEnquiry.enquiryId ? selectedEnquiry.enquiryId.replace(/-/g, '') : ''}
                     </span>
                     {getStatusBadge(selectedEnquiry.status)}
                   </div>
@@ -1320,7 +1322,7 @@ export default function AdminEnquiriesManager() {
                 <h3 className="text-base font-bold text-[#000E28] dark:text-white">
                   Convert to Admission Application
                 </h3>
-                <p className="text-xs text-slate-500">Enquiry {selectedEnquiry.enquiryId}</p>
+                <p className="text-xs text-slate-500">Enquiry {selectedEnquiry.enquiryId ? selectedEnquiry.enquiryId.replace(/-/g, '') : ''}</p>
               </div>
             </div>
 
@@ -1368,7 +1370,7 @@ export default function AdminEnquiriesManager() {
           <div className="bg-white dark:bg-[#000E28] rounded-2xl border border-slate-200 dark:border-slate-800 p-6 max-w-md w-full space-y-4 shadow-2xl text-xs">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <h3 className="text-sm font-bold text-[#000E28] dark:text-white">
-                Schedule Follow-up for {selectedEnquiry.enquiryId}
+                Schedule Follow-up for {selectedEnquiry.enquiryId ? selectedEnquiry.enquiryId.replace(/-/g, '') : ''}
               </h3>
               <button type="button" onClick={() => setIsFollowUpModalOpen(false)}>
                 <X className="w-4 h-4 text-slate-400" />
@@ -1480,7 +1482,7 @@ export default function AdminEnquiriesManager() {
           <div className="bg-white dark:bg-[#000E28] rounded-2xl border border-slate-200 dark:border-slate-800 p-6 max-w-md w-full space-y-4 shadow-2xl text-xs">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <h3 className="text-sm font-bold text-rose-600 dark:text-rose-400">
-                Close Enquiry {selectedEnquiry.enquiryId}
+                Close Enquiry {selectedEnquiry.enquiryId ? selectedEnquiry.enquiryId.replace(/-/g, '') : ''}
               </h3>
               <button type="button" onClick={() => setIsCloseModalOpen(false)}>
                 <X className="w-4 h-4 text-slate-400" />
@@ -1589,6 +1591,13 @@ function StaffNewEnquiryModal({
     const em = email.trim();
     if (em && !EMAIL_REGEX.test(em)) {
       newErrors.email = "Please enter a valid email address";
+    }
+
+    if (dateOfBirth) {
+      const dobCheck = validateDOB(dateOfBirth);
+      if (!dobCheck.valid) {
+        newErrors.dateOfBirth = dobCheck.error || "Child must be at least 3 years old for school enrollment";
+      }
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -1742,9 +1751,26 @@ function StaffNewEnquiryModal({
                 type="date"
                 max={new Date().toISOString().split("T")[0]}
                 value={dateOfBirth}
-                onChange={(e) => setDateOfBirth(e.target.value)}
-                className="w-full h-9 px-3 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-[#000E28] dark:text-white"
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setDateOfBirth(val);
+                  if (val) {
+                    const check = validateDOB(val);
+                    if (!check.valid) {
+                      setErrors((p) => ({ ...p, dateOfBirth: check.error || "Child must be at least 3 years old for school enrollment" }));
+                    } else {
+                      setErrors((p) => { const n = { ...p }; delete n.dateOfBirth; return n; });
+                    }
+                  } else {
+                    setErrors((p) => { const n = { ...p }; delete n.dateOfBirth; return n; });
+                  }
+                }}
+                className={`w-full h-9 px-3 rounded-lg bg-slate-50 dark:bg-slate-900 border text-xs text-[#000E28] dark:text-white transition-all ${
+                  errors.dateOfBirth ? "border-rose-400 focus:ring-1 focus:ring-rose-500/20" : "border-slate-200 dark:border-slate-700"
+                }`}
               />
+              <p className="text-[10px] text-slate-400 mt-0.5">Child must be at least 3 years old for school enrollment</p>
+              {errors.dateOfBirth && <p className="text-[11px] text-rose-500 font-semibold mt-0.5">{errors.dateOfBirth}</p>}
             </div>
             <div>
               <label htmlFor="modalGender" className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
@@ -1771,21 +1797,9 @@ function StaffNewEnquiryModal({
                 onChange={(e) => setClassApplied(e.target.value)}
                 className="w-full h-9 px-2 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-[#000E28] dark:text-white"
               >
-                <option value="PreKG">PreKG</option>
+                <option value="Pre-KG">Pre-KG</option>
                 <option value="LKG">LKG</option>
                 <option value="UKG">UKG</option>
-                <option value="Class 1">Class 1</option>
-                <option value="Class 2">Class 2</option>
-                <option value="Class 3">Class 3</option>
-                <option value="Class 4">Class 4</option>
-                <option value="Class 5">Class 5</option>
-                <option value="Class 6">Class 6</option>
-                <option value="Class 7">Class 7</option>
-                <option value="Class 8">Class 8</option>
-                <option value="Class 9">Class 9</option>
-                <option value="Class 10">Class 10</option>
-                <option value="Class 11">Class 11</option>
-                <option value="Class 12">Class 12</option>
               </select>
             </div>
             <div>

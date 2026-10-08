@@ -546,6 +546,17 @@ export const deleteStudent = async (req: Request, res: Response) => {
 // @route   GET /api/students/:id/enrollments
 export const getStudentEnrollments = async (req: Request, res: Response) => {
   try {
+    if (req.user?.role === 'Parent') {
+      const allowedStudentIds = await getLinkedStudentIdsForParent(req.user.id);
+      const isAllowed = allowedStudentIds.some((sId) => sId.toString() === String(req.params.id));
+      if (!isAllowed) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied: You do not have permission to view enrollments for this student.',
+        });
+      }
+    }
+
     const enrollments = await Enrollment.find({ studentId: req.params.id })
       .populate('academicYearId', 'name startDate endDate isCurrent')
       .populate('classId', 'name')
@@ -562,6 +573,17 @@ export const getStudentEnrollments = async (req: Request, res: Response) => {
 // @route   GET /api/students/:id/parents
 export const getStudentParents = async (req: Request, res: Response) => {
   try {
+    if (req.user?.role === 'Parent') {
+      const allowedStudentIds = await getLinkedStudentIdsForParent(req.user.id);
+      const isAllowed = allowedStudentIds.some((sId) => sId.toString() === String(req.params.id));
+      if (!isAllowed) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied: You do not have permission to view guardians for this student.',
+        });
+      }
+    }
+
     const studentParents = await StudentParent.find({ studentId: req.params.id })
       .populate('parentId')
       .sort({ isPrimary: -1 });

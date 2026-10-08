@@ -21,7 +21,7 @@ export default function TodayAttendanceCard({ className = "" }: { className?: st
   const { selectedChild, todayAttendance } = useParent();
 
   const childName = selectedChild ? `${selectedChild.firstName} ${selectedChild.lastName}` : "Your child";
-  const classNameStr = selectedChild ? `${selectedChild.grade} - ${selectedChild.section}` : "LKG - Section A";
+  const classNameStr = selectedChild ? `${selectedChild.grade} - ${selectedChild.section}` : "Class not assigned";
 
   const formattedDate = new Date().toLocaleDateString("en-GB", {
     day: "numeric",
@@ -29,9 +29,10 @@ export default function TodayAttendanceCard({ className = "" }: { className?: st
     year: "numeric",
   });
 
-  const status = todayAttendance?.status || "Present";
-  const checkInTime = todayAttendance?.checkInTime || "8:42 AM";
-  const teacherName = todayAttendance?.teacherName || selectedChild?.teacherName || "Ms. Ananya Roy";
+  const isRecorded = Boolean(todayAttendance?.recorded);
+  const status = isRecorded ? (todayAttendance?.status || "Not Marked") : (todayAttendance?.status || "Not Marked");
+  const checkInTime = todayAttendance?.checkInTime || "Not recorded";
+  const teacherName = todayAttendance?.teacherName || selectedChild?.teacherName || "Class Teacher";
   const absenceReason = todayAttendance?.absenceReason;
   const teacherRemark = todayAttendance?.teacherRemark;
 

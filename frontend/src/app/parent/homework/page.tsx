@@ -27,7 +27,7 @@ interface HomeworkItem {
 }
 
 export default function ParentHomeworkPage() {
-  const { selectedChild, children = [], isLoadingChildren } = useParent();
+  const { selectedChild, children = [], isLoadingChildren, homeworkList: contextHwList = [], updateHomeworkStatus } = useParent();
   const [filter, setFilter] = useState<"all" | "Pending" | "Completed" | "Overdue">("all");
   const [selectedHw, setSelectedHw] = useState<HomeworkItem | null>(null);
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
@@ -52,54 +52,21 @@ export default function ParentHomeworkPage() {
     return <ParentEmptyChildState />;
   }
 
-  const [homeworkList, setHomeworkList] = useState<HomeworkItem[]>([
-    {
-      id: "hw-1",
-      title: "Nature Walk Sketchbook & Leaf Observation",
-      subject: "General Awareness",
-      description: "Draw and color three different leaves found in your garden or local park. Write down or dictate the color names (Green, Brown, Yellow) with a parent's help.",
-      assignedDate: "19 Sep 2026",
-      dueDate: "24 Sep 2026",
-      teacher: "Ms. Ananya Roy",
-      status: "Pending",
-      attachmentName: "Nature_Walk_Guideline.pdf",
-      attachmentSize: "1.2 MB",
-    },
-    {
-      id: "hw-2",
-      title: "Numbers 1 to 20 Tracing & Counting Worksheet",
-      subject: "Numeracy",
-      description: "Complete worksheet pages 14–15. Trace the dotted numbers 1 through 20 and count the corresponding fruit illustrations.",
-      assignedDate: "17 Sep 2026",
-      dueDate: "22 Sep 2026",
-      teacher: "Ms. Ananya Roy",
-      status: "Pending",
-      attachmentName: "Number_Tracing_Sheet_1_20.pdf",
-      attachmentSize: "850 KB",
-    },
-    {
-      id: "hw-3",
-      title: "Phonics Alphabet Sound Association: Letter 'M' & 'S'",
-      subject: "Language & Phonics",
-      description: "Practice identifying 4 items in your living room starting with the 'M' and 'S' sounds (e.g. Mug, Mat, Spoon, Sun).",
-      assignedDate: "14 Sep 2026",
-      dueDate: "16 Sep 2026",
-      teacher: "Ms. Ananya Roy",
-      status: "Completed",
-      attachmentName: "Phonics_Sound_Card.pdf",
-      attachmentSize: "620 KB",
-    },
-    {
-      id: "hw-4",
-      title: "Leaf Collection & Sensory Texture Collage",
-      subject: "General Awareness",
-      description: "Collect 3 dry leaves from your garden or balcony and stick them onto the science workbook page.",
-      assignedDate: "10 Sep 2026",
-      dueDate: "12 Sep 2026",
-      teacher: "Ms. Ananya Roy",
-      status: "Completed",
-    },
-  ]);
+  const homeworkList: HomeworkItem[] = (contextHwList || []).map((h: any) => ({
+    id: h._id || h.id || `hw-${Math.random()}`,
+    title: h.title,
+    subject: h.subject || "General",
+    description: h.description || h.instructions || "Review and complete the classroom assignment.",
+    assignedDate: h.assignedDate
+      ? new Date(h.assignedDate).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
+      : "Assigned",
+    dueDate: h.dueDate
+      ? new Date(h.dueDate).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
+      : "Upcoming",
+    teacher: h.teacherName || child.teacherName || "Class Teacher",
+    status: h.status === "Submitted" ? "Completed" : (h.status || "Pending"),
+    attachmentName: h.attachmentUrl ? h.attachmentUrl.split("/").pop() : undefined,
+  }));
 
   const counts = {
     all: homeworkList.length,
@@ -119,20 +86,21 @@ export default function ParentHomeworkPage() {
     setIsSubmitModalOpen(true);
   };
 
-  const handleSubmitWork = (e: React.FormEvent) => {
+  const handleSubmitWork = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedHw) return;
     setIsSubmitting(true);
-    setTimeout(() => {
-      setHomeworkList((prev) =>
-        prev.map((item) =>
-          item.id === selectedHw.id ? { ...item, status: "Completed" } : item
-        )
-      );
-      setIsSubmitting(false);
+    try {
+      if (updateHomeworkStatus) {
+        await updateHomeworkStatus(selectedHw.id, "Submitted");
+      }
       setIsSubmitModalOpen(false);
       toast.success(`Homework for "${selectedHw.title}" submitted successfully!`);
-    }, 1200);
+    } catch {
+      toast.error("Failed to submit homework.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -326,8 +294,21 @@ export default function ParentHomeworkPage() {
 
       {/* Homework Cards List */}
       <div className="space-y-4">
-        {filteredList.map((hw) => (
-          <SpotlightCard key={hw.id} className="p-6 sm:p-7">
+        {filteredList.length === 0 ? (
+          <div className="bg-white dark:bg-[#111827] rounded-[24px] p-12 text-center border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
+            <BookOpen className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto" />
+            <h3 className="text-base font-bold text-slate-700 dark:text-slate-300">
+              No homework assignments found
+            </h3>
+            <p className="text-xs text-slate-400 max-w-sm mx-auto">
+              {filter === "all"
+                ? `No homework tasks currently assigned to ${child.firstName}.`
+                : `No ${filter.toLowerCase()} homework tasks found for this filter.`}
+            </p>
+          </div>
+        ) : (
+          filteredList.map((hw) => (
+            <SpotlightCard key={hw.id} className="p-6 sm:p-7">
             <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
               <div className="space-y-2 max-w-2xl">
                 <div className="flex flex-wrap items-center gap-2">
@@ -391,7 +372,8 @@ export default function ParentHomeworkPage() {
               </div>
             </div>
           </SpotlightCard>
-        ))}
+        ))
+      )}
       </div>
 
       {/* Submission Modal */}
@@ -457,7 +439,7 @@ export default function ParentHomeworkPage() {
                   rows={3}
                   value={submissionNote}
                   onChange={(e) => setSubmissionNote(e.target.value)}
-                  placeholder="e.g. Aarav drew the farm animals and spoke about the sheep..."
+                  placeholder={`e.g. ${child.firstName} completed the assigned worksheet with parent guidance...`}
                   className="w-full p-3 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs focus:outline-none focus:ring-2 focus:ring-[#0050CB]"
                 />
               </div>

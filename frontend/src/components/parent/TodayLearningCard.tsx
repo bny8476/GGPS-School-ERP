@@ -60,12 +60,23 @@ export default function TodayLearningCard({ className = "" }: { className?: stri
 
           {/* List of Today's Learning Items */}
           <div className="mt-3.5 space-y-3">
-            {items.map((item, idx) => (
-              <motion.div
-                key={item._id || idx}
-                whileHover={{ y: -2 }}
-                className="p-3.5 rounded-2xl bg-gradient-to-br from-[#F8FAFF] to-[#EFF5FF] dark:from-white/5 dark:to-blue-950/20 border border-blue-100/70 dark:border-white/5 transition-all shadow-2xs"
-              >
+            {items.length === 0 ? (
+              <div className="text-center py-7 px-4 rounded-2xl bg-slate-50/70 dark:bg-slate-800/20 border border-dashed border-slate-200 dark:border-slate-800">
+                <BookOpen className="w-8 h-8 mx-auto text-slate-300 dark:text-slate-600 mb-2" />
+                <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                  No learning units published for today yet
+                </p>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                  Classroom lesson topics and activities will appear here once teachers log them.
+                </p>
+              </div>
+            ) : (
+              items.map((item, idx) => (
+                <motion.div
+                  key={item._id || idx}
+                  whileHover={{ y: -2 }}
+                  className="p-3.5 rounded-2xl bg-gradient-to-br from-[#F8FAFF] to-[#EFF5FF] dark:from-white/5 dark:to-blue-950/20 border border-blue-100/70 dark:border-white/5 transition-all shadow-2xs"
+                >
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <span className="inline-block px-2.5 py-0.5 rounded-full text-[10.5px] font-black uppercase tracking-wide bg-[#0050CB] text-white shadow-2xs mb-1">
@@ -103,9 +114,10 @@ export default function TodayLearningCard({ className = "" }: { className?: stri
                   )}
                 </div>
               </motion.div>
-            ))}
-          </div>
+            ))
+          )}
         </div>
+      </div>
 
         <div className="mt-4 pt-3 border-t border-blue-50 dark:border-white/5 flex items-center justify-between text-xs text-slate-400">
           <span>Updated dynamically by classroom teachers</span>

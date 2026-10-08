@@ -19,23 +19,8 @@ export default function ParentClassWorkPage() {
 
   const child = selectedChild || children[0] || null;
 
-  if (isLoadingChildren) {
-    return (
-      <div className="w-full min-h-[400px] flex items-center justify-center p-8">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 border-3 border-[#0050CB] border-t-transparent rounded-full animate-spin" />
-          <p className="text-xs font-bold text-slate-500">Loading daily classroom work...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!child) {
-    return <ParentEmptyChildState />;
-  }
-
   const filteredWork = useMemo(() => {
-    return todayClassWork.filter((item) => {
+    return (todayClassWork || []).filter((item) => {
       if (selectedSubject !== "All" && item.subject.toLowerCase() !== selectedSubject.toLowerCase()) {
         return false;
       }
@@ -53,11 +38,26 @@ export default function ParentClassWorkPage() {
 
   const subjects = useMemo(() => {
     const set = new Set<string>(["All"]);
-    todayClassWork.forEach((i) => {
+    (todayClassWork || []).forEach((i) => {
       if (i.subject) set.add(i.subject);
     });
     return Array.from(set);
   }, [todayClassWork]);
+
+  if (isLoadingChildren) {
+    return (
+      <div className="w-full min-h-[400px] flex items-center justify-center p-8">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-3 border-[#0050CB] border-t-transparent rounded-full animate-spin" />
+          <p className="text-xs font-bold text-slate-500">Loading daily classroom work...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!child) {
+    return <ParentEmptyChildState />;
+  }
 
   return (
     <div className="space-y-6 pb-16 font-sans text-slate-800 dark:text-slate-100">

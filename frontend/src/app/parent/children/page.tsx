@@ -15,7 +15,7 @@ import { useParent } from "@/context/ParentContext";
 import ParentEmptyChildState from "@/components/parent/ParentEmptyChildState";
 
 export default function MyChildrenPage() {
-  const { children, selectChild, selectedChild, isLoadingChildren } = useParent();
+  const { children, selectChild, selectedChild, isLoadingChildren, unreadMessageCount } = useParent();
   const [isAddChildModalOpen, setIsAddChildModalOpen] = useState(false);
   const [newAdmissionNumber, setNewAdmissionNumber] = useState("");
   const [newStudentDob, setNewStudentDob] = useState("");
@@ -58,7 +58,7 @@ export default function MyChildrenPage() {
         {/* Left Hero Card (~70% width) — Plain full-width image banner */}
         <div className="lg:col-span-8 xl:col-span-8.5 rounded-[24px] overflow-hidden shadow-[0_4px_24px_rgba(0,80,203,0.06)] border border-blue-100/60 relative min-h-[160px] sm:min-h-[185px]">
           <AppImage
-            src="/my-children-exact-banner-hd.png"
+            src="/kids-learning-banner.jpg"
             alt="Welcome Back, My Children"
             fill
             priority
@@ -95,7 +95,7 @@ export default function MyChildrenPage() {
           <div className="space-y-1.5 max-h-[180px] overflow-y-auto">
             {children.map((c) => {
               const isSelected = (selectedChild?._id || children[0]?._id) === c._id;
-              const photo = c.studentPhoto || (c.firstName === "Ananya" ? "/ananya-student.jpg" : "/aarav-hero-student.jpg");
+              const photo = c.studentPhoto || "/class-hero-girl.jpg";
               return (
                 <button
                   key={c._id}
@@ -153,385 +153,248 @@ export default function MyChildrenPage() {
       </div>
 
       {/* ========================================================
-          3. TWO SIDE-BY-SIDE CHILD PROFILE CARDS
-          (EXACT MATCH TO REFERENCE WITH PASTEL GRADIENTS & RICH DETAILS)
+          3. DYNAMIC CHILD PROFILE CARDS
       ======================================================== */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        
-        {/* ================= CARD 1: AARAV SHARMA ================= */}
-        <div className="bg-white rounded-[28px] border border-[#DCE7F6] shadow-[0_4px_24px_rgba(0,80,203,0.06)] flex flex-col justify-between group hover:shadow-xl transition-all overflow-hidden p-5 sm:p-6">
-          
-          <div>
-            {/* Top Profile Header: Real Dynamic Content */}
-            <div className="relative w-full rounded-[22px] p-3.5 sm:p-4 mb-4 overflow-hidden bg-gradient-to-r from-[#EBF5FF] via-[#F4F9FF] to-[#E3F0FF] dark:from-[#0B1A3A] dark:via-[#091530] dark:to-[#0D2452] border border-blue-200/80 dark:border-white/10 shadow-xs flex items-center justify-between min-h-[92px] sm:min-h-[104px]">
-              {/* Left: Avatar + Details */}
-              <div className="relative z-10 flex items-center gap-3 sm:gap-3.5 min-w-0">
-                {/* Circular Avatar */}
-                <div className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-full overflow-hidden shrink-0 border-2 sm:border-3 border-white dark:border-[#000E28] shadow-md ring-3 ring-blue-200/80 dark:ring-blue-500/30 bg-blue-100">
-                  <AppImage
-                    src={children[0]?.studentPhoto || "/aarav-hero-student.jpg"}
-                    alt={children[0]?.firstName || "Student"}
-                    fill
-                    sizes="64px"
-                    fallbackType="avatar"
-                    name={`${children[0]?.firstName || ""} ${children[0]?.lastName || ""}`}
-                    className="object-cover object-top"
-                  />
-                  {/* Floating mini star */}
-                  <span className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-amber-400 text-white flex items-center justify-center text-[9px] shadow-xs">
-                    ⭐
-                  </span>
-                </div>
+      <div className={`grid grid-cols-1 ${children.length > 1 ? "lg:grid-cols-2" : "max-w-2xl mx-auto"} gap-6`}>
+        {children.map((c, idx) => {
+          const isSelected = (selectedChild?._id || children[0]?._id) === c._id;
+          const photo = c.studentPhoto || "/class-hero-girl.jpg";
+          const isSecondTheme = idx % 2 === 1;
 
-                {/* Details */}
-                <div className="min-w-0">
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#E6F9F0] dark:bg-emerald-950/60 border border-emerald-200/70 text-[10px] font-black text-[#059669] dark:text-emerald-400 leading-none">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#059669] animate-pulse" />
-                      Active
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1.5 mt-0.5">
-                    <h3 className="text-base sm:text-[17px] font-black text-[#000E28] dark:text-white tracking-tight leading-snug">
-                      {children[0]?.firstName} {children[0]?.lastName}
-                    </h3>
-                    <CheckCircle2 className="w-4 h-4 text-[#0050CB] fill-[#0050CB] text-white shrink-0" />
-                  </div>
-                  <p className="text-[11.5px] sm:text-xs font-bold text-[#0050CB] dark:text-blue-300 leading-tight">
-                    {children[0]?.grade} - {children[0]?.section} <span className="text-slate-300 dark:text-slate-600 mx-1 font-normal">|</span> <span className="text-slate-500 dark:text-slate-400 font-semibold">{children[0]?.admissionNumber ? `Adm: ${children[0]?.admissionNumber}` : `Roll No. ${children[0]?.rollNumber || "01"}`}</span>
-                  </p>
-                </div>
-              </div>
+          return (
+            <div
+              key={c._id}
+              className="bg-white dark:bg-[#07142F] rounded-[28px] border border-[#DCE7F6] dark:border-white/10 shadow-[0_4px_24px_rgba(0,80,203,0.06)] flex flex-col justify-between group hover:shadow-xl transition-all overflow-hidden p-5 sm:p-6"
+            >
+              <div>
+                {/* Top Profile Header */}
+                <div
+                  className={`relative w-full rounded-[22px] p-3.5 sm:p-4 mb-4 overflow-hidden border shadow-xs flex items-center justify-between min-h-[92px] sm:min-h-[104px] ${
+                    isSecondTheme
+                      ? "bg-gradient-to-r from-[#FDF2F7] via-[#FEF8FC] to-[#F5F0FF] dark:from-[#2B1020] dark:via-[#1A0B20] dark:to-[#0D1535] border-pink-200/80 dark:border-white/10"
+                      : "bg-gradient-to-r from-[#EBF5FF] via-[#F4F9FF] to-[#E3F0FF] dark:from-[#0B1A3A] dark:via-[#091530] dark:to-[#0D2452] border-blue-200/80 dark:border-white/10"
+                  }`}
+                >
+                  {/* Left: Avatar + Details */}
+                  <div className="relative z-10 flex items-center gap-3 sm:gap-3.5 min-w-0">
+                    <div
+                      className={`relative w-14 h-14 sm:w-16 sm:h-16 rounded-full overflow-hidden shrink-0 border-2 sm:border-3 border-white dark:border-[#000E28] shadow-md ring-3 ${
+                        isSecondTheme
+                          ? "ring-pink-200/80 dark:ring-pink-500/30 bg-pink-100"
+                          : "ring-blue-200/80 dark:ring-blue-500/30 bg-blue-100"
+                      }`}
+                    >
+                      <AppImage
+                        src={photo}
+                        alt={c.firstName}
+                        fill
+                        sizes="64px"
+                        fallbackType="avatar"
+                        name={`${c.firstName} ${c.lastName || ""}`}
+                        className="object-cover object-top"
+                      />
+                      <span className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-amber-400 text-white flex items-center justify-center text-[9px] shadow-xs">
+                        ⭐
+                      </span>
+                    </div>
 
-              {/* Right: Slogan & Decorative Books */}
-              <div className="relative z-10 flex items-center gap-2.5 sm:gap-3 shrink-0">
-                <div className="text-right hidden xs:block">
-                  <p className="text-[11px] sm:text-xs font-bold italic text-[#1A68E5] dark:text-blue-300 leading-tight">
-                    Bright Mind
-                  </p>
-                  <p className="text-[11px] sm:text-xs font-bold italic text-[#1A68E5] dark:text-blue-300 leading-tight flex items-center justify-end gap-0.5">
-                    Happy Heart <span className="text-rose-500 not-italic">♡</span>
-                  </p>
-                </div>
-                <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-xl overflow-hidden border border-blue-100/60 shadow-xs shrink-0 hidden sm:block">
-                  <AppImage
-                    src="/aarav-card-books.jpg"
-                    alt="Study Books"
-                    fill
-                    sizes="56px"
-                    className="object-cover"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* 3 Info Capsules (Age, Class Teacher, Class Mentor) */}
-            <div className="grid grid-cols-3 gap-2.5 mb-4">
-              {/* Capsule 1: Age */}
-              <div className="p-2.5 sm:p-3 rounded-2xl bg-[#EEF5FE] border border-[#DCE9FA] flex items-center gap-2.5 min-h-[64px]">
-                <div className="w-9 h-9 rounded-full bg-[#D4E6FC] text-[#1A68E5] flex items-center justify-center shrink-0 shadow-2xs">
-                  <GraduationCap className="w-4.5 h-4.5" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[11px] text-[#5A6E8C] font-semibold leading-tight">Age</p>
-                  <p className="text-xs sm:text-sm font-black text-[#0A225C] leading-snug">5 Years</p>
-                </div>
-              </div>
-
-              {/* Capsule 2: Class Teacher */}
-              <div className="p-2.5 sm:p-3 rounded-2xl bg-[#FDF2F7] border border-[#FCE1EC] flex items-center gap-2.5 min-h-[64px]">
-                <div className="w-9 h-9 rounded-full bg-[#FCE1EC] text-[#E11D48] flex items-center justify-center shrink-0 shadow-2xs">
-                  <UserCheck className="w-4.5 h-4.5" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[11px] text-[#5A6E8C] font-semibold leading-tight">Class Teacher</p>
-                  <p className="text-xs sm:text-sm font-black text-[#0A225C] leading-snug" title="Ms. Anjali Singh">Ms. Anjali</p>
-                </div>
-              </div>
-
-              {/* Capsule 3: Class Mentor */}
-              <div className="p-2.5 sm:p-3 rounded-2xl bg-[#F5F3FF] border border-[#EDE9FE] flex items-center gap-2.5 min-h-[64px]">
-                <div className="w-9 h-9 rounded-full bg-[#EDE9FE] text-[#7C3AED] flex items-center justify-center shrink-0 shadow-2xs">
-                  <Award className="w-4.5 h-4.5" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[11px] text-[#5A6E8C] font-semibold leading-tight">Class Mentor</p>
-                  <p className="text-xs sm:text-sm font-black text-[#0A225C] leading-snug" title="Ms. Ritu Verma">Ms. Ritu</p>
-                </div>
-              </div>
-            </div>
-
-            {/* 3 Metric Cards Row (Exact Matching Reference Card Design) */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3 mb-5">
-              {/* Metric 1: Attendance */}
-              <div className="relative overflow-hidden rounded-[22px] p-4 bg-gradient-to-br from-white via-white to-[#EBF3FF]/70 border border-blue-100/90 shadow-[0_4px_16px_rgba(0,80,203,0.05)] hover:shadow-md transition-all duration-300 min-h-[128px] flex flex-col justify-between group">
-                <div className="relative z-10 flex items-center justify-between">
-                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#E1EFFF] to-[#C8E0FF] p-[2px] shadow-sm flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                    <div className="w-full h-full rounded-full bg-gradient-to-b from-[#2563EB] to-[#0050CB] flex items-center justify-center shadow-inner">
-                      <CalendarCheck className="w-4 h-4 text-white" />
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#E6F9F0] dark:bg-emerald-950/60 border border-emerald-200/70 text-[10px] font-black text-[#059669] dark:text-emerald-400 leading-none">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#059669] animate-pulse" />
+                          Enrolled
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <h3 className="text-base sm:text-[17px] font-black text-[#000E28] dark:text-white tracking-tight leading-snug">
+                          {c.firstName} {c.lastName}
+                        </h3>
+                        <CheckCircle2
+                          className={`w-4 h-4 shrink-0 ${
+                            isSecondTheme
+                              ? "text-[#E11D48] fill-[#E11D48] text-white"
+                              : "text-[#0050CB] fill-[#0050CB] text-white"
+                          }`}
+                        />
+                      </div>
+                      <p
+                        className={`text-[11.5px] sm:text-xs font-bold leading-tight ${
+                          isSecondTheme ? "text-[#E11D48] dark:text-pink-300" : "text-[#0050CB] dark:text-blue-300"
+                        }`}
+                      >
+                        {c.grade} - {c.section}{" "}
+                        <span className="text-slate-300 dark:text-slate-600 mx-1 font-normal">|</span>{" "}
+                        <span className="text-slate-500 dark:text-slate-400 font-semibold">
+                          {c.admissionNumber
+                            ? `Adm: ${c.admissionNumber.replace(/-/g, "")}`
+                            : c.rollNumber
+                            ? `Roll No. ${c.rollNumber}`
+                            : "Enrolled"}
+                        </span>
+                      </p>
                     </div>
                   </div>
-                  <ChevronRight className="w-3.5 h-3.5 text-blue-400 group-hover:translate-x-0.5 transition-transform" />
-                </div>
-                <div className="relative z-10 mt-2 min-w-0">
-                  <div className="text-[22px] sm:text-[24px] font-black text-[#000E28] tracking-tight leading-none font-sans">
-                    94%
+
+                  {/* Right: Class Tag */}
+                  <div className="relative z-10 flex items-center gap-2.5 sm:gap-3 shrink-0">
+                    <div className="text-right hidden xs:block">
+                      <p
+                        className={`text-[11px] sm:text-xs font-bold italic leading-tight ${
+                          isSecondTheme ? "text-[#E11D48] dark:text-pink-300" : "text-[#1A68E5] dark:text-blue-300"
+                        }`}
+                      >
+                        {c.grade}
+                      </p>
+                      <p
+                        className={`text-[11px] sm:text-xs font-bold italic leading-tight flex items-center justify-end gap-0.5 ${
+                          isSecondTheme ? "text-[#E11D48] dark:text-pink-300" : "text-[#1A68E5] dark:text-blue-300"
+                        }`}
+                      >
+                        {c.section} <span className="text-rose-500 not-italic">♡</span>
+                      </p>
+                    </div>
                   </div>
-                  <div className="text-[13px] font-bold text-[#001D4A] tracking-tight leading-tight mt-1 whitespace-nowrap">
-                    Attendance
+                </div>
+
+                {/* 3 Info Capsules */}
+                <div className="grid grid-cols-3 gap-2.5 mb-4">
+                  {/* Capsule 1: Class */}
+                  <div className="p-2.5 sm:p-3 rounded-2xl bg-[#EEF5FE] dark:bg-blue-950/30 border border-[#DCE9FA] dark:border-blue-900/40 flex items-center gap-2.5 min-h-[64px]">
+                    <div className="w-9 h-9 rounded-full bg-[#D4E6FC] dark:bg-blue-900/60 text-[#1A68E5] flex items-center justify-center shrink-0 shadow-2xs">
+                      <GraduationCap className="w-4.5 h-4.5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[11px] text-[#5A6E8C] dark:text-slate-400 font-semibold leading-tight">Class</p>
+                      <p className="text-xs sm:text-sm font-black text-[#0A225C] dark:text-white leading-snug truncate">
+                        {c.grade || "Preschool"}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Capsule 2: Class Teacher */}
+                  <div className="p-2.5 sm:p-3 rounded-2xl bg-[#FDF2F7] dark:bg-rose-950/30 border border-[#FCE1EC] dark:border-rose-900/40 flex items-center gap-2.5 min-h-[64px]">
+                    <div className="w-9 h-9 rounded-full bg-[#FCE1EC] dark:bg-rose-900/60 text-[#E11D48] flex items-center justify-center shrink-0 shadow-2xs">
+                      <UserCheck className="w-4.5 h-4.5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[11px] text-[#5A6E8C] dark:text-slate-400 font-semibold leading-tight">Teacher</p>
+                      <p
+                        className="text-xs sm:text-sm font-black text-[#0A225C] dark:text-white leading-snug truncate"
+                        title={c.teacherName || "Assigned Educator"}
+                      >
+                        {c.teacherName || "Assigned"}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Capsule 3: Emergency Contact */}
+                  <div className="p-2.5 sm:p-3 rounded-2xl bg-[#F5F3FF] dark:bg-purple-950/30 border border-[#EDE9FE] dark:border-purple-900/40 flex items-center gap-2.5 min-h-[64px]">
+                    <div className="w-9 h-9 rounded-full bg-[#EDE9FE] dark:bg-purple-900/60 text-[#7C3AED] flex items-center justify-center shrink-0 shadow-2xs">
+                      <ShieldCheck className="w-4.5 h-4.5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[11px] text-[#5A6E8C] dark:text-slate-400 font-semibold leading-tight">Emergency</p>
+                      <p
+                        className="text-xs sm:text-sm font-black text-[#0A225C] dark:text-white leading-snug truncate"
+                        title={c.emergencyContact || "Registered on file"}
+                      >
+                        {c.emergencyContact ? c.emergencyContact.slice(-10) : "On Record"}
+                      </p>
+                    </div>
                   </div>
                 </div>
-                <div className="relative z-10 mt-2 pt-0.5 flex items-center justify-between">
-                  <span className="inline-flex items-center gap-1 text-[11px] font-extrabold text-[#059669] whitespace-nowrap">
-                    ↑ +2.4% this month
-                  </span>
+
+                {/* 3 Metric Cards Row */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3 mb-5">
+                  {/* Metric 1: Attendance */}
+                  <div className="relative overflow-hidden rounded-[22px] p-4 bg-gradient-to-br from-white via-white to-[#EBF3FF]/70 dark:from-slate-900 dark:via-slate-900 dark:to-blue-950/30 border border-blue-100/90 dark:border-blue-900/40 shadow-[0_4px_16px_rgba(0,80,203,0.05)] hover:shadow-md transition-all duration-300 min-h-[128px] flex flex-col justify-between group">
+                    <div className="relative z-10 flex items-center justify-between">
+                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#E1EFFF] to-[#C8E0FF] p-[2px] shadow-sm flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                        <div className="w-full h-full rounded-full bg-gradient-to-b from-[#2563EB] to-[#0050CB] flex items-center justify-center shadow-inner">
+                          <CalendarCheck className="w-4 h-4 text-white" />
+                        </div>
+                      </div>
+                      <ChevronRight className="w-3.5 h-3.5 text-blue-400 group-hover:translate-x-0.5 transition-transform" />
+                    </div>
+                    <div className="relative z-10 mt-2 min-w-0">
+                      <div className="text-[22px] sm:text-[24px] font-black text-[#000E28] dark:text-white tracking-tight leading-none font-sans">
+                        {c.attendanceRate !== undefined ? `${c.attendanceRate}%` : "Recorded"}
+                      </div>
+                      <div className="text-[13px] font-bold text-[#001D4A] dark:text-slate-300 tracking-tight leading-tight mt-1 whitespace-nowrap">
+                        Attendance
+                      </div>
+                    </div>
+                    <div className="relative z-10 mt-2 pt-0.5 flex items-center justify-between">
+                      <span className="inline-flex items-center gap-1 text-[11px] font-extrabold text-[#059669] whitespace-nowrap">
+                        Verified Record
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Metric 2: Homework */}
+                  <div className="relative overflow-hidden rounded-[22px] p-4 bg-gradient-to-br from-white via-white to-[#FFF7ED]/70 dark:from-slate-900 dark:via-slate-900 dark:to-orange-950/30 border border-amber-100/90 dark:border-amber-900/40 shadow-[0_4px_16px_rgba(249,115,22,0.05)] hover:shadow-md transition-all duration-300 min-h-[128px] flex flex-col justify-between group">
+                    <div className="relative z-10 flex items-center justify-between">
+                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#FFEDD5] to-[#FED7AA] p-[2px] shadow-sm flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                        <div className="w-full h-full rounded-full bg-gradient-to-b from-[#FB923C] to-[#EA580C] flex items-center justify-center shadow-inner">
+                          <Home className="w-4 h-4 text-white" />
+                        </div>
+                      </div>
+                      <ChevronRight className="w-3.5 h-3.5 text-orange-400 group-hover:translate-x-0.5 transition-transform" />
+                    </div>
+                    <div className="relative z-10 mt-2 min-w-0">
+                      <div className="text-[22px] sm:text-[24px] font-black text-[#EA580C] tracking-tight leading-none font-sans">
+                        {c.pendingHomework !== undefined ? c.pendingHomework : 0}
+                      </div>
+                      <div className="text-[13px] font-bold text-[#001D4A] dark:text-slate-300 tracking-tight leading-tight mt-1 whitespace-nowrap">
+                        Pending Tasks
+                      </div>
+                    </div>
+                    <div className="relative z-10 mt-2 pt-0.5 flex items-center justify-between">
+                      <span className="inline-flex items-center gap-1 text-[11px] font-extrabold text-[#EA580C] whitespace-nowrap">
+                        Assignments
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Metric 3: Fees */}
+                  <div className="relative overflow-hidden rounded-[22px] p-4 bg-gradient-to-br from-white via-white to-[#F5F3FF]/70 dark:from-slate-900 dark:via-slate-900 dark:to-purple-950/30 border border-purple-100/90 dark:border-purple-900/40 shadow-[0_4px_16px_rgba(124,58,237,0.05)] hover:shadow-md transition-all duration-300 min-h-[128px] flex flex-col justify-between group">
+                    <div className="relative z-10 flex items-center justify-between">
+                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#EDE9FE] to-[#DDD6FE] p-[2px] shadow-sm flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                        <div className="w-full h-full rounded-full bg-gradient-to-b from-[#8B5CF6] to-[#6D28D9] flex items-center justify-center shadow-inner">
+                          <BarChart3 className="w-4 h-4 text-white" />
+                        </div>
+                      </div>
+                      <ChevronRight className="w-3.5 h-3.5 text-purple-400 group-hover:translate-x-0.5 transition-transform" />
+                    </div>
+                    <div className="relative z-10 mt-2 min-w-0">
+                      <div className="text-[18px] sm:text-[20px] font-black text-[#7C3AED] tracking-tight leading-none font-sans truncate">
+                        {c.feesDue && c.feesDue > 0 ? `₹${c.feesDue.toLocaleString('en-IN')}` : "Settled"}
+                      </div>
+                      <div className="text-[13px] font-bold text-[#001D4A] dark:text-slate-300 tracking-tight leading-tight mt-1 whitespace-nowrap">
+                        Fee Balance
+                      </div>
+                    </div>
+                    <div className="relative z-10 mt-2 pt-0.5 flex items-center justify-between">
+                      <span className="inline-flex items-center gap-1 text-[11px] font-extrabold text-[#7C3AED] whitespace-nowrap">
+                        {c.feesDue && c.feesDue > 0 ? "Payment due" : "All cleared"}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              {/* Metric 2: Homework */}
-              <div className="relative overflow-hidden rounded-[22px] p-4 bg-gradient-to-br from-white via-white to-[#FFF7ED]/70 border border-amber-100/90 shadow-[0_4px_16px_rgba(249,115,22,0.05)] hover:shadow-md transition-all duration-300 min-h-[128px] flex flex-col justify-between group">
-                <div className="relative z-10 flex items-center justify-between">
-                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#FFEDD5] to-[#FED7AA] p-[2px] shadow-sm flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                    <div className="w-full h-full rounded-full bg-gradient-to-b from-[#FB923C] to-[#EA580C] flex items-center justify-center shadow-inner">
-                      <Home className="w-4 h-4 text-white" />
-                    </div>
-                  </div>
-                  <ChevronRight className="w-3.5 h-3.5 text-orange-400 group-hover:translate-x-0.5 transition-transform" />
-                </div>
-                <div className="relative z-10 mt-2 min-w-0">
-                  <div className="text-[22px] sm:text-[24px] font-black text-[#EA580C] tracking-tight leading-none font-sans">
-                    3
-                  </div>
-                  <div className="text-[13px] font-bold text-[#001D4A] tracking-tight leading-tight mt-1 whitespace-nowrap">
-                    Pending Tasks
-                  </div>
-                </div>
-                <div className="relative z-10 mt-2 pt-0.5 flex items-center justify-between">
-                  <span className="inline-flex items-center gap-1 text-[11px] font-extrabold text-[#EA580C] whitespace-nowrap">
-                    Due soon
-                  </span>
-                </div>
-              </div>
-
-              {/* Metric 3: Overall Progress */}
-              <div className="relative overflow-hidden rounded-[22px] p-4 bg-gradient-to-br from-white via-white to-[#F5F3FF]/70 border border-purple-100/90 shadow-[0_4px_16px_rgba(124,58,237,0.05)] hover:shadow-md transition-all duration-300 min-h-[128px] flex flex-col justify-between group">
-                <div className="relative z-10 flex items-center justify-between">
-                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#EDE9FE] to-[#DDD6FE] p-[2px] shadow-sm flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                    <div className="w-full h-full rounded-full bg-gradient-to-b from-[#8B5CF6] to-[#6D28D9] flex items-center justify-center shadow-inner">
-                      <BarChart3 className="w-4 h-4 text-white" />
-                    </div>
-                  </div>
-                  <ChevronRight className="w-3.5 h-3.5 text-purple-400 group-hover:translate-x-0.5 transition-transform" />
-                </div>
-                <div className="relative z-10 mt-2 min-w-0">
-                  <div className="text-[20px] sm:text-[22px] font-black text-[#7C3AED] tracking-tight leading-none font-sans">
-                    Progressing
-                  </div>
-                  <div className="text-[13px] font-bold text-[#001D4A] tracking-tight leading-tight mt-1 whitespace-nowrap">
-                    Overall Progress
-                  </div>
-                </div>
-                <div className="relative z-10 mt-2 pt-0.5 flex items-center justify-between">
-                  <span className="inline-flex items-center gap-1 text-[11px] font-extrabold text-[#7C3AED] whitespace-nowrap">
-                    On track &amp; thriving
-                  </span>
-                </div>
-              </div>
+              {/* Full-Width Gradient Button */}
+              <Link
+                href={`/parent/children/${c._id}`}
+                onClick={() => selectChild(c._id)}
+                className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-[#0050CB] via-[#3B82F6] to-[#6366F1] hover:opacity-95 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-[0_4px_16px_rgba(0,80,203,0.25)] transition-all"
+              >
+                <span>View Full Profile</span>
+                <span className="text-base">→</span>
+              </Link>
             </div>
-          </div>
-
-          {/* Full-Width Gradient Button: Royal Blue to Electric Purple */}
-          <Link
-            href={`/parent/children/${children[0]?._id}`}
-            onClick={() => children[0] && selectChild(children[0]._id)}
-            className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-[#2072F5] via-[#6366F1] to-[#9D4DF6] hover:opacity-95 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-[0_4px_16px_rgba(99,102,241,0.35)] transition-all"
-          >
-            <span>View Full Profile</span>
-            <span className="text-base">→</span>
-          </Link>
-        </div>
-
-        {/* ================= CARD 2: DYNAMIC SECOND CHILD ================= */}
-        {children[1] && (
-        <div className="bg-white rounded-[28px] border border-[#DCE7F6] shadow-[0_4px_24px_rgba(0,80,203,0.06)] flex flex-col justify-between group hover:shadow-xl transition-all overflow-hidden p-5 sm:p-6">
-          
-          <div>
-            {/* Top Profile Header: Real Dynamic Content */}
-            <div className="relative w-full rounded-[22px] p-3.5 sm:p-4 mb-4 overflow-hidden bg-gradient-to-r from-[#FDF2F7] via-[#FEF8FC] to-[#F5F0FF] border border-pink-200/80 shadow-xs flex items-center justify-between min-h-[92px] sm:min-h-[104px]">
-              {/* Left: Avatar + Details */}
-              <div className="relative z-10 flex items-center gap-3 sm:gap-3.5 min-w-0">
-                {/* Circular Avatar */}
-                <div className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-full overflow-hidden shrink-0 border-2 sm:border-3 border-white shadow-md ring-3 ring-pink-200/80 bg-pink-100 flex items-center justify-center">
-                  <span className="text-3xl">👧</span>
-                  {/* Floating mini star */}
-                  <span className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-amber-400 text-white flex items-center justify-center text-[9px] shadow-xs">
-                    ⭐
-                  </span>
-                </div>
-
-                {/* Details */}
-                <div className="min-w-0">
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#E6F9F0] border border-emerald-200/70 text-[10px] font-black text-[#059669] leading-none">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#059669] animate-pulse" />
-                      Active
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1.5 mt-0.5">
-                    <h3 className="text-base sm:text-[17px] font-black text-[#000E28] dark:text-white tracking-tight leading-snug">
-                      {children[1]?.firstName || children[0]?.firstName} {children[1]?.lastName || children[0]?.lastName}
-                    </h3>
-                    <CheckCircle2 className="w-4 h-4 text-[#E11D48] fill-[#E11D48] text-white shrink-0" />
-                  </div>
-                  <p className="text-[11.5px] sm:text-xs font-bold text-[#E11D48] leading-tight">
-                    {children[1]?.grade || children[0]?.grade} - {children[1]?.section || children[0]?.section} <span className="text-slate-300 mx-1 font-normal">|</span> <span className="text-slate-500 font-semibold">{(children[1] || children[0])?.admissionNumber ? `Adm: ${(children[1] || children[0])?.admissionNumber}` : `Roll No. ${(children[1] || children[0])?.rollNumber || "02"}`}</span>
-                  </p>
-                </div>
-              </div>
-
-              {/* Right: Slogan & Decorative Art */}
-              <div className="relative z-10 flex items-center gap-2.5 sm:gap-3 shrink-0">
-                <div className="text-right hidden xs:block">
-                  <p className="text-[11px] sm:text-xs font-bold italic text-[#E11D48] leading-tight">
-                    Creative Soul
-                  </p>
-                  <p className="text-[11px] sm:text-xs font-bold italic text-[#E11D48] leading-tight flex items-center justify-end gap-0.5">
-                    Star Learner <span className="text-rose-500 not-italic">♡</span>
-                  </p>
-                </div>
-                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-pink-100 to-purple-100 border border-pink-200/60 shadow-xs shrink-0 hidden sm:flex items-center justify-center text-3xl">
-                  🎨
-                </div>
-              </div>
-            </div>
-
-            {/* 3 Info Capsules (Age, Class Teacher, Class Mentor) */}
-            <div className="grid grid-cols-3 gap-2.5 mb-4">
-              {/* Capsule 1: Age */}
-              <div className="p-2.5 sm:p-3 rounded-2xl bg-[#EEF5FE] border border-[#DCE9FA] flex items-center gap-2.5 min-h-[64px]">
-                <div className="w-9 h-9 rounded-full bg-[#D4E6FC] text-[#1A68E5] flex items-center justify-center shrink-0 shadow-2xs">
-                  <GraduationCap className="w-4.5 h-4.5" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[11px] text-[#5A6E8C] font-semibold leading-tight">Age</p>
-                  <p className="text-xs sm:text-sm font-black text-[#0A225C] leading-snug">5 Years</p>
-                </div>
-              </div>
-
-              {/* Capsule 2: Class Teacher */}
-              <div className="p-2.5 sm:p-3 rounded-2xl bg-[#FDF2F7] border border-[#FCE1EC] flex items-center gap-2.5 min-h-[64px]">
-                <div className="w-9 h-9 rounded-full bg-[#FCE1EC] text-[#E11D48] flex items-center justify-center shrink-0 shadow-2xs">
-                  <UserCheck className="w-4.5 h-4.5" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[11px] text-[#5A6E8C] font-semibold leading-tight">Class Teacher</p>
-                  <p className="text-xs sm:text-sm font-black text-[#0A225C] leading-snug" title="Ms. Pooja Sharma">Ms. Pooja</p>
-                </div>
-              </div>
-
-              {/* Capsule 3: Class Mentor */}
-              <div className="p-2.5 sm:p-3 rounded-2xl bg-[#F5F3FF] border border-[#EDE9FE] flex items-center gap-2.5 min-h-[64px]">
-                <div className="w-9 h-9 rounded-full bg-[#EDE9FE] text-[#7C3AED] flex items-center justify-center shrink-0 shadow-2xs">
-                  <Award className="w-4.5 h-4.5" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[11px] text-[#5A6E8C] font-semibold leading-tight">Class Mentor</p>
-                  <p className="text-xs sm:text-sm font-black text-[#0A225C] leading-snug" title="Ms. Neha Gupta">Ms. Neha</p>
-                </div>
-              </div>
-            </div>
-
-            {/* 3 Metric Cards Row (Exact Matching Reference Card Design) */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3 mb-5">
-              {/* Metric 1: Attendance */}
-              <div className="relative overflow-hidden rounded-[22px] p-4 bg-gradient-to-br from-white via-white to-[#EBF3FF]/70 border border-blue-100/90 shadow-[0_4px_16px_rgba(0,80,203,0.05)] hover:shadow-md transition-all duration-300 min-h-[128px] flex flex-col justify-between group">
-                <div className="relative z-10 flex items-center justify-between">
-                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#E1EFFF] to-[#C8E0FF] p-[2px] shadow-sm flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                    <div className="w-full h-full rounded-full bg-gradient-to-b from-[#2563EB] to-[#0050CB] flex items-center justify-center shadow-inner">
-                      <CalendarCheck className="w-4 h-4 text-white" />
-                    </div>
-                  </div>
-                  <ChevronRight className="w-3.5 h-3.5 text-blue-400 group-hover:translate-x-0.5 transition-transform" />
-                </div>
-                <div className="relative z-10 mt-2 min-w-0">
-                  <div className="text-[22px] sm:text-[24px] font-black text-[#000E28] tracking-tight leading-none font-sans">
-                    96%
-                  </div>
-                  <div className="text-[13px] font-bold text-[#001D4A] tracking-tight leading-tight mt-1 whitespace-nowrap">
-                    Attendance
-                  </div>
-                </div>
-                <div className="relative z-10 mt-2 pt-0.5 flex items-center justify-between">
-                  <span className="inline-flex items-center gap-1 text-[11px] font-extrabold text-[#059669] whitespace-nowrap">
-                    ↑ +1.8% this month
-                  </span>
-                </div>
-              </div>
-
-              {/* Metric 2: Homework */}
-              <div className="relative overflow-hidden rounded-[22px] p-4 bg-gradient-to-br from-white via-white to-[#FFF7ED]/70 border border-amber-100/90 shadow-[0_4px_16px_rgba(249,115,22,0.05)] hover:shadow-md transition-all duration-300 min-h-[128px] flex flex-col justify-between group">
-                <div className="relative z-10 flex items-center justify-between">
-                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#FFEDD5] to-[#FED7AA] p-[2px] shadow-sm flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                    <div className="w-full h-full rounded-full bg-gradient-to-b from-[#FB923C] to-[#EA580C] flex items-center justify-center shadow-inner">
-                      <Home className="w-4 h-4 text-white" />
-                    </div>
-                  </div>
-                  <ChevronRight className="w-3.5 h-3.5 text-orange-400 group-hover:translate-x-0.5 transition-transform" />
-                </div>
-                <div className="relative z-10 mt-2 min-w-0">
-                  <div className="text-[22px] sm:text-[24px] font-black text-[#EA580C] tracking-tight leading-none font-sans">
-                    1
-                  </div>
-                  <div className="text-[13px] font-bold text-[#001D4A] tracking-tight leading-tight mt-1 whitespace-nowrap">
-                    Pending Tasks
-                  </div>
-                </div>
-                <div className="relative z-10 mt-2 pt-0.5 flex items-center justify-between">
-                  <span className="inline-flex items-center gap-1 text-[11px] font-extrabold text-[#EA580C] whitespace-nowrap">
-                    Due soon
-                  </span>
-                </div>
-              </div>
-
-              {/* Metric 3: Overall Progress */}
-              <div className="relative overflow-hidden rounded-[22px] p-4 bg-gradient-to-br from-white via-white to-[#F5F3FF]/70 border border-purple-100/90 shadow-[0_4px_16px_rgba(124,58,237,0.05)] hover:shadow-md transition-all duration-300 min-h-[128px] flex flex-col justify-between group">
-                <div className="relative z-10 flex items-center justify-between">
-                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#EDE9FE] to-[#DDD6FE] p-[2px] shadow-sm flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                    <div className="w-full h-full rounded-full bg-gradient-to-b from-[#8B5CF6] to-[#6D28D9] flex items-center justify-center shadow-inner">
-                      <BarChart3 className="w-4 h-4 text-white" />
-                    </div>
-                  </div>
-                  <ChevronRight className="w-3.5 h-3.5 text-purple-400 group-hover:translate-x-0.5 transition-transform" />
-                </div>
-                <div className="relative z-10 mt-2 min-w-0">
-                  <div className="text-[20px] sm:text-[22px] font-black text-[#7C3AED] tracking-tight leading-none font-sans">
-                    Progressing
-                  </div>
-                  <div className="text-[13px] font-bold text-[#001D4A] tracking-tight leading-tight mt-1 whitespace-nowrap">
-                    Overall Progress
-                  </div>
-                </div>
-                <div className="relative z-10 mt-2 pt-0.5 flex items-center justify-between">
-                  <span className="inline-flex items-center gap-1 text-[11px] font-extrabold text-[#7C3AED] whitespace-nowrap">
-                    On track &amp; thriving
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Full-Width Gradient Button: Royal Blue to Electric Purple */}
-          <Link
-            href={`/parent/children/${children[1]?._id || children[0]?._id}`}
-            onClick={() => (children[1] || children[0]) && selectChild((children[1] || children[0])._id)}
-            className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-[#2072F5] via-[#6366F1] to-[#9D4DF6] hover:opacity-95 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-[0_4px_16px_rgba(99,102,241,0.35)] transition-all"
-          >
-            <span>View Full Profile</span>
-            <span className="text-base">→</span>
-          </Link>
-        </div>
-        )}
-
+          );
+        })}
       </div>
 
       {/* ========================================================
@@ -638,9 +501,11 @@ export default function MyChildrenPage() {
 
           {/* Top Right: Red Badge 3 + Blue Arrow */}
           <div className="absolute top-3.5 right-4 z-10 flex flex-col items-end gap-1">
-            <span className="w-4 h-4 rounded-full bg-[#EF4444] text-white text-[9px] font-black flex items-center justify-center shadow-xs">
-              3
-            </span>
+            {unreadMessageCount > 0 && (
+              <span className="w-4 h-4 rounded-full bg-[#EF4444] text-white text-[9px] font-black flex items-center justify-center shadow-xs">
+                {unreadMessageCount > 99 ? "99+" : unreadMessageCount}
+              </span>
+            )}
             <ChevronRight className="w-4 h-4 text-[#1A68E5] stroke-[2.8] group-hover:translate-x-0.5 transition-transform" />
           </div>
 
@@ -743,7 +608,7 @@ export default function MyChildrenPage() {
                     <input
                       type="text"
                       required
-                      placeholder="e.g. GGPS-2026-042"
+                      placeholder="e.g. GGPS2026042"
                       value={newAdmissionNumber}
                       onChange={(e) => setNewAdmissionNumber(e.target.value)}
                       className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-[#0050CB] focus:outline-hidden"
