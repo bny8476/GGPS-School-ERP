@@ -1397,10 +1397,6 @@ export default function ChildGrowthWorkspace({ students = [], onNavigateTab }: C
           <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-6 sm:p-7 shadow-xs">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-100 dark:border-slate-800">
               <div>
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-950/60 text-[#0050CB] dark:text-blue-300 text-xs font-bold mb-2">
-                  <FileText className="w-3.5 h-3.5" />
-                  <span>Kindergarten Term Progress Dossier</span>
-                </div>
                 <h2 className="text-xl font-black text-slate-900 dark:text-white">
                   Monthly Child Growth Summary • September 2026
                 </h2>

@@ -174,9 +174,6 @@ export default function StudentIdVerificationPage() {
                 </div>
 
                 <div className="space-y-1.5 flex-1 min-w-0">
-                  <span className="inline-block text-[11px] font-bold text-[#0050CB] dark:text-[#38BDF8] bg-blue-50 dark:bg-blue-950/40 px-2.5 py-0.5 rounded-full border border-blue-100 dark:border-blue-900/40">
-                    Enrolled Student
-                  </span>
                   <h2 className="text-xl sm:text-2xl font-black text-[#000E28] dark:text-white truncate">
                     {data.studentName}
                   </h2>

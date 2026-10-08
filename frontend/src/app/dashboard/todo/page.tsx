@@ -375,10 +375,6 @@ export default function TodoPage() {
                 <h1 className="text-2xl sm:text-3xl font-black text-[#000E28] dark:text-white tracking-tight">
                   To-Do Tasks & Delegation
                 </h1>
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-[#E5EEFF] text-[#0050CB] dark:bg-[#0050CB]/30 dark:text-[#38BDF8] border border-[#0050CB]/20">
-                  <UserCheck className="w-3 h-3" />
-                  Staff Delegation Hub
-                </span>
               </div>
               <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-300 font-medium mt-1 max-w-xl">
                 Assign tasks to faculty, monitor SLA deadlines, automate ERP workflow items, and escalate critical operational action items.

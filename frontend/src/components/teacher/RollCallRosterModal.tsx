@@ -547,9 +547,6 @@ export default function RollCallRosterModal({
                   <h2 className="text-base sm:text-lg font-black text-[#000E28] dark:text-white tracking-tight">
                     Roll-Call Roster
                   </h2>
-                  <span className="px-2 py-0.5 rounded-full bg-[#E5EEFF] dark:bg-blue-950 text-[#0050CB] dark:text-blue-300 text-[10px] font-bold">
-                    Official Document
-                  </span>
                 </div>
                 <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
                   {className} - Section {sectionName} • Academic Session {academicYear}

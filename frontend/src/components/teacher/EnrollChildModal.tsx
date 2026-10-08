@@ -343,9 +343,6 @@ export default function EnrollChildModal({
                 <h3 className="font-black text-base sm:text-lg text-[#000E28] dark:text-white leading-none">
                   Enroll Child to Classroom
                 </h3>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-[#E5EEFF] text-[#0050CB] dark:bg-blue-900/50 dark:text-blue-300">
-                  Registrar Authority
-                </span>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                 Official Student Identity, Safety Record & Permanent Credential Generation
@@ -555,9 +552,6 @@ export default function EnrollChildModal({
                     <span className="font-mono font-black text-sm tracking-wider">
                       {isPreviewLoading ? '...' : previewRollNo || '001'}
                     </span>
-                    <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-[#E5EEFF] text-[#0050CB] dark:bg-blue-950 dark:text-blue-300">
-                      Scoped to {className}-{sectionName}
-                    </span>
                   </motion.div>
                 </div>
 
@@ -582,9 +576,6 @@ export default function EnrollChildModal({
                   >
                     <span className="font-mono font-black text-xs sm:text-sm text-[#0050CB] dark:text-blue-400 tracking-wide">
                       {isPreviewLoading ? 'Generating...' : previewAdmissionNo || 'GGPS2026LKG001'}
-                    </span>
-                    <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-orange-50 text-[#FF690C] dark:bg-orange-950/60 dark:text-orange-300">
-                      System Authority
                     </span>
                   </motion.div>
                 </div>

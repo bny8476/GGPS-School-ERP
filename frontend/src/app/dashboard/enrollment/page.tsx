@@ -985,13 +985,10 @@ export default function EnrollmentPage() {
             <form onSubmit={handleAssignSubmit} className="space-y-4 text-xs">
               {reassignTarget ? (
                 <div>
-                  <div className="flex items-center justify-between mb-1.5">
+                  <div className="mb-1.5">
                     <label className="font-bold text-slate-700 dark:text-slate-300 block">
                       Student
                     </label>
-                    <span className="text-[10px] font-bold text-[#0050CB] dark:text-[#E5EEFF] bg-[#E5EEFF] dark:bg-[#0050CB]/20 px-2 py-0.5 rounded-full border border-[#0050CB]/20">
-                      Reassigning
-                    </span>
                   </div>
                   <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl">
                     <div className="w-9 h-9 rounded-full bg-[#E5EEFF] dark:bg-[#0050CB]/20 text-[#0050CB] dark:text-[#E5EEFF] flex items-center justify-center font-black text-xs shrink-0">

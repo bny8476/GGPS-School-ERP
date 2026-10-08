@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Users, ShieldAlert, Mail } from "lucide-react";
+import { Users, Mail } from "lucide-react";
 
 interface ParentEmptyChildStateProps {
   title?: string;
@@ -32,10 +32,6 @@ export default function ParentEmptyChildState({
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300">
             <Mail className="w-3.5 h-3.5 text-[#0050CB]" />
             <span>admin@ggps.edu.in</span>
-          </div>
-          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#E5EEFF] dark:bg-[#0050CB]/20 text-[11px] font-bold text-[#0050CB] dark:text-[#38BDF8]">
-            <ShieldAlert className="w-3.5 h-3.5 text-[#FF690C]" />
-            <span>Verified Guardian Access Only</span>
           </div>
         </div>
       </div>

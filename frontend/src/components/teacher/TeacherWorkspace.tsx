@@ -4197,11 +4197,7 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
               <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#DBEAFE] via-[#EDE9FE] to-[#FCE7F3] dark:from-slate-900 dark:via-indigo-950/40 dark:to-purple-950/40 border border-blue-200/70 dark:border-slate-800 p-6 shadow-xs">
                 <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
                   <div className="max-w-xl">
-                    {/* Attendance Pill Badge */}
-                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/90 dark:bg-slate-800/90 backdrop-blur-xs border border-blue-200/50 text-[#0050CB] dark:text-blue-400 text-xs font-bold mb-2.5 shadow-xs">
-                      <Calendar className="w-3.5 h-3.5 text-[#0050CB] dark:text-blue-400" />
-                      <span>Daily Homeroom Roll-Call</span>
-                    </div>
+
 
                     {/* Heading */}
                     <h1 className="text-2xl sm:text-3xl font-black text-[#000E28] dark:text-white tracking-tight flex items-baseline gap-2 flex-wrap">
@@ -6254,12 +6250,7 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
               {/* Header */}
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white dark:bg-[#000E28] p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
                 <div>
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#E5EEFF] dark:bg-blue-950/60 text-[#0050CB] dark:text-blue-400 border border-blue-200/80 dark:border-blue-800">
-                      <User className="w-3 h-3" />
-                      Individual Faculty Portal • {teacherProfile.firstName} {teacherProfile.lastName} ({teacherProfile.designation})
-                    </span>
-                  </div>
+
                   <div className="flex items-center gap-2.5">
                     <div className="w-9 h-9 rounded-xl bg-[#E5EEFF] dark:bg-blue-900/40 text-[#0050CB] dark:text-blue-400 flex items-center justify-center font-bold">
                       <Clock className="w-5 h-5" />
@@ -7361,9 +7352,6 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
                         <h3 className="text-xl font-black text-slate-800 dark:text-white">
                           {teacherProfile.firstName} {teacherProfile.lastName}
                         </h3>
-                        <span className="px-2 py-0.5 rounded-full bg-[#E5EEFF] text-[#0050CB] text-[10px] font-black border border-blue-200/60">
-                          Verified Faculty
-                        </span>
                       </div>
                       <p className="text-xs text-[#0050CB] dark:text-blue-400 font-bold mt-0.5">
                         {teacherProfile.designation}
@@ -7532,10 +7520,6 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
                           <span className="text-slate-400 font-medium flex items-center gap-1.5">
                             <Mail className="w-3.5 h-3.5 text-[#0050CB]" />
                             Official Faculty Email
-                          </span>
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#E5EEFF] text-[#0050CB] border border-blue-200/60 flex items-center gap-1">
-                            <CheckCircle2 className="w-3 h-3 text-[#0050CB]" />
-                            Verified Domain
                           </span>
                         </div>
                         <p className="text-base font-black text-slate-800 dark:text-white">

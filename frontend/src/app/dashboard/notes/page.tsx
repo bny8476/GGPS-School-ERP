@@ -433,10 +433,6 @@ export default function NotesPage() {
               <h1 className="text-2xl sm:text-3xl font-black text-[#000E28] dark:text-white tracking-tight">
                 Notes, Executive Memos & Minutes
               </h1>
-              <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-[#E5EEFF] text-[#0050CB] dark:bg-[#0050CB]/30 dark:text-[#38BDF8] border border-[#0050CB]/20">
-                <Lock className="w-3 h-3" />
-                RBAC Governed
-              </span>
             </div>
             <p className="text-slate-500 dark:text-slate-400 text-xs font-medium mt-1">
               Institutional records, executive resolutions, curriculum frameworks, and collaborative meeting minutes.

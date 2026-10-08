@@ -1822,16 +1822,6 @@ Need help? Contact School IT Desk at +91 98765 43210.`;
                 );
               })}
             </div>
-
-            <div className="p-3.5 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40 rounded-2xl text-xs text-amber-800 dark:text-amber-300 space-y-1">
-              <p className="font-bold flex items-center gap-1.5">
-                <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                Live MongoDB Synchronization
-              </p>
-              <p className="text-[11px] leading-relaxed">
-                Modifications to Role permissions affect all linked accounts immediately upon token renewal.
-              </p>
-            </div>
           </div>
 
           {/* Permissions Matrix */}
@@ -2075,9 +2065,6 @@ Need help? Contact School IT Desk at +91 98765 43210.`;
                           Linked Children ({inspectLinkedChildren.length})
                         </h4>
                       </div>
-                      <span className="text-[10px] font-bold text-[#0050CB] bg-[#E5EEFF] dark:bg-[#0050CB]/30 px-2 py-0.5 rounded-full">
-                        Parent Profile
-                      </span>
                     </div>
 
                     {isLoadingInspectChildren ? (
