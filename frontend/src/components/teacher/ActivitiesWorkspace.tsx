@@ -13,7 +13,6 @@ import {
   Filter,
   Users,
   Camera,
-  Share2,
   FileText,
   AlertTriangle,
   ChevronLeft,
@@ -1148,13 +1147,6 @@ export default function ActivitiesWorkspace({ students = [], onNavigateTab }: Ac
               </p>
             </div>
             <div className="flex items-center gap-2">
-              <button
-                onClick={() => toast.success("All published moments are synced with parents' mobile app!")}
-                className="px-3.5 py-2 bg-[#E5EEFF] dark:bg-blue-950/60 text-[#0050CB] dark:text-blue-300 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
-              >
-                <Share2 className="w-3.5 h-3.5" />
-                <span>Parent Sync Status: Active</span>
-              </button>
               <button
                 onClick={() => setIsAddMomentModalOpen(true)}
                 className="px-3.5 py-2 bg-[#FF690C] hover:bg-orange-600 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs"

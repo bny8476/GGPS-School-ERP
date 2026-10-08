@@ -1088,13 +1088,10 @@ export default function EnrollmentPage() {
               </div>
 
               <div>
-                <div className="flex items-center justify-between mb-1">
+                <div className="mb-1">
                   <label className="font-bold text-slate-700 dark:text-slate-300 block">
                     Roll Number
                   </label>
-                  <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 px-2 py-0.5 rounded-full border border-blue-200 dark:border-blue-800/40">
-                    Auto-assigned (Locked)
-                  </span>
                 </div>
                 <input
                   type="text"

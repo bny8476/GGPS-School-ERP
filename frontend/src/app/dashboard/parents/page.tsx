@@ -1619,13 +1619,9 @@ Need help? Contact School Administration at +91 98765 43210.`;
               </div>
 
               <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200/60 dark:border-blue-800/60 shrink-0">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                  <span className="text-xs font-semibold text-[#0050CB] dark:text-blue-300">Active Sync</span>
-                </div>
                 <button
                   onClick={() => setProvisionModal(prev => ({ ...prev, isOpen: false }))}
-                  className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer shrink-0 ml-1"
+                  className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer shrink-0"
                   title="Close modal"
                 >
                   <X className="w-5 h-5" />
