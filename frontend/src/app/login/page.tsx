@@ -80,7 +80,6 @@ export default function LoginPage() {
   const [passwordError, setPasswordError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-  const [serverWakeupNotice, setServerWakeupNotice] = useState(false);
 
   useEffect(() => {
     // Pre-warm backend container as soon as login page loads (mitigates Render cold-start latency)
@@ -199,10 +198,7 @@ export default function LoginPage() {
 
     if (hasError) return;
 
-    setIsLoading(true); setError(""); setServerWakeupNotice(false);
-    const wakeupTimer = setTimeout(() => {
-      setServerWakeupNotice(true);
-    }, 3500);
+    setIsLoading(true); setError("");
 
     try {
       const apiBase = getApiBaseUrl();
@@ -289,9 +285,7 @@ export default function LoginPage() {
       if (err?.name === "TypeError" || err?.message?.includes("Failed to fetch")) setError("Unable to connect to the server. Please check your connection and try again.");
       else setError("Something went wrong while signing you in. Please try again.");
     } finally {
-      clearTimeout(wakeupTimer);
       setIsLoading(false);
-      setServerWakeupNotice(false);
     }
   };
 
@@ -659,13 +653,6 @@ export default function LoginPage() {
                 <><ArrowRight className="w-4 h-4" /> Sign In</>
               )}
             </button>
-
-            {serverWakeupNotice && isLoading && (
-              <div className="flex items-center gap-2 p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/40 text-amber-800 dark:text-amber-200 text-xs">
-                <Loader2 className="w-3.5 h-3.5 shrink-0 animate-spin text-amber-600 dark:text-amber-400" />
-                <span>Waking up cloud server... First login may take a few moments. Please wait.</span>
-              </div>
-            )}
           </form>
         </motion.div>
       </div>
