@@ -29,6 +29,7 @@ router.post('/register', validate(registerSchema), registerUser);
 router.post('/login', validate(loginSchema), loginUser);
 router.post('/refresh', refreshAuthToken);
 router.post('/logout', logoutUser);
+router.get('/me', protect, getUserProfile);
 router.get('/profile', protect, getUserProfile);
 router.put('/profile', protect, updateSelfProfile);
 router.put('/change-password', protect, validate(changePasswordSchema), changePassword);

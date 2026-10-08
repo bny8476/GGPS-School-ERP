@@ -34,7 +34,6 @@ export const useAuthStore = create<AuthState>((set) => ({
     const rawRole = (data.role || (data.user && data.user.role) || "PARENT") as string;
     const role = normalizeRole(rawRole);
     
-    // Store non-sensitive user profile strictly in memory/local display cache (no raw tokens)
     const user: AuthUser = (data.user || {
       id: String(data._id || data.id || ""),
       name: String(data.name || "User"),
@@ -48,13 +47,22 @@ export const useAuthStore = create<AuthState>((set) => ({
       : ROLE_PERMISSIONS[role] || [];
 
     if (typeof window !== "undefined") {
-      // Never store raw JWT tokens in localStorage - tokens are managed via secure httpOnly cookies
+      if (data.token) {
+        localStorage.setItem("token", data.token);
+      }
+      if (data.refreshToken) {
+        localStorage.setItem("refreshToken", data.refreshToken as string);
+      }
       localStorage.setItem("user_profile", JSON.stringify({
         id: user.id || user._id,
         name: user.name,
         email: user.email,
         role: user.role,
         avatar: user.avatar,
+      }));
+      localStorage.setItem("user", JSON.stringify({
+        ...user,
+        role: user.role,
       }));
     }
 
@@ -71,6 +79,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     if (typeof window !== "undefined") {
       localStorage.removeItem("user_profile");
       localStorage.removeItem("token");
+      localStorage.removeItem("refreshToken");
       localStorage.removeItem("user");
       localStorage.removeItem("ggps_cached_stats");
       // Explicitly expire cookies so Next.js middleware doesn't bounce /login back to /dashboard
@@ -93,14 +102,17 @@ export const useAuthStore = create<AuthState>((set) => ({
   hydrate: () => {
     if (typeof window === "undefined") return;
     try {
+      const token = localStorage.getItem("token");
       const userStr = localStorage.getItem("user_profile") || localStorage.getItem("user");
-      if (userStr) {
+
+      if (token && userStr) {
         const data = JSON.parse(userStr);
         const rawRole = (data.role || (data.user && data.user.role)) as string;
         const role = normalizeRole(rawRole);
         const user: AuthUser = (data.user || data) as AuthUser;
         const permissions = ROLE_PERMISSIONS[role] || [];
 
+        // 1. Optimistic hydration for instant 0ms UI load
         set({
           user,
           isAuthenticated: true,
@@ -112,7 +124,8 @@ export const useAuthStore = create<AuthState>((set) => ({
       }
     } catch (e) {
       console.error("Auth hydration error:", e);
+    } finally {
+      set({ isLoading: false });
     }
-    set({ isLoading: false });
   },
 }));

@@ -28,6 +28,7 @@ import {
   handleNamePaste,
   handlePhonePaste,
 } from '@/lib/validationUtils';
+import { getApiBaseUrl } from '@/lib/utils';
 
 interface ParentRecord {
   _id: string;
@@ -184,7 +185,7 @@ function ParentsPageContent() {
     setIsLoading(true);
     try {
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+      const apiBase = getApiBaseUrl();
       const headers = { 'Authorization': `Bearer ${token || ''}` };
 
       const [parentsRes, stuRes] = await Promise.all([
@@ -373,7 +374,7 @@ function ParentsPageContent() {
     if (!confirm(`Are you sure you want to remove the parent profile for ${name}?`)) return;
     try {
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+      const apiBase = getApiBaseUrl();
       await fetch(`${apiBase}/api/parents/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token || ''}` }
@@ -415,7 +416,7 @@ function ParentsPageContent() {
 
     try {
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+      const apiBase = getApiBaseUrl();
       const url = editingParentId ? `${apiBase}/api/parents/${editingParentId}` : `${apiBase}/api/parents`;
 
       await fetch(url, {
@@ -487,7 +488,7 @@ function ParentsPageContent() {
     // Save to backend API asynchronously
     try {
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+      const apiBase = getApiBaseUrl();
       fetch(`${apiBase}/api/parents/${currentParent._id}/children`, {
         method: 'POST',
         headers: {
@@ -714,7 +715,7 @@ Need help? Contact School Administration at +91 98765 43210.`;
     setProvisionModal(prev => ({ ...prev, isSaving: true }));
     try {
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+      const apiBase = getApiBaseUrl();
       
       try {
         await fetch(`${apiBase}/api/parents/${parent._id}/provision-access`, {

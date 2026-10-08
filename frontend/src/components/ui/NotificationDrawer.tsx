@@ -42,6 +42,7 @@ export interface NotificationItem {
 
 export interface NotificationDrawerProps {
   onNavigateTab?: (tab: string) => void;
+  badgeCount?: number;
 }
 
 // Fallback realistic notifications for Class LKG-A
@@ -108,7 +109,7 @@ const fallbackNotifications: NotificationItem[] = [
   }
 ];
 
-export default function NotificationDrawer({ onNavigateTab }: NotificationDrawerProps) {
+export default function NotificationDrawer({ onNavigateTab, badgeCount }: NotificationDrawerProps) {
   const [mounted, setMounted] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>(fallbackNotifications);
@@ -473,19 +474,21 @@ export default function NotificationDrawer({ onNavigateTab }: NotificationDrawer
     </AnimatePresence>
   );
 
+  const displayBadge = typeof badgeCount === 'number' ? badgeCount : unreadCount;
+
   return (
     <>
       {/* Trigger Bell Button in Header */}
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        className="relative p-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+        className="relative h-9 w-9 flex items-center justify-center bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer border border-slate-200/90 dark:border-slate-700 shadow-2xs"
         title="Notification Center"
       >
-        <Bell className="h-5 w-5" />
-        {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-[#FF690C] text-[10px] font-black text-white shadow-xs animate-pulse">
-            {unreadCount > 9 ? '9+' : unreadCount}
+        <Bell className="h-4 w-4 text-slate-500 dark:text-slate-300" />
+        {displayBadge > 0 && (
+          <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-rose-500 text-white rounded-full text-[9px] font-black flex items-center justify-center pointer-events-none shadow-xs">
+            {displayBadge > 9 ? '9+' : displayBadge}
           </span>
         )}
       </button>

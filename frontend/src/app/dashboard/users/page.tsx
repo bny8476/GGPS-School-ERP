@@ -59,6 +59,7 @@ import {
   handleNamePaste,
   handlePhonePaste,
 } from "@/lib/validationUtils";
+import { getApiBaseUrl } from "@/lib/utils";
 
 interface StagedChild {
   studentId: string;
@@ -474,7 +475,7 @@ Need help? Contact School IT Desk at +91 98765 43210.`;
   const handleSaveUserProvision = async (user: UserItem, password: string, via = "Direct") => {
     setProvisionModal((prev) => ({ ...prev, isSaving: true }));
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+      const apiBase = getApiBaseUrl();
       const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
       const headers: Record<string, string> = { "Content-Type": "application/json" };
       if (token) headers["Authorization"] = `Bearer ${token}`;
@@ -583,7 +584,7 @@ Need help? Contact School IT Desk at +91 98765 43210.`;
     else setIsLoading(true);
 
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+      const apiBase = getApiBaseUrl();
       const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
       const headers: Record<string, string> = { "Content-Type": "application/json" };
       if (token) headers["Authorization"] = `Bearer ${token}`;
@@ -615,7 +616,7 @@ Need help? Contact School IT Desk at +91 98765 43210.`;
   // Fetch Roles from Backend API
   const fetchRoles = async () => {
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+      const apiBase = getApiBaseUrl();
       const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
       const headers: Record<string, string> = { "Content-Type": "application/json" };
       if (token) headers["Authorization"] = `Bearer ${token}`;
@@ -741,7 +742,7 @@ Need help? Contact School IT Desk at +91 98765 43210.`;
     const timer = setTimeout(async () => {
       setIsSearchingStudents(true);
       try {
-        const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+        const apiBase = getApiBaseUrl();
         const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
         const headers: Record<string, string> = {};
         if (token) headers["Authorization"] = `Bearer ${token}`;
@@ -769,7 +770,7 @@ Need help? Contact School IT Desk at +91 98765 43210.`;
   const fetchInspectLinkedChildren = async (userId: string) => {
     setIsLoadingInspectChildren(true);
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+      const apiBase = getApiBaseUrl();
       const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
       const headers: Record<string, string> = {};
       if (token) headers["Authorization"] = `Bearer ${token}`;
@@ -811,7 +812,7 @@ Need help? Contact School IT Desk at +91 98765 43210.`;
     const timer = setTimeout(async () => {
       setIsSearchingInspectStudents(true);
       try {
-        const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+        const apiBase = getApiBaseUrl();
         const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
         const headers: Record<string, string> = {};
         if (token) headers["Authorization"] = `Bearer ${token}`;
@@ -840,7 +841,7 @@ Need help? Contact School IT Desk at +91 98765 43210.`;
     if (!confirm(`Are you sure you want to unlink ${studentName} from this parent?`)) return;
 
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+      const apiBase = getApiBaseUrl();
       const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
       const headers: Record<string, string> = { "Content-Type": "application/json" };
       if (token) headers["Authorization"] = `Bearer ${token}`;
@@ -865,7 +866,7 @@ Need help? Contact School IT Desk at +91 98765 43210.`;
   const handleLinkChildToInspectUser = async (student: any) => {
     if (!inspectUser) return;
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+      const apiBase = getApiBaseUrl();
       const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
       const headers: Record<string, string> = { "Content-Type": "application/json" };
       if (token) headers["Authorization"] = `Bearer ${token}`;
@@ -994,7 +995,7 @@ Need help? Contact School IT Desk at +91 98765 43210.`;
 
     setIsSaving(true);
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+      const apiBase = getApiBaseUrl();
       const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
       const headers: Record<string, string> = { "Content-Type": "application/json" };
       if (token) headers["Authorization"] = `Bearer ${token}`;
@@ -1100,7 +1101,7 @@ Need help? Contact School IT Desk at +91 98765 43210.`;
 
     setIsSaving(true);
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+      const apiBase = getApiBaseUrl();
       const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
       const headers: Record<string, string> = { "Content-Type": "application/json" };
       if (token) headers["Authorization"] = `Bearer ${token}`;
@@ -1165,7 +1166,7 @@ Need help? Contact School IT Desk at +91 98765 43210.`;
     if (!selectedUser) return;
     setIsSaving(true);
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+      const apiBase = getApiBaseUrl();
       const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
       const headers: Record<string, string> = {};
       if (token) headers["Authorization"] = `Bearer ${token}`;
@@ -1237,7 +1238,7 @@ Need help? Contact School IT Desk at +91 98765 43210.`;
   const handleSaveRolePermissions = async () => {
     setIsSavingRoles(true);
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+      const apiBase = getApiBaseUrl();
       const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
       const headers: Record<string, string> = { "Content-Type": "application/json" };
       if (token) headers["Authorization"] = `Bearer ${token}`;

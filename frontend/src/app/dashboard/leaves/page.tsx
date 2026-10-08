@@ -27,6 +27,7 @@ import { getCurrentAcademicYearFormatted } from '@/lib/date';
 import { toSchoolISODate } from '@/lib/date/timezone';
 import { LeaveRequestSchema } from '@/schemas';
 import FieldError from '@/components/ui/FieldError';
+import { authFetch } from '@/lib/apiClient';
 
 interface LeaveItem {
   _id: string;
@@ -159,38 +160,9 @@ export default function LeavesPage() {
     });
   };
 
-  // Authenticated fetch helper
+  // Authenticated fetch helper using standard authFetch
   const authenticatedFetch = async (url: string, options: RequestInit = {}): Promise<Response> => {
-    const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
-    let token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-
-    const headers: Record<string, string> = {
-      ...(options.headers as Record<string, string> || {}),
-    };
-    if (token) headers["Authorization"] = `Bearer ${token}`;
-
-    let res = await fetch(url, { ...options, headers, credentials: "include" });
-
-    if (res.status === 401 && typeof window !== "undefined") {
-      try {
-        const loginRes = await fetch(`${apiBase}/api/v1/auth/login`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({ email: "admin@school.com", password: "password123" }),
-        });
-        if (loginRes.ok) {
-          const data = await loginRes.json();
-          if (data.token) {
-            localStorage.setItem("token", data.token);
-            headers["Authorization"] = `Bearer ${data.token}`;
-            res = await fetch(url, { ...options, headers, credentials: "include" });
-          }
-        }
-      } catch (_) {}
-    }
-
-    return res;
+    return authFetch(url, options);
   };
 
   const fetchData = async () => {

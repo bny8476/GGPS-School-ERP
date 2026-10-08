@@ -16,6 +16,7 @@ import AdminStatCard from '@/components/admin/AdminStatCard';
 import AdminDataTable, { Column } from '@/components/admin/AdminDataTable';
 import AddStudentModal from '@/components/admin/AddStudentModal';
 import { authFetch } from '@/lib/apiClient';
+import { getApiBaseUrl } from '@/lib/utils';
 
 interface StudentRecord {
   _id: string;
@@ -56,7 +57,7 @@ function StudentsDirectoryContent() {
     setIsLoading(true);
     try {
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+      const apiBase = getApiBaseUrl();
       
       let loadedStudents: StudentRecord[] = [];
 
@@ -104,7 +105,7 @@ function StudentsDirectoryContent() {
   const handleDelete = async (id: string, name: string) => {
     if (!confirm(`Are you sure you want to delete the student record for "${name}"?`)) return;
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+      const apiBase = getApiBaseUrl();
       await authFetch(`${apiBase}/api/students/${id}`, {
         method: 'DELETE',
       });

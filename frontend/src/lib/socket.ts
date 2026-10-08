@@ -4,12 +4,15 @@ import { getQueryClient } from "@/providers/QueryProvider";
 
 let socketInstance: Socket | null = null;
 
-export function getSocket(): Socket {
+export function getSocket(): Socket | null {
   if (typeof window === "undefined") {
-    return null as unknown as Socket;
+    return null;
   }
 
   const token = localStorage.getItem("token") || "";
+  if (!token) {
+    return null;
+  }
 
   if (!socketInstance) {
     const apiBase = getApiBaseUrl();
@@ -18,8 +21,8 @@ export function getSocket(): Socket {
       auth: { token },
       transports: ["websocket", "polling"],
       reconnection: true,
-      reconnectionAttempts: 10,
-      reconnectionDelay: 1000,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 2000,
     });
 
     socketInstance.on("connect", () => {

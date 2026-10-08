@@ -12,6 +12,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import TeacherWorkspace from '@/components/teacher/TeacherWorkspace';
 import AdminExecutiveDashboard from '@/components/admin/AdminExecutiveDashboard';
 import { authFetch } from '@/lib/apiClient';
+import { getApiBaseUrl } from '@/lib/utils';
 
 export default function DashboardOverview() {
   const { t } = useLanguage();
@@ -28,7 +29,7 @@ export default function DashboardOverview() {
         setIsLoading(false);
         return;
       }
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+      const apiBase = getApiBaseUrl();
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 3500);
 

@@ -50,6 +50,8 @@ import toast from "react-hot-toast";
 import QRCode from "qrcode";
 import { getSocket } from "@/lib/socket";
 import { toSchoolISODate } from "@/lib/date/timezone";
+import { authFetch } from "@/lib/apiClient";
+import { getApiBaseUrl } from "@/lib/utils";
 
 // Card Templates
 export type CardTemplate = "modern-blue" | "classic-white" | "premium-school" | "minimal";
@@ -269,76 +271,15 @@ export default function IdCardGeneratorPage() {
   // File Upload Ref
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Resilient authenticated fetch with auto-token acquisition and 401 retry
+  // Resilient authenticated fetch with Bearer token header and cookie support
   const authenticatedFetch = async (url: string, options: RequestInit = {}): Promise<Response> => {
-    const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
-    let token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-
-    const headers: Record<string, string> = {
-      ...(options.headers as Record<string, string> || {}),
-    };
-    if (token) headers["Authorization"] = `Bearer ${token}`;
-
-    let res = await fetch(url, { ...options, headers, credentials: "include" });
-
-    // Auto-refresh token if 401 encountered (e.g., stale or expired token from previous session)
-    if (res.status === 401 && typeof window !== "undefined") {
-      try {
-        const loginRes = await fetch(`${apiBase}/api/v1/auth/login`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({ email: "admin@school.com", password: "password123" }),
-        });
-        if (loginRes.ok) {
-          const data = await loginRes.json();
-          if (data.token) {
-            localStorage.setItem("token", data.token);
-            localStorage.setItem("user", JSON.stringify(data));
-            headers["Authorization"] = `Bearer ${data.token}`;
-            res = await fetch(url, { ...options, headers, credentials: "include" });
-          }
-        }
-      } catch (_) {}
-    }
-    return res;
+    return authFetch(url, options);
   };
-
-  // Ensure valid session token
-  const ensureSession = React.useCallback(async (): Promise<string | null> => {
-    if (typeof window === "undefined") return null;
-    let token = localStorage.getItem("token");
-    if (!token) {
-      try {
-        const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
-        const loginRes = await fetch(`${apiBase}/api/v1/auth/login`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({ email: "admin@school.com", password: "password123" }),
-        });
-        if (loginRes.ok) {
-          const data = await loginRes.json();
-          if (data.token) {
-            localStorage.setItem("token", data.token);
-            localStorage.setItem("user", JSON.stringify(data));
-            token = data.token;
-          }
-        }
-      } catch (_) {}
-    }
-    return token;
-  }, []);
-
-  useEffect(() => {
-    ensureSession();
-  }, [ensureSession]);
-
   // 1. Fetch School Branding from backend
   useEffect(() => {
     const fetchBranding = async () => {
       try {
-        const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+        const apiBase = getApiBaseUrl();
         const res = await authenticatedFetch(`${apiBase}/api/v1/settings/school`);
         if (res.ok) {
           const json = await res.json();
@@ -357,7 +298,7 @@ export default function IdCardGeneratorPage() {
   const fetchHistory = async () => {
     try {
       setHistoryLoading(true);
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+      const apiBase = getApiBaseUrl();
       let url = `${apiBase}/api/v1/id-cards?limit=50`;
       if (historyStatusFilter !== "all") {
         url += `&status=${historyStatusFilter}`;
@@ -389,7 +330,7 @@ export default function IdCardGeneratorPage() {
     const timer = setTimeout(async () => {
       try {
         setIsSearching(true);
-        const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+        const apiBase = getApiBaseUrl();
         const res = await authenticatedFetch(`${apiBase}/api/v1/students?search=${encodeURIComponent(searchQuery)}&limit=10`);
         if (res.ok) {
           const json = await res.json();
@@ -410,8 +351,7 @@ export default function IdCardGeneratorPage() {
   useEffect(() => {
     const loadDefaultStudent = async () => {
       try {
-        await ensureSession();
-        const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+        const apiBase = getApiBaseUrl();
 
         // Look specifically for Aarav first
         const aaravRes = await authenticatedFetch(`${apiBase}/api/v1/students?search=Aarav&limit=1`);
@@ -441,7 +381,7 @@ export default function IdCardGeneratorPage() {
   // 4. Select Student and fetch complete detailed profile
   const handleSelectStudent = async (student: StudentRecord) => {
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+      const apiBase = getApiBaseUrl();
       const res = await authenticatedFetch(`${apiBase}/api/v1/students/${student._id}`);
       if (res.ok) {
         const fullStudent = await res.json();
@@ -554,7 +494,7 @@ export default function IdCardGeneratorPage() {
     const fetchBulkList = async () => {
       try {
         setBulkLoading(true);
-        const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+        const apiBase = getApiBaseUrl();
         const res = await authenticatedFetch(`${apiBase}/api/v1/students?grade=${bulkClassFilter}&limit=100`);
         if (res.ok) {
           const json = await res.json();
@@ -591,7 +531,7 @@ export default function IdCardGeneratorPage() {
 
     try {
       setIsGenerating(true);
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+      const apiBase = getApiBaseUrl();
 
       const payload = {
         studentId: selectedStudent._id,
@@ -633,7 +573,7 @@ export default function IdCardGeneratorPage() {
 
     try {
       setIsRevoking(true);
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+      const apiBase = getApiBaseUrl();
 
       const res = await authenticatedFetch(`${apiBase}/api/v1/id-cards/${revokingCard._id}/revoke`, {
         method: "POST",
@@ -662,7 +602,7 @@ export default function IdCardGeneratorPage() {
 
     try {
       setIsRegenerating(true);
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+      const apiBase = getApiBaseUrl();
 
       const res = await authenticatedFetch(`${apiBase}/api/v1/id-cards/${regeneratingCard._id}/regenerate`, {
         method: "POST",
@@ -712,7 +652,7 @@ export default function IdCardGeneratorPage() {
     if (!card) return;
 
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+      const apiBase = getApiBaseUrl();
 
       const res = await authenticatedFetch(`${apiBase}/api/v1/id-cards/${card._id}/pdf`);
       if (!res.ok) throw new Error("Could not download PDF");

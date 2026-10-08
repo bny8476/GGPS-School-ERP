@@ -32,9 +32,31 @@ declare global {
   }
 }
 
+interface CachedUserStatus {
+  isDeleted: boolean;
+  isActive: boolean;
+  status: string;
+  expiresAt: number;
+}
+
+const userStatusCache = new Map<string, CachedUserStatus>();
+const USER_CACHE_TTL_MS = 30 * 1000; // 30 seconds
+
 export const protect = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  const perfStart = process.env.DEBUG_PERF === 'true' ? performance.now() : 0;
+
+  let bearerToken: string | undefined;
+  // 1. Check Authorization: Bearer <token> header first (most reliable for cross-origin SPA)
+  const authHeader = req.headers.authorization;
+  if (authHeader && /^bearer\s+/i.test(authHeader)) {
+    const raw = authHeader.replace(/^bearer\s+/i, '').trim();
+    if (raw && raw !== 'null' && raw !== 'undefined') {
+      bearerToken = raw;
+    }
+  }
+
   let cookieToken: string | undefined;
-  // 1. Check HttpOnly cookie first (primary auth mechanism)
+  // 2. Fallback to HttpOnly cookie
   if (req.cookies && req.cookies.token) {
     const rawCookie = String(req.cookies.token).trim();
     if (rawCookie && rawCookie !== 'null' && rawCookie !== 'undefined') {
@@ -42,16 +64,16 @@ export const protect = async (req: Request, res: Response, next: NextFunction): 
     }
   }
 
-  let bearerToken: string | undefined;
-  // 2. Fallback to Authorization: Bearer <token> header for API clients / automated tests
-  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-    const raw = req.headers.authorization.substring(6).trim();
-    if (raw && raw !== 'null' && raw !== 'undefined') {
-      bearerToken = raw;
+  let queryToken: string | undefined;
+  // 3. Fallback to query parameter (useful for iframe / PDF report-card downloads)
+  if (typeof req.query.token === 'string') {
+    const rawQuery = req.query.token.trim();
+    if (rawQuery && rawQuery !== 'null' && rawQuery !== 'undefined') {
+      queryToken = rawQuery;
     }
   }
 
-  const tokensToTry = [cookieToken, bearerToken].filter(Boolean) as string[];
+  const tokensToTry = [bearerToken, cookieToken, queryToken].filter(Boolean) as string[];
 
   if (tokensToTry.length === 0) {
     res.status(401).json({ success: false, message: 'Not authorized, no token', code: 'NO_TOKEN' });
@@ -62,9 +84,9 @@ export const protect = async (req: Request, res: Response, next: NextFunction): 
     const secretsToTry = Array.from(
       new Set(
         [
-          process.env.JWT_SECRET,
-          process.env.JWT_ACCESS_SECRET,
           env.JWT_ACCESS_SECRET,
+          process.env.JWT_ACCESS_SECRET,
+          process.env.JWT_SECRET,
         ].filter(Boolean) as string[]
       )
     );
@@ -85,18 +107,42 @@ export const protect = async (req: Request, res: Response, next: NextFunction): 
       return;
     }
 
-    // Database verification: Ensure user still exists and is active
+    // Database verification with in-memory TTL caching to avoid hammering MongoDB on concurrent dashboard calls
     if (mongoose.connection.readyState === 1 && mongoose.Types.ObjectId.isValid(decoded.user.id)) {
-      const dbUser = await User.findById(decoded.user.id).select('isActive isDeleted status role');
-      if (dbUser && (dbUser.isDeleted || dbUser.isActive === false || dbUser.status === 'Suspended')) {
-        res.status(401).json({
-          success: false,
-          message: 'Account is deactivated, suspended, or no longer exists',
-          code: 'USER_DEACTIVATED',
-        });
-        return;
+      const now = Date.now();
+      const cached = userStatusCache.get(decoded.user.id);
+
+      let isDeleted = false;
+      let isActive = true;
+      let status = 'Active';
+
+      if (cached && cached.expiresAt > now) {
+        isDeleted = cached.isDeleted;
+        isActive = cached.isActive;
+        status = cached.status;
+      } else {
+        const dbUser = await User.findById(decoded.user.id).select('isActive isDeleted status');
+        if (dbUser) {
+          isDeleted = Boolean(dbUser.isDeleted);
+          isActive = dbUser.isActive !== false;
+          status = dbUser.status || 'Active';
+          userStatusCache.set(decoded.user.id, {
+            isDeleted,
+            isActive,
+            status,
+            expiresAt: now + USER_CACHE_TTL_MS,
+          });
+        } else if (env.NODE_ENV === 'production') {
+          res.status(401).json({
+            success: false,
+            message: 'Account is deactivated, suspended, or no longer exists',
+            code: 'USER_DEACTIVATED',
+          });
+          return;
+        }
       }
-      if (!dbUser && env.NODE_ENV === 'production') {
+
+      if (isDeleted || !isActive || status === 'Suspended') {
         res.status(401).json({
           success: false,
           message: 'Account is deactivated, suspended, or no longer exists',
@@ -109,6 +155,10 @@ export const protect = async (req: Request, res: Response, next: NextFunction): 
     req.user = decoded.user;
     req.campusId = decoded.user.campusId;
     req.schoolId = decoded.user.schoolId;
+
+    if (process.env.DEBUG_PERF === 'true') {
+      console.log(`[PERF] protect middleware: ${(performance.now() - perfStart).toFixed(2)}ms`);
+    }
 
     next();
   } catch (error) {

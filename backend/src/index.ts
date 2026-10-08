@@ -40,6 +40,10 @@ const isOriginAllowed = (origin: string | undefined): boolean => {
   if (!origin) return true;
   const cleanOrigin = normalizeUrl(origin);
   if (allowedOrigins.includes(cleanOrigin)) return true;
+  // Allow all Vercel deployments (production, staging, and branch previews)
+  if (/^https:\/\/[a-z0-9-]+(\.vercel\.app)$/i.test(cleanOrigin)) {
+    return true;
+  }
   if (
     env.NODE_ENV !== 'production' &&
     (cleanOrigin.startsWith('http://localhost:') || cleanOrigin.startsWith('http://127.0.0.1:'))
@@ -57,19 +61,28 @@ app.use(
 );
 
 // CORS configuration
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      if (isOriginAllowed(origin)) {
-        return callback(null, true);
-      }
-      return callback(new Error(`CORS: origin '${origin}' not allowed`));
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-Id'],
-  })
-);
+const corsOptions: cors.CorsOptions = {
+  origin: (origin, callback) => {
+    if (isOriginAllowed(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error(`CORS: origin '${origin}' not allowed`));
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'X-Request-Id',
+    'Accept',
+    'Cache-Control',
+    'X-Requested-With',
+  ],
+  exposedHeaders: ['Set-Cookie'],
+  maxAge: 86400, // Cache preflight requests for 24 hours
+};
+
+app.use(cors(corsOptions));
 
 // Global rate limiting
 const limiter = rateLimit({
@@ -100,18 +113,7 @@ app.use('/api/v1/auth/reset-password', authLimiter);
 app.use('/api/auth/reset-password', authLimiter);
 
 // OPTIONS preflight
-app.options(
-  /.*/,
-  cors({
-    origin: (origin, callback) => {
-      if (isOriginAllowed(origin)) return callback(null, true);
-      return callback(new Error(`CORS: origin '${origin}' not allowed`));
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-Id'],
-  })
-);
+app.options(/.*/, cors(corsOptions));
 
 // Body and cookie parsing
 app.use(express.json({ limit: '10mb' }));
@@ -124,8 +126,8 @@ app.use(requestLogger);
 // API Documentation via Swagger / OpenAPI
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
-// Root Health Check routes (fail-safe status reporting)
-app.get('/health', (req: Request, res: Response) => {
+// Root Health Check routes (fail-safe status reporting & container pre-warming)
+const healthHandler = (req: Request, res: Response) => {
   const isDbConnected = mongoose.connection.readyState === 1;
   const dbStatus = isDbConnected ? 'connected' : 'disconnected';
 
@@ -137,7 +139,10 @@ app.get('/health', (req: Request, res: Response) => {
     database: dbStatus,
     readyState: mongoose.connection.readyState,
   });
-});
+};
+
+app.get('/health', healthHandler);
+app.get('/api/v1/health', healthHandler);
 
 app.get('/health/db', (req: Request, res: Response) => {
   const isConnected = mongoose.connection.readyState === 1;

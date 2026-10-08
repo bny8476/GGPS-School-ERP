@@ -58,6 +58,7 @@ import { ThemeProvider, useTheme } from '@/context/ThemeContext';
 import CommandPalette from '@/components/ui/CommandPalette';
 import NotificationDrawer from '@/components/ui/NotificationDrawer';
 import { useCurrentTime } from '@/lib/date';
+import { getApiBaseUrl } from '@/lib/utils';
 
 interface NavSubItem {
   href: string;
@@ -128,7 +129,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
 
   const handleLogout = async () => {
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+      const apiBase = getApiBaseUrl();
       const token = localStorage.getItem('token');
       const refreshToken = localStorage.getItem('refreshToken');
       await fetch(`${apiBase}/api/v1/auth/logout`, {
@@ -676,9 +677,9 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col overflow-hidden">
         {/* Top Header Bar (72px) */}
-        <header className="h-18 bg-white dark:bg-[#07152F] border-b border-[#E6EAF2] dark:border-slate-800 flex items-center justify-between px-4 sm:px-6 shrink-0 sticky top-0 z-20 shadow-[0_2px_12px_rgba(0,14,40,0.03)]">
-          {/* Left: Mobile Menu + Search Bar (Matches Exact Screenshot) */}
-          <div className="flex items-center gap-3">
+        <header className="h-18 bg-white dark:bg-[#07152F] border-b border-[#E6EAF2] dark:border-slate-800 flex items-center justify-between gap-4 md:gap-6 px-4 sm:px-6 shrink-0 sticky top-0 z-20 shadow-[0_2px_12px_rgba(0,14,40,0.03)]">
+          {/* Left: Mobile Menu + Search Bar */}
+          <div className="flex items-center gap-3 shrink-0">
             <button
               type="button"
               onClick={() => setIsMobileMenuOpen(true)}
@@ -695,33 +696,28 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                 const event = new KeyboardEvent('keydown', { key: 'k', metaKey: true, ctrlKey: true, bubbles: true });
                 window.dispatchEvent(event);
               }}
-              className="flex items-center justify-between w-[280px] sm:w-[340px] md:w-[420px] h-9 px-3.5 bg-slate-50 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-700/80 rounded-full text-xs font-normal text-slate-400 cursor-pointer transition-all border border-slate-200/90 dark:border-slate-700 shadow-2xs"
+              className="flex items-center justify-between w-64 sm:w-72 md:w-80 lg:w-[340px] xl:w-[380px] max-w-sm h-9 px-3.5 bg-slate-50 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-700/80 rounded-full text-xs font-normal text-slate-400 cursor-pointer transition-all border border-slate-200/90 dark:border-slate-700 shadow-2xs shrink-0"
             >
               <div className="flex items-center gap-2 truncate">
                 <Search className="h-3.5 w-3.5 text-slate-400 shrink-0" />
                 <span className="truncate">Search students, teachers, classes, events...</span>
               </div>
-              <span className="text-[10px] text-slate-400 font-semibold bg-white dark:bg-slate-700 px-1.5 py-0.5 rounded border border-slate-200/80 dark:border-slate-600 shadow-2xs shrink-0">
+              <span className="text-[10px] text-slate-400 font-semibold bg-white dark:bg-slate-700 px-1.5 py-0.5 rounded border border-slate-200/80 dark:border-slate-600 shadow-2xs shrink-0 ml-2">
                 ⌘K
               </span>
             </button>
           </div>
 
-          {/* Right Header Controls */}
-          <div className="flex items-center gap-2 sm:gap-3">
-            {/* Notification Drawer with red badge "3" */}
-            <div className="relative">
-              <NotificationDrawer />
-              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-rose-500 text-white rounded-full text-[9px] font-black flex items-center justify-center pointer-events-none shadow-xs">
-                3
-              </span>
-            </div>
+          {/* Right Header Controls with Equal Spacing & Perfect Center Alignment */}
+          <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
+            {/* Notification Drawer with matching circular pill */}
+            <NotificationDrawer badgeCount={3} />
 
             {/* Messages Quick Action with red badge "2" */}
             <div className="relative">
               <Link
                 href="/dashboard/chat"
-                className="h-9 w-9 flex items-center justify-center bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer border border-slate-200/80 dark:border-slate-700 shadow-2xs"
+                className="h-9 w-9 flex items-center justify-center bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer border border-slate-200/90 dark:border-slate-700 shadow-2xs"
                 title="Staff Messages"
               >
                 <MessageSquare className="h-4 w-4 text-slate-500 dark:text-slate-300" />
@@ -735,7 +731,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             <button
               type="button"
               onClick={toggleTheme}
-              className="h-9 w-9 flex items-center justify-center bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer border border-slate-200/80 dark:border-slate-700 shadow-2xs"
+              className="h-9 w-9 flex items-center justify-center bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer border border-slate-200/90 dark:border-slate-700 shadow-2xs"
               title="Toggle Dark/Light Mode"
             >
               {theme === 'light' ? <Moon className="h-4 w-4 text-slate-500" /> : <Sun className="h-4 w-4 text-slate-300" />}
@@ -747,7 +743,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             {/* Live Real-Time Date & Clock Button */}
             <Link
               href="/dashboard/calendar"
-              className="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 shadow-2xs transition-colors"
+              className="hidden xl:flex items-center gap-2 h-9 px-3.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200/90 dark:border-slate-700 rounded-full text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 shadow-2xs transition-colors"
               title="View Academic Calendar & Live Clock"
             >
               <Calendar className="w-3.5 h-3.5 text-[#0050CB]" />
@@ -759,14 +755,14 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
               </span>
             </Link>
 
-            {/* Admin Profile Dropdown Pill */}
+            {/* Admin Profile Dropdown Pill (Compact) */}
             <div className="relative">
               <button
                 type="button"
                 onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
-                className="flex items-center gap-2 pl-2 sm:pl-2.5 hover:bg-slate-50 dark:hover:bg-slate-800/50 py-1 pr-1.5 rounded-full transition-colors cursor-pointer"
+                className="flex items-center gap-1.5 h-9 pl-1 pr-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200/90 dark:border-slate-700 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 shadow-2xs transition-colors cursor-pointer"
               >
-                <div className="relative h-9 w-9 rounded-full overflow-hidden bg-slate-200 ring-1 ring-slate-200 shrink-0">
+                <div className="relative h-7 w-7 rounded-full overflow-hidden bg-slate-200 ring-1 ring-slate-200 shrink-0">
                   <AppImage
                     src="/aarav-profile-avatar.png"
                     alt="Admin"
@@ -775,14 +771,10 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                     className="object-cover w-full h-full"
                   />
                 </div>
-                <div className="hidden sm:block text-left leading-none pr-1">
-                  <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
-                    Admin
-                  </p>
-                  <p className="text-[11px] text-slate-400 font-normal mt-0.5">
-                    Administrator
-                  </p>
-                </div>
+                <span className="text-xs font-bold text-slate-900 dark:text-white">
+                  Admin
+                </span>
+                <ChevronDown className="w-3 h-3 text-slate-400 shrink-0" />
               </button>
 
               {/* Profile Dropdown Menu */}

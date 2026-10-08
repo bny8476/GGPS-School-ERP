@@ -61,11 +61,11 @@ export default function LanguageSwitcher({
         aria-label="Select language"
         aria-haspopup="listbox"
         aria-expanded={isOpen}
-        className={`flex items-center gap-2 px-3 py-1.5 rounded-full transition-all duration-200 cursor-pointer shadow-xs focus:outline-none focus:ring-2 focus:ring-[#0050CB]/40 select-none ${
+        className={`flex items-center gap-2 rounded-full transition-all duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#0050CB]/40 select-none ${
           variant === "pill"
-            ? "bg-white dark:bg-[#001438] border border-slate-200/90 dark:border-slate-700 text-[#000E28] dark:text-white hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50/80 dark:hover:bg-slate-800/80 text-xs sm:text-sm font-semibold"
+            ? "h-9 px-3.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200/90 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/80 shadow-2xs text-xs font-semibold"
             : variant === "compact"
-            ? "bg-slate-100/90 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200/80 text-xs font-semibold px-2.5 py-1"
+            ? "bg-slate-100/90 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200/80 text-xs font-semibold px-2.5 py-1 shadow-xs"
             : "bg-transparent text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-semibold"
         }`}
       >

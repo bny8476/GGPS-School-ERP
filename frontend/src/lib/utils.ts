@@ -22,16 +22,30 @@ export function cn(...inputs: ClassValue[]): string {
 }
 
 export const getApiBaseUrl = (): string => {
-  if (process.env.NEXT_PUBLIC_API_URL) {
-    return process.env.NEXT_PUBLIC_API_URL.replace(/\/+$/, "");
-  }
+  const configured = process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "");
+  
   if (typeof window !== "undefined") {
     const host = window.location.hostname;
-    if (host === "localhost" || host === "127.0.0.1") {
+    const isLocalhost = host === "localhost" || host === "127.0.0.1";
+    
+    // In production browser environments, prevent accidental localhost fallback
+    if (configured) {
+      if (isLocalhost) return configured;
+      if (!configured.includes("localhost") && !configured.includes("127.0.0.1")) {
+        return configured;
+      }
+    }
+    
+    if (isLocalhost) {
       return "http://localhost:5001";
     }
     return "https://ggsp-school-erp.onrender.com";
   }
+
+  if (configured && (process.env.NODE_ENV !== "production" || (!configured.includes("localhost") && !configured.includes("127.0.0.1")))) {
+    return configured;
+  }
+
   return process.env.NODE_ENV === "production"
     ? "https://ggsp-school-erp.onrender.com"
     : "http://localhost:5001";

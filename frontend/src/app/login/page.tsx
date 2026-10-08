@@ -80,8 +80,15 @@ export default function LoginPage() {
   const [passwordError, setPasswordError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [serverWakeupNotice, setServerWakeupNotice] = useState(false);
 
   useEffect(() => {
+    // Pre-warm backend container as soon as login page loads (mitigates Render cold-start latency)
+    try {
+      const apiBase = getApiBaseUrl();
+      fetch(`${apiBase}/health`, { method: "GET" }).catch(() => {});
+    } catch (_) {}
+
     if (typeof window !== "undefined") {
       const savedEmail = localStorage.getItem("ggps_remembered_email");
       const savedRole = localStorage.getItem("ggps_remembered_role") as PortalRole;
@@ -192,7 +199,11 @@ export default function LoginPage() {
 
     if (hasError) return;
 
-    setIsLoading(true); setError("");
+    setIsLoading(true); setError(""); setServerWakeupNotice(false);
+    const wakeupTimer = setTimeout(() => {
+      setServerWakeupNotice(true);
+    }, 3500);
+
     try {
       const apiBase = getApiBaseUrl();
       const cleanEmail = email.trim();
@@ -277,7 +288,11 @@ export default function LoginPage() {
     } catch (err: any) {
       if (err?.name === "TypeError" || err?.message?.includes("Failed to fetch")) setError("Unable to connect to the server. Please check your connection and try again.");
       else setError("Something went wrong while signing you in. Please try again.");
-    } finally { setIsLoading(false); }
+    } finally {
+      clearTimeout(wakeupTimer);
+      setIsLoading(false);
+      setServerWakeupNotice(false);
+    }
   };
 
   return (
@@ -637,13 +652,20 @@ export default function LoginPage() {
               className="w-full h-[52px] rounded-2xl bg-gradient-to-r from-[#0050CB] to-[#003894] hover:from-[#0047B8] hover:to-[#002D75] text-white font-bold text-sm shadow-[0_8px_20px_rgba(0,80,203,0.35)] hover:shadow-[0_10px_26px_rgba(0,80,203,0.45)] hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-75 disabled:hover:translate-y-0"
             >
               {isLoading ? (
-                <><Loader2 className="w-4 h-4 animate-spin" /> Signing in...</>
+                <><Loader2 className="w-4 h-4 animate-spin" /> Logging in...</>
               ) : isSuccess ? (
                 <><Check className="w-4 h-4 text-emerald-300" /> Signed in</>
               ) : (
                 <><ArrowRight className="w-4 h-4" /> Sign In</>
               )}
             </button>
+
+            {serverWakeupNotice && isLoading && (
+              <div className="flex items-center gap-2 p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/40 text-amber-800 dark:text-amber-200 text-xs">
+                <Loader2 className="w-3.5 h-3.5 shrink-0 animate-spin text-amber-600 dark:text-amber-400" />
+                <span>Waking up cloud server... First login may take a few moments. Please wait.</span>
+              </div>
+            )}
           </form>
         </motion.div>
       </div>

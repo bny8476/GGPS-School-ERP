@@ -35,6 +35,7 @@ export const initSocket = (httpServer: HttpServer): SocketIOServer => {
     'https://schoolerp-livid.vercel.app',
     'https://school-erp-bny2.vercel.app',
     env.CLIENT_URL,
+    ...(env.CORS_ORIGINS ? env.CORS_ORIGINS.split(',').map((s) => s.trim()) : []),
   ].filter(Boolean) as string[];
 
   io = new SocketIOServer(httpServer, {
@@ -43,11 +44,12 @@ export const initSocket = (httpServer: HttpServer): SocketIOServer => {
         if (!origin) return callback(null, true);
         const clean = origin.replace(/\/+$/, '').toLowerCase();
         const isMatched = allowedOrigins.some((o) => o && clean === o.replace(/\/+$/, '').toLowerCase());
+        const isVercel = /^https:\/\/[a-z0-9-]+(\.vercel\.app)$/i.test(clean);
         const isDevLocal =
           env.NODE_ENV !== 'production' &&
           (clean.startsWith('http://localhost:') || clean.startsWith('http://127.0.0.1:'));
 
-        if (isMatched || isDevLocal) {
+        if (isMatched || isVercel || isDevLocal) {
           return callback(null, true);
         }
         return callback(new Error(`CORS origin denied: ${origin}`));

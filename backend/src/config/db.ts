@@ -41,11 +41,19 @@ const attemptPrimaryConnect = async (): Promise<boolean> => {
 
   try {
     const conn = await mongoose.connect(mongoUri, {
-      serverSelectionTimeoutMS: 20000, // 20s for cloud Atlas DNS & TLS handshakes
-      connectTimeoutMS: 20000,
+      serverSelectionTimeoutMS: 15000, // 15s for cloud Atlas DNS & TLS handshakes
+      connectTimeoutMS: 15000,
       socketTimeoutMS: 45000,
+      maxPoolSize: 20, // Maintain optimal connection pool
+      minPoolSize: 2,  // Keep at least 2 connections warm to avoid cold TCP handshakes on queries
+      family: 4,       // Force IPv4 to avoid 3-5s IPv6 DNS resolution delays on Render/cloud containers
     });
     console.log(`✓ MongoDB Connected successfully: ${conn.connection.host}`);
+
+    // Quick warm-up ping to verify active connection
+    try {
+      await mongoose.connection.db?.admin().ping();
+    } catch (_) {}
 
     if (reconnectTimer) {
       clearInterval(reconnectTimer);
