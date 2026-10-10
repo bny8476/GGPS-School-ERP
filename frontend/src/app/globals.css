@@ -95,6 +95,19 @@ html {
   mask-image: radial-gradient(ellipse 84% 80% at 54% 50%, #000000 52%, rgba(0, 0, 0, 0.92) 68%, rgba(0, 0, 0, 0.4) 86%, transparent 100%);
 }
 
+/* Hero Student Image Silhouette Rim & Border Glow in Dark Theme */
+.hero-student-glow {
+  filter: drop-shadow(0 20px 35px rgba(0, 14, 40, 0.18));
+  transition: filter 0.4s ease;
+}
+
+:where(.dark, .dark *, [data-theme="dark"], [data-theme="dark"] *) .hero-student-glow {
+  filter:
+    drop-shadow(0 0 10px rgba(56, 189, 248, 0.85))
+    drop-shadow(0 0 26px rgba(34, 211, 238, 0.60))
+    drop-shadow(0 0 60px rgba(0, 80, 203, 0.45));
+}
+
 @layer base {
   :root {
     --background: 210 40% 98%;

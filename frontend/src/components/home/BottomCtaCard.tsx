@@ -54,7 +54,7 @@ export default function BottomCtaCard() {
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, margin: "-60px" }}
         transition={{ duration: 0.65, ease: [0.16, 1, 0.3, 1] }}
-        className="relative overflow-hidden rounded-[28px] sm:rounded-[36px] lg:rounded-[44px] shadow-[0_25px_70px_-15px_rgba(0,80,203,0.28)] dark:shadow-[0_25px_70px_-10px_rgba(0,10,40,0.85)] border border-blue-200/70 dark:border-blue-900/40 bg-gradient-to-r from-blue-900 via-[#003893] to-[#0050CB]"
+        className="relative overflow-hidden rounded-[28px] sm:rounded-[36px] lg:rounded-[44px] shadow-[0_25px_70px_-15px_rgba(0,80,203,0.28)] dark:shadow-[0_0_55px_rgba(0,80,203,0.35),0_25px_70px_-10px_rgba(0,10,40,0.85)] border border-blue-200/70 dark:border-blue-500/35 bg-gradient-to-r from-blue-900 via-[#003893] to-[#0050CB]"
       >
         <div className="relative min-h-[520px] sm:min-h-[580px] lg:min-h-[590px] xl:min-h-[620px] flex flex-col lg:flex-row items-stretch">
           

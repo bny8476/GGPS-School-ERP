@@ -112,7 +112,7 @@ export default function FloatingNotificationCard({
     >
       {/* 1. Surrounding Atmospheric Soft Ambient Glow */}
       <div
-        className="absolute -inset-3 sm:-inset-4 rounded-[26px] pointer-events-none -z-10 blur-xl transition-opacity duration-500 opacity-80 group-hover:opacity-100"
+        className="absolute -inset-3 sm:-inset-4 rounded-[26px] pointer-events-none -z-10 blur-xl transition-opacity duration-500 opacity-80 dark:opacity-95 group-hover:opacity-100"
         style={{ background: config.bgGlow }}
       />
 
@@ -122,8 +122,8 @@ export default function FloatingNotificationCard({
         style={{
           background:
             "linear-gradient(135deg, rgba(2, 14, 42, 0.90) 0%, rgba(0, 18, 52, 0.95) 100%)",
-          border: "1px solid rgba(255, 255, 255, 0.22)",
-          boxShadow: `0 20px 42px -12px rgba(0, 10, 32, 0.85), 0 8px 18px -6px rgba(0, 0, 0, 0.5), 0 0 22px -4px ${config.glowBorder}, inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.4), inset 0 -1px 2px 0 rgba(0, 0, 0, 0.5)`,
+          border: "1px solid rgba(255, 255, 255, 0.26)",
+          boxShadow: `0 20px 42px -12px rgba(0, 10, 32, 0.85), 0 8px 18px -6px rgba(0, 0, 0, 0.5), 0 0 26px -2px ${config.glowBorder}, inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.45), inset 0 -1px 2px 0 rgba(0, 0, 0, 0.5)`,
         }}
       >
         {/* Subtle chromatic sheen */}

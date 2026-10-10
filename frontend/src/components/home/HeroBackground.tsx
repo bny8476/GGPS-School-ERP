@@ -46,10 +46,10 @@ export default function HeroBackground({ className = "" }: { className?: string 
 
       {/* 4. Soft Cyan & Sky Blue Atmosphere Glow behind Subject (Center-Right Prominence) */}
       <div
-        className="absolute top-[8%] right-[10%] xl:right-[14%] w-[620px] h-[620px] rounded-full blur-[110px] opacity-80 dark:opacity-35 pointer-events-none"
+        className="absolute top-[8%] right-[10%] xl:right-[14%] w-[620px] h-[620px] rounded-full blur-[110px] opacity-80 dark:opacity-75 pointer-events-none"
         style={{
           background:
-            "radial-gradient(circle at 50% 50%, rgba(34, 211, 238, 0.32) 0%, rgba(56, 189, 248, 0.22) 45%, rgba(0, 80, 203, 0.08) 75%, transparent 100%)",
+            "radial-gradient(circle at 50% 50%, rgba(34, 211, 238, 0.35) 0%, rgba(56, 189, 248, 0.25) 45%, rgba(0, 80, 203, 0.12) 75%, transparent 100%)",
         }}
       />
 

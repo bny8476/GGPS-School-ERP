@@ -26,17 +26,26 @@ export default function HeroStudentImage({ className = "" }: HeroStudentImagePro
     >
       {/* Dynamic Cyan / Sky Backlight Glow Halo behind Girl Silhouette */}
       <div
-        className="absolute bottom-6 sm:bottom-12 left-1/2 -translate-x-1/2 w-[340px] sm:w-[480px] lg:w-[540px] h-[340px] sm:h-[480px] lg:h-[540px] rounded-full blur-[80px] lg:blur-[100px] pointer-events-none -z-10"
+        className="absolute bottom-6 sm:bottom-12 left-1/2 -translate-x-1/2 w-[360px] sm:w-[480px] lg:w-[560px] h-[360px] sm:h-[480px] lg:h-[560px] rounded-full blur-[80px] lg:blur-[100px] pointer-events-none -z-10 opacity-70 dark:opacity-100 transition-opacity duration-500"
         style={{
           background:
-            "radial-gradient(circle, rgba(34, 211, 238, 0.4) 0%, rgba(56, 189, 248, 0.28) 45%, rgba(0, 80, 203, 0.1) 75%, transparent 100%)",
+            "radial-gradient(circle, rgba(34, 211, 238, 0.45) 0%, rgba(56, 189, 248, 0.35) 42%, rgba(0, 80, 203, 0.22) 72%, transparent 100%)",
+        }}
+      />
+
+      {/* Dark Theme Ambient Aura Disk directly hugging the subject */}
+      <div
+        className="hidden dark:block absolute top-[14%] left-1/2 -translate-x-1/2 w-[280px] sm:w-[380px] lg:w-[440px] h-[380px] sm:h-[460px] lg:h-[520px] rounded-full blur-[65px] pointer-events-none -z-10 opacity-80"
+        style={{
+          background:
+            "radial-gradient(ellipse at 50% 45%, rgba(56, 189, 248, 0.45) 0%, rgba(0, 80, 203, 0.32) 55%, transparent 80%)",
         }}
       />
 
       {/* Floating Micro Light Specular Flares around Subject */}
-      <span className="absolute top-[22%] left-[18%] w-2 h-2 rounded-full bg-cyan-300/80 blur-[1px] animate-pulse pointer-events-none" />
-      <span className="absolute top-[36%] right-[16%] w-1.5 h-1.5 rounded-full bg-sky-200/90 blur-[0.8px] animate-pulse pointer-events-none" />
-      <span className="absolute bottom-[30%] left-[10%] w-2.5 h-2.5 rounded-full bg-white/70 blur-[1.2px] animate-pulse pointer-events-none" />
+      <span className="absolute top-[22%] left-[18%] w-2 h-2 rounded-full bg-cyan-300/90 dark:bg-cyan-200 dark:shadow-[0_0_12px_#38BDF8] blur-[0.8px] animate-pulse pointer-events-none" />
+      <span className="absolute top-[36%] right-[16%] w-1.5 h-1.5 rounded-full bg-sky-200/95 dark:bg-cyan-100 dark:shadow-[0_0_10px_#22D3EE] blur-[0.6px] animate-pulse pointer-events-none" />
+      <span className="absolute bottom-[30%] left-[10%] w-2.5 h-2.5 rounded-full bg-white/80 dark:bg-white dark:shadow-[0_0_14px_white] blur-[1px] animate-pulse pointer-events-none" />
 
       {/* Main Schoolgirl Visual with Natural Feathered Dissolve Base */}
       <motion.div
@@ -50,9 +59,9 @@ export default function HeroStudentImage({ className = "" }: HeroStudentImagePro
         className="relative flex items-end justify-center"
         style={{
           maskImage:
-            "linear-gradient(to bottom, black 0%, black 86%, rgba(0, 0, 0, 0.5) 94%, transparent 100%)",
+            "linear-gradient(to bottom, black 0%, black 68%, rgba(0, 0, 0, 0.75) 80%, rgba(0, 0, 0, 0.25) 92%, transparent 100%)",
           WebkitMaskImage:
-            "linear-gradient(to bottom, black 0%, black 86%, rgba(0, 0, 0, 0.5) 94%, transparent 100%)",
+            "linear-gradient(to bottom, black 0%, black 68%, rgba(0, 0, 0, 0.75) 80%, rgba(0, 0, 0, 0.25) 92%, transparent 100%)",
         }}
       >
         <Image
@@ -65,8 +74,11 @@ export default function HeroStudentImage({ className = "" }: HeroStudentImagePro
           onError={() => {
             setSrcIndex((prev) => (prev < CANDIDATE_SOURCES.length - 1 ? prev + 1 : prev));
           }}
-          className="w-auto h-[440px] sm:h-[500px] lg:h-[580px] xl:h-[640px] max-w-full object-contain object-bottom drop-shadow-[0_20px_35px_rgba(0,14,40,0.18)] dark:drop-shadow-[0_25px_45px_rgba(0,0,0,0.65)] pointer-events-none"
+          className="hero-student-glow w-auto h-[440px] sm:h-[500px] lg:h-[580px] xl:h-[640px] max-w-full object-contain object-bottom pointer-events-none"
         />
+
+        {/* Soft bottom dissolved gradient overlay for seamless dark mode blending */}
+        <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-transparent via-transparent to-transparent dark:from-[#000E28] dark:via-[#000E28]/60 dark:to-transparent pointer-events-none" />
       </motion.div>
     </div>
   );
