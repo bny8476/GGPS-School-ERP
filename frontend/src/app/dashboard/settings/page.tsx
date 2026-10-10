@@ -25,8 +25,11 @@ import {
   Eye,
   EyeOff,
   Sparkles,
+  X,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { getApiBaseUrl } from '@/lib/utils';
+import { authFetch } from '@/lib/apiClient';
 import { FieldError } from '@/components/ui/FieldError';
 import {
   InstitutionalSettingsSchema,
@@ -88,6 +91,17 @@ export default function SettingsPage() {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [isPasswordSaving, setIsPasswordSaving] = useState(false);
+
+  // Admin Forgot Password Modal State
+  const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [isSendingReset, setIsSendingReset] = useState(false);
+  const [resetSuccessNotice, setResetSuccessNotice] = useState<{ message: string; pin?: string } | null>(null);
+  const [forgotPin, setForgotPin] = useState('');
+  const [forgotNewPassword, setForgotNewPassword] = useState('');
+  const [forgotConfirmPassword, setForgotConfirmPassword] = useState('');
+  const [isResettingWithPin, setIsResettingWithPin] = useState(false);
+  const [showForgotNewPw, setShowForgotNewPw] = useState(false);
 
   // Tab 5: Role & Permissions Management State
   const [roles, setRoles] = useState<any[]>([]);
@@ -317,15 +331,10 @@ export default function SettingsPage() {
 
     setIsPasswordSaving(true);
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
-      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (token) headers['Authorization'] = `Bearer ${token}`;
-
-      const res = await fetch(`${apiBase}/api/auth/change-password`, {
+      const apiBase = getApiBaseUrl();
+      const res = await authFetch(`${apiBase}/api/v1/auth/change-password`, {
         method: 'PUT',
-        headers,
-        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           currentPassword: passwordData.currentPassword,
           newPassword: passwordData.newPassword,
@@ -343,6 +352,88 @@ export default function SettingsPage() {
       toast.error('Network error changing password.');
     } finally {
       setIsPasswordSaving(false);
+    }
+  };
+
+  // Handler: Request Reset Code for Forgot Password
+  const handleSendResetCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const emailToUse = (forgotEmail || profileData.email || user?.email || '').trim().toLowerCase();
+    if (!emailToUse) {
+      toast.error('Please enter your registered email address');
+      return;
+    }
+    setIsSendingReset(true);
+    try {
+      const apiBase = getApiBaseUrl();
+      const res = await authFetch(`${apiBase}/api/v1/auth/forgot-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: emailToUse }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setResetSuccessNotice({
+          message: data.message || 'Password reset instructions sent!',
+          pin: data.demoResetPin,
+        });
+        if (data.demoResetPin) {
+          setForgotPin(data.demoResetPin);
+        }
+        toast.success('Reset code dispatched to email!');
+      } else {
+        toast.error(data.message || 'Unable to process reset request');
+      }
+    } catch {
+      toast.error('Network error sending reset code.');
+    } finally {
+      setIsSendingReset(false);
+    }
+  };
+
+  // Handler: Complete Reset with PIN
+  const handleCompleteResetWithPin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanPin = forgotPin.trim();
+    if (!cleanPin || cleanPin.length < 4) {
+      toast.error('Please enter the 6-digit verification PIN');
+      return;
+    }
+    if (forgotNewPassword.length < 8) {
+      toast.error('New password must be at least 8 characters long');
+      return;
+    }
+    if (forgotNewPassword !== forgotConfirmPassword) {
+      toast.error('Passwords do not match');
+      return;
+    }
+    setIsResettingWithPin(true);
+    try {
+      const apiBase = getApiBaseUrl();
+      const res = await authFetch(`${apiBase}/api/v1/auth/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: (forgotEmail || profileData.email || user?.email || '').trim().toLowerCase(),
+          code: cleanPin,
+          newPassword: forgotNewPassword,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success(data.message || 'Password reset successfully!');
+        setIsForgotModalOpen(false);
+        setResetSuccessNotice(null);
+        setForgotPin('');
+        setForgotNewPassword('');
+        setForgotConfirmPassword('');
+      } else {
+        toast.error(data.message || 'Failed to reset password. Please check your PIN.');
+      }
+    } catch {
+      toast.error('Network error resetting password.');
+    } finally {
+      setIsResettingWithPin(false);
     }
   };
 
@@ -935,11 +1026,24 @@ export default function SettingsPage() {
 
               {/* Inline Password Change Form */}
               <div className="bg-slate-50/70 dark:bg-[#000E28]/50 border border-slate-200 dark:border-slate-800 rounded-2xl p-6">
-                <div className="flex items-center gap-2.5 mb-5 pb-3 border-b border-slate-200/80 dark:border-slate-800">
-                  <KeyRound className="w-5 h-5 text-[#0050CB] dark:text-[#38BDF8]" />
-                  <h3 className="font-black text-[#000E28] dark:text-white text-base">
-                    Change Password
-                  </h3>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-5 pb-3 border-b border-slate-200/80 dark:border-slate-800">
+                  <div className="flex items-center gap-2.5">
+                    <KeyRound className="w-5 h-5 text-[#0050CB] dark:text-[#38BDF8]" />
+                    <h3 className="font-black text-[#000E28] dark:text-white text-base">
+                      Change Password
+                    </h3>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setForgotEmail(profileData.email || user?.email || '');
+                      setIsForgotModalOpen(true);
+                    }}
+                    className="text-xs font-bold text-[#0050CB] dark:text-[#38BDF8] hover:underline cursor-pointer flex items-center gap-1.5 self-start sm:self-auto"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-[#FF690C]" />
+                    Forgot Current Password?
+                  </button>
                 </div>
 
                 <form onSubmit={handleChangePassword} className="space-y-4">
@@ -997,7 +1101,7 @@ export default function SettingsPage() {
                           className={`w-full pl-10 pr-10 py-2.5 rounded-xl border text-sm font-medium text-[#000E28] dark:text-white focus:ring-2 focus:ring-[#0050CB] focus:outline-none ${
                             passwordErrors.newPassword ? 'border-rose-400 bg-rose-50/20' : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800'
                           }`}
-                          placeholder="Min 6 characters"
+                          placeholder="Min 8 characters"
                         />
                         <button
                           type="button"
@@ -1367,6 +1471,190 @@ export default function SettingsPage() {
           )}
         </div>
       </div>
+      {/* ========================================================
+          ADMIN FORGOT PASSWORD / PIN RESET MODAL
+      ======================================================== */}
+      {isForgotModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-[#000E28] border border-slate-200 dark:border-slate-800 rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl relative text-left">
+            <button
+              onClick={() => {
+                setIsForgotModalOpen(false);
+                setResetSuccessNotice(null);
+              }}
+              className="absolute top-5 right-5 p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-2xl bg-[#E5EEFF] dark:bg-[#0050CB]/30 text-[#0050CB] dark:text-[#38BDF8] flex items-center justify-center shrink-0">
+                <KeyRound className="w-5 h-5 stroke-[2.2]" />
+              </div>
+              <div>
+                <h3 className="text-lg font-black text-[#000E28] dark:text-white">
+                  Reset Admin Password
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                  {resetSuccessNotice ? 'Enter your 6-digit PIN & new password' : 'Send verification code to your email'}
+                </p>
+              </div>
+            </div>
+
+            {!resetSuccessNotice ? (
+              <form onSubmit={handleSendResetCode} className="space-y-4 mt-2">
+                <div>
+                  <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1.5">
+                    Registered Email Address <span className="text-[#FF690C]">*</span>
+                  </label>
+                  <div className="relative">
+                    <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+                    <input
+                      type="email"
+                      required
+                      value={forgotEmail}
+                      onChange={(e) => setForgotEmail(e.target.value)}
+                      placeholder="admin@ggps.edu.in"
+                      className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-medium text-[#000E28] dark:text-white focus:ring-2 focus:ring-[#0050CB] focus:outline-none"
+                    />
+                  </div>
+                  <p className="text-[11px] text-slate-500 mt-1">
+                    We will send a 6-digit one-time verification PIN valid for 15 minutes.
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsForgotModalOpen(false)}
+                    className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSendingReset}
+                    className="px-5 py-2.5 rounded-xl bg-[#0050CB] hover:bg-[#003d99] text-white text-xs font-bold flex items-center gap-2 shadow-md shadow-[#0050CB]/20 transition-all cursor-pointer disabled:opacity-50"
+                  >
+                    {isSendingReset ? (
+                      <div className="animate-spin h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full" />
+                    ) : (
+                      <Sparkles className="w-3.5 h-3.5 text-[#FF690C]" />
+                    )}
+                    <span>{isSendingReset ? 'Sending...' : 'Send Reset PIN'}</span>
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <form onSubmit={handleCompleteResetWithPin} className="space-y-4 mt-2">
+                <div className="p-3 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-xl text-xs text-emerald-800 dark:text-emerald-300">
+                  <p className="font-semibold">{resetSuccessNotice.message}</p>
+                  {resetSuccessNotice.pin && (
+                    <p className="mt-1 font-mono font-bold text-emerald-700 dark:text-emerald-400">
+                      Development PIN: {resetSuccessNotice.pin}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1.5">
+                    6-Digit Verification PIN <span className="text-[#FF690C]">*</span>
+                  </label>
+                  <div className="relative">
+                    <KeyRound className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+                    <input
+                      type="text"
+                      required
+                      maxLength={6}
+                      value={forgotPin}
+                      onChange={(e) => setForgotPin(e.target.value.replace(/\D/g, ''))}
+                      placeholder="123456"
+                      className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-mono tracking-widest text-[#000E28] dark:text-white focus:ring-2 focus:ring-[#0050CB] focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1.5">
+                    New Password <span className="text-[#FF690C]">*</span>
+                  </label>
+                  <div className="relative">
+                    <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+                    <input
+                      type={showForgotNewPw ? 'text' : 'password'}
+                      required
+                      minLength={8}
+                      value={forgotNewPassword}
+                      onChange={(e) => setForgotNewPassword(e.target.value)}
+                      placeholder="Minimum 8 characters"
+                      className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-medium text-[#000E28] dark:text-white focus:ring-2 focus:ring-[#0050CB] focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowForgotNewPw(!showForgotNewPw)}
+                      className="absolute right-3.5 top-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                    >
+                      {showForgotNewPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1.5">
+                    Confirm New Password <span className="text-[#FF690C]">*</span>
+                  </label>
+                  <div className="relative">
+                    <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+                    <input
+                      type={showForgotNewPw ? 'text' : 'password'}
+                      required
+                      minLength={8}
+                      value={forgotConfirmPassword}
+                      onChange={(e) => setForgotConfirmPassword(e.target.value)}
+                      placeholder="Repeat new password"
+                      className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-medium text-[#000E28] dark:text-white focus:ring-2 focus:ring-[#0050CB] focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setResetSuccessNotice(null)}
+                    className="text-xs font-bold text-[#0050CB] dark:text-[#38BDF8] hover:underline cursor-pointer"
+                  >
+                    Resend Code
+                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsForgotModalOpen(false);
+                        setResetSuccessNotice(null);
+                      }}
+                      className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isResettingWithPin}
+                      className="px-5 py-2.5 rounded-xl bg-[#0050CB] hover:bg-[#003d99] text-white text-xs font-bold flex items-center gap-2 shadow-md shadow-[#0050CB]/20 transition-all cursor-pointer disabled:opacity-50"
+                    >
+                      {isResettingWithPin ? (
+                        <div className="animate-spin h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full" />
+                      ) : (
+                        <CheckCircle2 className="w-3.5 h-3.5 text-white" />
+                      )}
+                      <span>{isResettingWithPin ? 'Resetting...' : 'Set New Password'}</span>
+                    </button>
+                  </div>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

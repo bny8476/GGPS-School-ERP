@@ -17,10 +17,15 @@ import {
   EyeOff,
   RefreshCw,
   Save,
-  Users
+  Users,
+  Sparkles,
+  KeyRound,
+  X,
 } from "lucide-react";
 import { useParent } from "@/context/ParentContext";
 import toast from "react-hot-toast";
+import { getApiBaseUrl } from "@/lib/utils";
+import { authFetch } from "@/lib/apiClient";
 
 export default function ParentAccountPage() {
   const { parentProfile, updateParentProfile, children } = useParent();
@@ -29,6 +34,18 @@ export default function ParentAccountPage() {
 
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // Forgot Password Modal State
+  const [forgotModalOpen, setForgotModalOpen] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [isSendingForgotReset, setIsSendingForgotReset] = useState(false);
+  const [forgotSuccessNotice, setForgotSuccessNotice] = useState<{ message: string; pin?: string } | null>(null);
+  const [forgotPin, setForgotPin] = useState("");
+  const [forgotNewPassword, setForgotNewPassword] = useState("");
+  const [forgotConfirmPassword, setForgotConfirmPassword] = useState("");
+  const [isResettingWithPin, setIsResettingWithPin] = useState(false);
+  const [showForgotNewPw, setShowForgotNewPw] = useState(false);
 
   const [form, setForm] = useState({
     motherName: parentProfile?.motherName || "",
@@ -57,6 +74,7 @@ export default function ParentAccountPage() {
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: "",
     newPassword: "",
+    confirmPassword: "",
   });
 
   const displayChildren = children && children.length > 0 ? children : [];
@@ -78,22 +96,131 @@ export default function ParentAccountPage() {
     }
   };
 
-  const handleUpdatePassword = (e: React.FormEvent) => {
+  const handleUpdatePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!passwordForm.currentPassword) {
       toast.error("Please enter your current password");
       return;
     }
-    if (passwordForm.newPassword.length < 6) {
-      toast.error("New password must be at least 6 characters");
+    if (passwordForm.newPassword.length < 8) {
+      toast.error("New password must be at least 8 characters long");
       return;
     }
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      toast.error("New passwords do not match");
+      return;
+    }
+    if (passwordForm.currentPassword === passwordForm.newPassword) {
+      toast.error("New password must be different from current password");
+      return;
+    }
+
     setIsUpdatingPassword(true);
-    setTimeout(() => {
+    try {
+      const apiBase = getApiBaseUrl();
+      const res = await authFetch(`${apiBase}/api/v1/auth/change-password`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          currentPassword: passwordForm.currentPassword,
+          newPassword: passwordForm.newPassword,
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast.success("Account password updated securely!");
+        setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+      } else {
+        toast.error(data.message || "Failed to update password");
+      }
+    } catch {
+      toast.error("Network error updating password. Please try again.");
+    } finally {
       setIsUpdatingPassword(false);
-      toast.success("Account password updated securely!");
-      setPasswordForm({ currentPassword: "", newPassword: "" });
-    }, 600);
+    }
+  };
+
+  const handleSendForgotReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const emailToUse = (forgotEmail || form.primaryEmail || "").trim().toLowerCase();
+    if (!emailToUse) {
+      toast.error("Please enter your registered email address");
+      return;
+    }
+
+    setIsSendingForgotReset(true);
+    try {
+      const apiBase = getApiBaseUrl();
+      const res = await authFetch(`${apiBase}/api/v1/auth/forgot-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: emailToUse }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setForgotSuccessNotice({
+          message: data.message || "Password reset instructions sent!",
+          pin: data.demoResetPin,
+        });
+        if (data.demoResetPin) {
+          setForgotPin(data.demoResetPin);
+        }
+        toast.success("Reset code sent to your email!");
+      } else {
+        toast.error(data.message || "Unable to send reset code");
+      }
+    } catch {
+      toast.error("Network error sending reset code");
+    } finally {
+      setIsSendingForgotReset(false);
+    }
+  };
+
+  const handleCompleteForgotReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanPin = forgotPin.trim();
+    if (!cleanPin || cleanPin.length < 4) {
+      toast.error("Please enter the 6-digit verification PIN");
+      return;
+    }
+    if (forgotNewPassword.length < 8) {
+      toast.error("New password must be at least 8 characters long");
+      return;
+    }
+    if (forgotNewPassword !== forgotConfirmPassword) {
+      toast.error("Passwords do not match");
+      return;
+    }
+
+    setIsResettingWithPin(true);
+    try {
+      const apiBase = getApiBaseUrl();
+      const res = await authFetch(`${apiBase}/api/v1/auth/reset-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: (forgotEmail || form.primaryEmail || "").trim().toLowerCase(),
+          code: cleanPin,
+          newPassword: forgotNewPassword,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success(data.message || "Password reset successfully!");
+        setForgotModalOpen(false);
+        setForgotSuccessNotice(null);
+        setForgotPin("");
+        setForgotNewPassword("");
+        setForgotConfirmPassword("");
+      } else {
+        toast.error(data.message || "Failed to reset password. Check your PIN.");
+      }
+    } catch {
+      toast.error("Network error resetting password");
+    } finally {
+      setIsResettingWithPin(false);
+    }
   };
 
   return (
@@ -387,7 +514,7 @@ export default function ParentAccountPage() {
         </div>
 
         {/* Top Header of Security Card + 3D Lock Illustration on Right */}
-        <div className="flex items-center justify-between mb-5">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-[#0050CB] dark:text-blue-300 border border-blue-100 dark:border-blue-900/60 flex items-center justify-center shrink-0 shadow-2xs">
               <ShieldCheck className="w-5 h-5 stroke-[2.2]" />
@@ -397,27 +524,40 @@ export default function ParentAccountPage() {
                 Account Security & Password
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                Keep your account secure with a strong password.
+                Keep your account secure with a strong password (minimum 8 characters).
               </p>
             </div>
           </div>
 
-          {/* 3D Glossy Blue Lock Graphic */}
-          <div className="w-12 h-12 sm:w-14 sm:h-14 shrink-0 overflow-hidden">
-            <AppImage
-              src="/security-lock-3d.jpg"
-              alt="Security Lock"
-              className="w-full h-full object-contain drop-shadow-sm"
-            />
+          <div className="flex items-center gap-4">
+            <button
+              type="button"
+              onClick={() => {
+                setForgotEmail(form.primaryEmail || "");
+                setForgotModalOpen(true);
+              }}
+              className="text-xs font-bold text-[#0050CB] dark:text-[#38BDF8] hover:underline cursor-pointer flex items-center gap-1.5"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-[#FF690C]" />
+              Forgot Current Password?
+            </button>
+            {/* 3D Glossy Blue Lock Graphic */}
+            <div className="w-12 h-12 sm:w-14 sm:h-14 shrink-0 overflow-hidden hidden sm:block">
+              <AppImage
+                src="/security-lock-3d.jpg"
+                alt="Security Lock"
+                className="w-full h-full object-contain drop-shadow-sm"
+              />
+            </div>
           </div>
         </div>
 
         {/* Password Form Row */}
         <form onSubmit={handleUpdatePassword} className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
           {/* Current Password Field */}
-          <div className="md:col-span-5">
+          <div className="md:col-span-4">
             <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-              Current Password
+              Current Password <span className="text-[#FF690C]">*</span>
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
@@ -429,6 +569,7 @@ export default function ParentAccountPage() {
                 value={passwordForm.currentPassword}
                 onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
                 className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-white dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-[#000E28] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0050CB] focus:border-transparent transition-all shadow-2xs"
+                required
               />
               <button
                 type="button"
@@ -441,9 +582,9 @@ export default function ParentAccountPage() {
           </div>
 
           {/* New Password Field */}
-          <div className="md:col-span-4">
+          <div className="md:col-span-3">
             <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-              New Password
+              New Password <span className="text-[#FF690C]">*</span>
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
@@ -451,10 +592,12 @@ export default function ParentAccountPage() {
               </div>
               <input
                 type={showNewPassword ? "text" : "password"}
-                placeholder="Enter new password"
+                placeholder="Min 8 characters"
+                minLength={8}
                 value={passwordForm.newPassword}
                 onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
                 className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-white dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-[#000E28] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0050CB] focus:border-transparent transition-all shadow-2xs"
+                required
               />
               <button
                 type="button"
@@ -466,20 +609,233 @@ export default function ParentAccountPage() {
             </div>
           </div>
 
-          {/* Update Password Button */}
+          {/* Confirm New Password Field */}
           <div className="md:col-span-3">
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+              Confirm Password <span className="text-[#FF690C]">*</span>
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                <Lock className="w-4 h-4" />
+              </div>
+              <input
+                type={showConfirmPassword ? "text" : "password"}
+                placeholder="Repeat new password"
+                minLength={8}
+                value={passwordForm.confirmPassword}
+                onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+                className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-white dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-[#000E28] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0050CB] focus:border-transparent transition-all shadow-2xs"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-white cursor-pointer"
+              >
+                {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+
+          {/* Update Password Button */}
+          <div className="md:col-span-2">
             <button
               type="submit"
               disabled={isUpdatingPassword}
-              className="w-full py-2.5 rounded-xl bg-[#0050CB] hover:bg-[#0041A8] text-white font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md shadow-[#0050CB]/25 hover:shadow-lg transition-all cursor-pointer hover:scale-[1.01] active:scale-[0.99]"
+              className="w-full py-2.5 rounded-xl bg-[#0050CB] hover:bg-[#0041A8] text-white font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md shadow-[#0050CB]/25 hover:shadow-lg transition-all cursor-pointer hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50"
             >
               <RefreshCw className={`w-4 h-4 stroke-[2.4] ${isUpdatingPassword ? 'animate-spin' : ''}`} />
-              <span>{isUpdatingPassword ? "Updating..." : "Update Password"}</span>
+              <span>{isUpdatingPassword ? "Updating..." : "Update"}</span>
             </button>
           </div>
         </form>
 
       </div>
+
+      {/* ========================================================
+          PARENT FORGOT PASSWORD / PIN RESET MODAL
+      ======================================================== */}
+      {forgotModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-[#000E28] border border-slate-200 dark:border-slate-800 rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl relative text-left">
+            <button
+              onClick={() => {
+                setForgotModalOpen(false);
+                setForgotSuccessNotice(null);
+              }}
+              className="absolute top-5 right-5 p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-2xl bg-[#E5EEFF] dark:bg-[#0050CB]/30 text-[#0050CB] dark:text-[#38BDF8] flex items-center justify-center shrink-0">
+                <KeyRound className="w-5 h-5 stroke-[2.2]" />
+              </div>
+              <div>
+                <h3 className="text-lg font-black text-[#000E28] dark:text-white">
+                  Reset Parent Password
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                  {forgotSuccessNotice ? 'Enter your 6-digit PIN & new password' : 'Send verification code to your email'}
+                </p>
+              </div>
+            </div>
+
+            {!forgotSuccessNotice ? (
+              <form onSubmit={handleSendForgotReset} className="space-y-4 mt-2">
+                <div>
+                  <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1.5">
+                    Registered Email Address <span className="text-[#FF690C]">*</span>
+                  </label>
+                  <div className="relative">
+                    <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+                    <input
+                      type="email"
+                      required
+                      value={forgotEmail}
+                      onChange={(e) => setForgotEmail(e.target.value)}
+                      placeholder="parent@school.com"
+                      className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-medium text-[#000E28] dark:text-white focus:ring-2 focus:ring-[#0050CB] focus:outline-none"
+                    />
+                  </div>
+                  <p className="text-[11px] text-slate-500 mt-1">
+                    We will send a 6-digit one-time verification PIN valid for 15 minutes.
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setForgotModalOpen(false)}
+                    className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSendingForgotReset}
+                    className="px-5 py-2.5 rounded-xl bg-[#0050CB] hover:bg-[#003d99] text-white text-xs font-bold flex items-center gap-2 shadow-md shadow-[#0050CB]/20 transition-all cursor-pointer disabled:opacity-50"
+                  >
+                    {isSendingForgotReset ? (
+                      <div className="animate-spin h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full" />
+                    ) : (
+                      <Sparkles className="w-3.5 h-3.5 text-[#FF690C]" />
+                    )}
+                    <span>{isSendingForgotReset ? 'Sending...' : 'Send Reset PIN'}</span>
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <form onSubmit={handleCompleteForgotReset} className="space-y-4 mt-2">
+                <div className="p-3 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-xl text-xs text-emerald-800 dark:text-emerald-300">
+                  <p className="font-semibold">{forgotSuccessNotice.message}</p>
+                  {forgotSuccessNotice.pin && (
+                    <p className="mt-1 font-mono font-bold text-emerald-700 dark:text-emerald-400">
+                      Development PIN: {forgotSuccessNotice.pin}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1.5">
+                    6-Digit Verification PIN <span className="text-[#FF690C]">*</span>
+                  </label>
+                  <div className="relative">
+                    <KeyRound className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+                    <input
+                      type="text"
+                      required
+                      maxLength={6}
+                      value={forgotPin}
+                      onChange={(e) => setForgotPin(e.target.value.replace(/\D/g, ''))}
+                      placeholder="123456"
+                      className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-mono tracking-widest text-[#000E28] dark:text-white focus:ring-2 focus:ring-[#0050CB] focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1.5">
+                    New Password <span className="text-[#FF690C]">*</span>
+                  </label>
+                  <div className="relative">
+                    <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+                    <input
+                      type={showForgotNewPw ? 'text' : 'password'}
+                      required
+                      minLength={8}
+                      value={forgotNewPassword}
+                      onChange={(e) => setForgotNewPassword(e.target.value)}
+                      placeholder="Minimum 8 characters"
+                      className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-medium text-[#000E28] dark:text-white focus:ring-2 focus:ring-[#0050CB] focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowForgotNewPw(!showForgotNewPw)}
+                      className="absolute right-3.5 top-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                    >
+                      {showForgotNewPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1.5">
+                    Confirm New Password <span className="text-[#FF690C]">*</span>
+                  </label>
+                  <div className="relative">
+                    <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+                    <input
+                      type={showForgotNewPw ? 'text' : 'password'}
+                      required
+                      minLength={8}
+                      value={forgotConfirmPassword}
+                      onChange={(e) => setForgotConfirmPassword(e.target.value)}
+                      placeholder="Repeat new password"
+                      className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-medium text-[#000E28] dark:text-white focus:ring-2 focus:ring-[#0050CB] focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setForgotSuccessNotice(null)}
+                    className="text-xs font-bold text-[#0050CB] dark:text-[#38BDF8] hover:underline cursor-pointer"
+                  >
+                    Resend Code
+                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setForgotModalOpen(false);
+                        setForgotSuccessNotice(null);
+                      }}
+                      className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isResettingWithPin}
+                      className="px-5 py-2.5 rounded-xl bg-[#0050CB] hover:bg-[#003d99] text-white text-xs font-bold flex items-center gap-2 shadow-md shadow-[#0050CB]/20 transition-all cursor-pointer disabled:opacity-50"
+                    >
+                      {isResettingWithPin ? (
+                        <div className="animate-spin h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full" />
+                      ) : (
+                        <CheckCircle2 className="w-3.5 h-3.5 text-white" />
+                      )}
+                      <span>{isResettingWithPin ? 'Resetting...' : 'Set New Password'}</span>
+                    </button>
+                  </div>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

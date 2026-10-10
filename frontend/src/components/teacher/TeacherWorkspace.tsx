@@ -1593,9 +1593,13 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
 
   // Forgot Password Modal State
   const [forgotPasswordModalOpen, setForgotPasswordModalOpen] = useState(false);
-  const [forgotEmail, setForgotEmail] = useState(user?.email || 'priya.sharma@schoolerp.com');
+  const [forgotEmail, setForgotEmail] = useState(user?.email || 'teacher@school.com');
   const [isSendingForgotReset, setIsSendingForgotReset] = useState(false);
   const [forgotSuccessNotice, setForgotSuccessNotice] = useState<{ message: string; pin?: string } | null>(null);
+  const [forgotPin, setForgotPin] = useState('');
+  const [forgotNewPassword, setForgotNewPassword] = useState('');
+  const [forgotConfirmPassword, setForgotConfirmPassword] = useState('');
+  const [isResettingWithPin, setIsResettingWithPin] = useState(false);
 
   // Notifications Hub State & Logic
   const [notifications, setNotifications] = useState<TeacherNotificationItem[]>(initialTeacherNotifications);
@@ -2625,8 +2629,8 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
 
     setIsChangingPassword(true);
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
-      const res = await authFetch(`${apiBase}/api/auth/change-password`, {
+      const apiBase = getApiBaseUrl();
+      const res = await authFetch(`${apiBase}/api/v1/auth/change-password`, {
         method: 'PUT',
         credentials: 'include',
         headers: getAuthHeaders(),
@@ -2664,11 +2668,11 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
 
     setIsSendingForgotReset(true);
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
-      const res = await authFetch(`${apiBase}/api/auth/forgot-password`, {
+      const apiBase = getApiBaseUrl();
+      const res = await authFetch(`${apiBase}/api/v1/auth/forgot-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: forgotEmail }),
+        body: JSON.stringify({ email: trimmedEmail }),
       });
 
       const data = await res.json();
@@ -2677,18 +2681,69 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
           message: data.message || 'Password reset instructions have been dispatched!',
           pin: data.demoResetPin,
         });
+        if (data.demoResetPin) {
+          setForgotPin(data.demoResetPin);
+        }
         toast.success('Password reset instructions sent!');
       } else {
         toast.error(data.message || 'Unable to process reset request');
       }
     } catch (error) {
       setForgotSuccessNotice({
-        message: `Password reset verification code dispatched to ${forgotEmail}.`,
+        message: `Password reset verification code dispatched to ${trimmedEmail}.`,
         pin: '849201',
       });
+      setForgotPin('849201');
       toast.success('Reset instructions sent to your email!');
     } finally {
       setIsSendingForgotReset(false);
+    }
+  };
+
+  const handleCompleteResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanPin = forgotPin.trim();
+    if (!cleanPin || cleanPin.length < 4) {
+      toast.error('Please enter the 6-digit verification PIN');
+      return;
+    }
+    if (forgotNewPassword.length < 8) {
+      toast.error('New password must be at least 8 characters long');
+      return;
+    }
+    if (forgotNewPassword !== forgotConfirmPassword) {
+      toast.error('Passwords do not match');
+      return;
+    }
+
+    setIsResettingWithPin(true);
+    try {
+      const apiBase = getApiBaseUrl();
+      const res = await authFetch(`${apiBase}/api/v1/auth/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: forgotEmail.trim().toLowerCase(),
+          code: cleanPin,
+          newPassword: forgotNewPassword,
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        toast.success(data.message || 'Password reset successfully! You can now use your new password.');
+        setForgotPasswordModalOpen(false);
+        setForgotSuccessNotice(null);
+        setForgotPin('');
+        setForgotNewPassword('');
+        setForgotConfirmPassword('');
+      } else {
+        toast.error(data.message || 'Failed to reset password. Please check your PIN.');
+      }
+    } catch (err) {
+      toast.error('Network error. Unable to reset password.');
+    } finally {
+      setIsResettingWithPin(false);
     }
   };
 
@@ -7704,7 +7759,7 @@ export default function TeacherWorkspace({ user, stats, onRefresh, initialTab }:
                             required
                             value={passwordForm.newPassword}
                             onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
-                            placeholder="Min. 6 characters"
+                            placeholder="Min. 8 characters"
                             className="w-full p-2.5 pr-10 rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent text-slate-800 dark:text-white"
                           />
                           <button

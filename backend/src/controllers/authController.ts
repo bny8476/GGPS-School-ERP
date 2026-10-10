@@ -437,12 +437,14 @@ export const forgotPassword = async (req: Request, res: Response) => {
       } catch (mailErr) {
         console.warn('Notice: Email dispatch fallback:', mailErr);
       }
+      console.log(`🔑 [AUTH] One-time password reset code for ${normalizedEmail}: ${resetCode}`);
     }
 
     return res.json({
       success: true,
       message: `If an account exists for ${normalizedEmail}, verification instructions have been dispatched.`,
       resetCodeSent: true,
+      ...(process.env.NODE_ENV !== 'production' ? { demoResetPin: resetCode } : {}),
     });
   } catch (error) {
     return res.status(500).json({ success: false, message: 'Failed to process password reset request', error });
