@@ -9,7 +9,7 @@ import ModernAcademicExcellence from '@/components/ModernAcademicExcellence';
 import CtaBanner from '@/components/CtaBanner';
 import HeroFloatingNotificationCards from '@/components/ui/HeroFloatingNotificationCards';
 import HeroSparkles from '@/components/effects/HeroSparkles';
-import HeroSection from '@/components/home/HeroSection';
+import SchoolHero from '@/components/school-hero/SchoolHero';
 import { useLanguage } from '@/context/LanguageContext';
 import {
   ArrowRight,
@@ -317,9 +317,9 @@ export default function Home() {
       />
 
       {/* ========================================== */}
-      {/* 1. MASTER SEAMLESS HERO SECTION */}
+      {/* 1. HIGH-QUALITY REALISTIC SCHOOL HERO BANNER */}
       {/* ========================================== */}
-      <HeroSection />
+      <SchoolHero />
 
       {/* ========================================== */}
       {/* INFINITE ANIMATED TICKER MARQUEE RIBBON */}
