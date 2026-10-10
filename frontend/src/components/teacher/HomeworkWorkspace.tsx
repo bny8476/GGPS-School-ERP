@@ -1197,18 +1197,7 @@ export default function HomeworkWorkspace({ students = [], onNavigateTab }: Home
       {/* ========================================================================= */}
       {activeSubTab === 'CLASSWORK_QUEUE' && (
         <div className="space-y-4">
-          <div className="bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800/50 p-4 rounded-2xl flex items-start gap-3">
-            <RefreshCw className="w-5 h-5 text-[#FF690C] shrink-0 mt-0.5" />
-            <div>
-              <h3 className="text-xs font-black text-orange-900 dark:text-orange-200 uppercase tracking-wide">
-                Class Work Carryover Queue
-              </h3>
-              <p className="text-xs text-orange-800/80 dark:text-orange-300/80 mt-1 leading-relaxed">
-                When students do not complete their period worksheets during classroom time in{' '}
-                <strong>Class Work Workspace</strong>, teachers can forward them here with 1-click. You can review and dispatch them as targeted home practice.
-              </p>
-            </div>
-          </div>
+
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {classworkQueue.map((item) => (

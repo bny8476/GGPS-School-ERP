@@ -62,7 +62,7 @@ export function exportToCSV(
  * - Hides navigation, action buttons, and sidebars
  * - Injects official GGPS School ERP header branding
  */
-export function printDocument(elementId: string, title?: string): void {
+export function printDocument(elementId: string, title?: string, landscape: boolean = false): void {
   const element = document.getElementById(elementId);
   if (!element) {
     toast.error(`Unable to locate content element for printing.`);
@@ -92,6 +92,7 @@ export function printDocument(elementId: string, title?: string): void {
     .join('\n');
 
   const printTitle = title || 'GGPS School Document';
+  const pageOrientation = landscape ? 'landscape' : 'portrait';
 
   doc.open();
   doc.write(`
@@ -102,7 +103,7 @@ export function printDocument(elementId: string, title?: string): void {
         ${styleElements}
         <style>
           @page {
-            size: A4 portrait;
+            size: A4 ${pageOrientation};
             margin: 15mm;
           }
           @media print {

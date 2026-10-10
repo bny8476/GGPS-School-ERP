@@ -485,13 +485,41 @@ export default function LessonPlanWorkspace({ onNavigateTab }: LessonPlanWorkspa
     CREATIVE_PLAY: { label: 'Creative Arts & Play', time: '01:30 PM - 02:15 PM', icon: '🎨' }
   };
 
-  const daysList: Array<{ id: LessonDay; label: string; date: string }> = [
-    { id: 'MONDAY', label: 'Mon', date: '14 Sep' },
-    { id: 'TUESDAY', label: 'Tue', date: '15 Sep' },
-    { id: 'WEDNESDAY', label: 'Wed', date: '16 Sep' },
-    { id: 'THURSDAY', label: 'Thu', date: '17 Sep' },
-    { id: 'FRIDAY', label: 'Fri (Today)', date: '18 Sep' }
-  ];
+  const daysList: Array<{ id: LessonDay; label: string; date: string }> = useMemo(() => {
+    const today = new Date();
+    const dayOfWeek = today.getDay();
+    const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+    const currentRealtimeMonday = new Date(today);
+    currentRealtimeMonday.setDate(today.getDate() + mondayOffset);
+    
+    const weekMonday = new Date(currentRealtimeMonday);
+    weekMonday.setDate(currentRealtimeMonday.getDate() + (currentWeek - 3) * 7);
+
+    const getShortMonth = (d: Date) => d.toLocaleString('en-US', { month: 'short' });
+    const formatDay = (offset: number) => {
+      const d = new Date(weekMonday);
+      d.setDate(d.getDate() + offset);
+      return `${d.getDate()} ${getShortMonth(d)}`;
+    };
+
+    const isToday = (offset: number) => {
+      const d = new Date(weekMonday);
+      d.setDate(d.getDate() + offset);
+      return d.getDate() === today.getDate() && d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
+    };
+
+    return [
+      { id: 'MONDAY', label: `Mon${isToday(0) ? ' (Today)' : ''}`, date: formatDay(0) },
+      { id: 'TUESDAY', label: `Tue${isToday(1) ? ' (Today)' : ''}`, date: formatDay(1) },
+      { id: 'WEDNESDAY', label: `Wed${isToday(2) ? ' (Today)' : ''}`, date: formatDay(2) },
+      { id: 'THURSDAY', label: `Thu${isToday(3) ? ' (Today)' : ''}`, date: formatDay(3) },
+      { id: 'FRIDAY', label: `Fri${isToday(4) ? ' (Today)' : ''}`, date: formatDay(4) }
+    ];
+  }, [currentWeek]);
+
+  const weekRangeStr = useMemo(() => {
+    return `${daysList[0].date.split(' ')[0]} - ${daysList[4].date}`;
+  }, [daysList]);
 
   // Filtered lessons
   const filteredLessons = useMemo(() => {
@@ -631,7 +659,7 @@ export default function LessonPlanWorkspace({ onNavigateTab }: LessonPlanWorkspa
               </button>
 
               <span className="px-3 text-xs font-black text-[#000E28] dark:text-white shrink-0">
-                Week {currentWeek} • 14 - 18 Sep
+                Week {currentWeek} • {weekRangeStr}
               </span>
 
               <button

@@ -523,7 +523,7 @@ export default function ExamsMarksWorkspace({ students = [], onNavigateTab }: Ex
 
             <button
               onClick={() => {
-                printDocument('printable-exam-ledger', 'GGPS School - Term Examination Ledger');
+                printDocument('printable-exam-ledger', 'GGPS School - Term Examination Ledger', true);
               }}
               className="px-3 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold border border-white/20 backdrop-blur-md transition-all flex items-center justify-center gap-1.5 cursor-pointer"
               title="Print Ledger"
@@ -690,7 +690,7 @@ export default function ExamsMarksWorkspace({ students = [], onNavigateTab }: Ex
       {activeSubTab === 'GRADEBOOK' && (
         <div id="printable-exam-ledger" className="space-y-4">
           {/* Top Control Strip: Search student, Total count, Lock All button */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-white dark:bg-[#000E28]/40 p-4 rounded-2xl border border-slate-200 dark:border-slate-800">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-white dark:bg-[#000E28]/40 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 print:hidden">
             <div className="flex items-center gap-3">
               <div className="relative w-64">
                 <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -730,8 +730,8 @@ export default function ExamsMarksWorkspace({ students = [], onNavigateTab }: Ex
           </div>
 
           {/* Marks Spreadsheet Table */}
-          <div className="bg-white dark:bg-[#000E28]/40 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-xs">
-            <div className="overflow-x-auto">
+          <div className="bg-white dark:bg-[#000E28]/40 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-xs print:border-none print:shadow-none">
+            <div className="overflow-x-auto print:overflow-visible">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-slate-50/80 dark:bg-slate-900/60 border-b border-slate-200/80 dark:border-slate-800 text-[11px] font-black text-slate-500 uppercase tracking-wider">
