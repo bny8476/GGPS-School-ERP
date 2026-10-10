@@ -8,7 +8,8 @@ import {
   ArrowUpRight, ArrowDownRight, CreditCard, ChevronRight,
   Send, Receipt, Calendar, Building2, UserCheck, Filter,
   Printer, ShieldAlert, Award, Smartphone, 
-  HelpCircle, CheckCircle, Percent, AlertTriangle, FileText
+  HelpCircle, CheckCircle, Percent, AlertTriangle, FileText,
+  User, BookOpen
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';
@@ -1789,109 +1790,265 @@ function FeesFinanceContent() {
       {/* Printable Receipt Modal */}
       {showReceiptModal.show && showReceiptModal.record && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div id="printable-receipt-container" className="bg-white rounded-[28px] max-w-lg w-full p-8 border border-slate-200 shadow-2xl space-y-6 text-[#000E28]">
-            {/* Receipt Header */}
-            <div className="flex justify-between items-start pb-4 border-b-2 border-slate-800">
-              <div>
-                <span className="text-xl font-black text-[#0050CB] tracking-tight block">GGPS SCHOOL</span>
-                <span className="text-[11px] text-slate-600 block">Excellence in Academics & Character Building</span>
-                <span className="text-[10px] text-slate-500 block">CBSE Affiliation No: 1930482 | Established 2012</span>
-              </div>
-              <div className="text-right">
-                <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-black text-[10px] uppercase">
-                  OFFICIAL RECEIPT
-                </span>
-                <span className="block font-mono text-xs font-bold text-slate-800 mt-1">
-                  {showReceiptModal.record.receiptNumber || 'GGPS-REC-2026-0042'}
-                </span>
-                <span className="block text-[10px] text-slate-500">
-                  Date: {showReceiptModal.record.paymentDate || new Date().toISOString().split('T')[0]}
-                </span>
-              </div>
-            </div>
-
-            {/* Student Info Box */}
-            <div className="bg-slate-50 rounded-xl p-3 text-xs grid grid-cols-2 gap-2">
-              <div>
-                <span className="text-slate-500 block text-[10px]">Student Name:</span>
-                <span className="font-bold">
-                  {showReceiptModal.record.studentId ? `${showReceiptModal.record.studentId.firstName} ${showReceiptModal.record.studentId.lastName}` : 'Aarav Sharma'}
-                </span>
-              </div>
-              <div>
-                <span className="text-slate-500 block text-[10px]">Admission No:</span>
-                <span className="font-mono font-bold">
-                  {showReceiptModal.record.studentId?.studentId || showReceiptModal.record.studentId?.admissionNumber || 'GGPS2026LKG001'}
-                </span>
-              </div>
-              <div>
-                <span className="text-slate-500 block text-[10px]">Class & Section:</span>
-                <span className="font-bold">Class {showReceiptModal.record.grade || 'LKG'} - Section A</span>
-              </div>
-              <div>
-                <span className="text-slate-500 block text-[10px]">Payment Mode:</span>
-                <span className="font-bold">{showReceiptModal.record.paymentMode || 'UPI'}</span>
-              </div>
-            </div>
-
-            {/* Particulars Table */}
-            <div className="border border-slate-200 rounded-xl overflow-hidden text-xs">
-              <table className="w-full text-left">
-                <thead className="bg-slate-100 text-slate-600 font-bold uppercase text-[10px]">
-                  <tr>
-                    <th className="p-2.5">Fee Head Particulars</th>
-                    <th className="p-2.5 text-right">Amount (₹)</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  <tr>
-                    <td className="p-2.5 font-medium">{showReceiptModal.record.feeType || 'Term 1 Tuition Fee'}</td>
-                    <td className="p-2.5 text-right font-mono font-bold">₹{(showReceiptModal.record.amountPaid || 0).toLocaleString('en-IN')}</td>
-                  </tr>
-                  <tr className="bg-slate-50 font-bold">
-                    <td className="p-2.5 text-[#000E28]">TOTAL AMOUNT RECEIVED</td>
-                    <td className="p-2.5 text-right text-emerald-600 font-black text-sm">₹{(showReceiptModal.record.amountPaid || 0).toLocaleString('en-IN')}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            {/* Seal & Signatures */}
-            <div className="flex justify-between items-end pt-4 border-t border-slate-200 text-center">
-              <div>
-                <div className="w-20 h-10 border border-dashed border-slate-300 rounded flex items-center justify-center text-[9px] text-slate-400 mb-1">
-                  GGPS STAMP
+          <div className="bg-[#F8FAFC] rounded-[28px] max-w-4xl w-full p-8 border border-slate-200 shadow-2xl space-y-6 text-[#000E28] relative max-h-[90vh] overflow-y-auto">
+            
+            <div id="printable-receipt-container" className="bg-[#F8FAFC] space-y-6 print:m-0 print:p-0">
+              
+              {/* Receipt Header */}
+              <div className="flex justify-between items-start pt-2">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 bg-white rounded-xl shadow-xs flex items-center justify-center text-[#0050CB]">
+                    <BookOpen className="w-8 h-8" />
+                  </div>
+                  <div>
+                    <h1 className="text-3xl font-black text-[#000E28] tracking-tight">GGPS School</h1>
+                    <h2 className="text-sm font-semibold text-slate-500">School Management System</h2>
+                    <div className="flex items-center gap-2 mt-1 text-[10px] text-slate-400 font-medium">
+                      <span>Recognized Institution</span>
+                      <span className="w-1 h-1 bg-slate-300 rounded-full"></span>
+                      <span>Affiliated to CBSE</span>
+                      <span className="w-1 h-1 bg-slate-300 rounded-full"></span>
+                      <span>New Delhi</span>
+                    </div>
+                  </div>
                 </div>
-                <span className="text-[10px] text-slate-500 block">Accounts Office</span>
+                <div className="text-right flex flex-col justify-end h-full pt-4">
+                  <div className="text-[#0050CB] font-bold text-sm italic tracking-wide">
+                    Learn <span className="text-slate-400 mx-1">•</span> Grow <span className="text-slate-400 mx-1">•</span> Achieve
+                  </div>
+                  <div className="h-0.5 bg-gradient-to-r from-transparent via-[#FF690C] to-transparent w-full mt-1"></div>
+                </div>
               </div>
-              <div>
-                <div className="w-28 border-b border-slate-800 mb-1"></div>
-                <span className="text-[10px] font-bold text-slate-700 block">Authorized Signatory</span>
+
+              {/* Banner */}
+              <div className="bg-gradient-to-r from-[#001438] to-[#0050CB] rounded-2xl p-6 text-white flex justify-between items-center relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-blue-400/10 rounded-full blur-3xl pointer-events-none -mr-10 -mt-10" />
+                <div className="relative z-10 flex items-center gap-4">
+                  <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center backdrop-blur-sm border border-white/20">
+                    <Receipt className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-3xl font-black">Fee Receipt</h2>
+                    <p className="text-sm text-blue-100">Transaction details for the received fee payment</p>
+                  </div>
+                </div>
+                
+                <div className="relative z-10 flex items-center gap-6">
+                  <div className="bg-emerald-500/20 border border-emerald-400/30 rounded-xl px-4 py-2 flex items-center gap-3 backdrop-blur-sm">
+                    <CheckCircle2 className="w-6 h-6 text-emerald-400" />
+                    <div>
+                      <div className="text-sm font-bold text-emerald-50">Payment Successful</div>
+                      <div className="text-[10px] text-emerald-200">Transaction completed successfully</div>
+                    </div>
+                  </div>
+
+                  <div className="border-l border-white/20 pl-6 space-y-2">
+                    <div>
+                      <div className="text-[10px] text-blue-200 mb-0.5">Receipt Number</div>
+                      <div className="font-mono font-bold text-sm">{showReceiptModal.record.receiptNumber || 'REC-2026-00001'}</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] text-blue-200 mb-0.5">Payment Date</div>
+                      <div className="font-bold text-sm">
+                        {showReceiptModal.record.paymentDate ? 
+                          new Date(showReceiptModal.record.paymentDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }) 
+                          : '28 September 2026'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Info Cards */}
+              <div className="grid grid-cols-2 gap-6">
+                {/* Student Info */}
+                <div className="bg-white rounded-2xl p-5 border border-slate-200/60 shadow-xs">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="w-8 h-8 bg-blue-100 text-[#0050CB] rounded-full flex items-center justify-center">
+                      <User className="w-4 h-4" />
+                    </div>
+                    <h3 className="font-bold text-[#0050CB]">Student Information</h3>
+                  </div>
+                  <div className="flex items-center gap-4 mb-5">
+                    <div className="w-14 h-14 bg-slate-100 rounded-full flex items-center justify-center overflow-hidden border border-slate-200">
+                       <User className="w-8 h-8 text-slate-400 mt-2" />
+                    </div>
+                    <div>
+                      <div className="text-[10px] text-slate-500">Student Name</div>
+                      <div className="font-black text-sm text-[#000E28]">
+                        {showReceiptModal.record.studentId ? `${showReceiptModal.record.studentId.firstName} ${showReceiptModal.record.studentId.lastName}` : 'Sammy Student'}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <div className="text-[10px] text-slate-500">Admission No.</div>
+                      <div className="font-bold text-sm">
+                        {showReceiptModal.record.studentId?.studentId || showReceiptModal.record.studentId?.admissionNumber || 'GGPS2026LKG001'}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] text-slate-500">Grade / Class</div>
+                      <div className="font-bold text-sm">
+                        {showReceiptModal.record.grade || 'LKG'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Payment Info */}
+                <div className="bg-white rounded-2xl p-5 border border-slate-200/60 shadow-xs">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="w-8 h-8 bg-blue-100 text-[#0050CB] rounded-full flex items-center justify-center">
+                      <CreditCard className="w-4 h-4" />
+                    </div>
+                    <h3 className="font-bold text-[#0050CB]">Payment Information</h3>
+                  </div>
+                  <div className="grid grid-cols-2 gap-y-5 gap-x-4">
+                    <div className="flex gap-3 items-start">
+                      <div className="mt-0.5 text-[#0050CB]/40"><CreditCard className="w-5 h-5"/></div>
+                      <div>
+                        <div className="text-[10px] text-slate-500">Payment Mode</div>
+                        <div className="font-bold text-sm text-[#000E28]">{showReceiptModal.record.paymentMode || 'UPI (Google Pay)'}</div>
+                      </div>
+                    </div>
+                    <div className="flex gap-3 items-start">
+                      <div className="mt-0.5 text-[#0050CB]/40"><Calendar className="w-5 h-5"/></div>
+                      <div>
+                        <div className="text-[10px] text-slate-500">Payment Date & Time</div>
+                        <div className="font-bold text-sm text-[#000E28]">
+                          {showReceiptModal.record.paymentDate ? 
+                            new Date(showReceiptModal.record.paymentDate).toLocaleString('en-GB', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }) 
+                            : '28 September 2026 06:21 PM'}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="col-span-2 flex gap-3 items-start">
+                      <div className="mt-0.5 text-[#0050CB]/40"><Receipt className="w-5 h-5"/></div>
+                      <div>
+                        <div className="text-[10px] text-slate-500">Transaction Reference No.</div>
+                        <div className="font-mono font-bold text-sm text-[#000E28]">{showReceiptModal.record.referenceId || 'PAY_ORD_1790587727201_8513'}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bottom Section */}
+              <div className="grid grid-cols-3 gap-6">
+                {/* Fee Details */}
+                <div className="col-span-2 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 bg-[#0050CB] text-white rounded-full flex items-center justify-center shadow-xs shadow-blue-500/30">
+                      <FileText className="w-4 h-4" />
+                    </div>
+                    <h3 className="font-bold text-[#000E28]">Fee Details</h3>
+                  </div>
+                  
+                  <div className="bg-white rounded-xl border border-slate-200/60 shadow-xs overflow-hidden">
+                    <table className="w-full text-left text-sm">
+                      <thead className="bg-[#E5EEFF]/50 text-[#0050CB] text-xs">
+                        <tr>
+                          <th className="py-3 px-4 font-bold border-b border-slate-200/60 w-16 text-center">S.No.</th>
+                          <th className="py-3 px-4 font-bold border-b border-slate-200/60">Particulars</th>
+                          <th className="py-3 px-4 font-bold border-b border-slate-200/60">Description</th>
+                          <th className="py-3 px-4 font-bold border-b border-slate-200/60 text-right">Amount (Rs.)</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        <tr>
+                          <td className="py-4 px-4 text-center text-slate-500">1</td>
+                          <td className="py-4 px-4 font-semibold text-[#000E28]">{showReceiptModal.record.feeType || 'Tuition Fee'}</td>
+                          <td className="py-4 px-4 text-slate-600">Academic Fee for {showReceiptModal.record.grade || 'LKG'}</td>
+                          <td className="py-4 px-4 text-right font-mono font-bold">{(showReceiptModal.record.amountPaid || 18500).toLocaleString('en-IN')}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Payment Summary */}
+                <div className="col-span-1 bg-emerald-50/50 rounded-2xl p-5 border border-emerald-100 shadow-xs flex flex-col">
+                  <div className="flex items-center gap-2 mb-5">
+                    <div className="w-8 h-8 bg-emerald-600 text-white rounded-full flex items-center justify-center shadow-xs shadow-emerald-600/30">
+                      <Wallet className="w-4 h-4" />
+                    </div>
+                    <h3 className="font-bold text-emerald-800">Payment Summary</h3>
+                  </div>
+
+                  <div className="flex justify-between items-center text-sm mb-3">
+                    <span className="text-slate-600 font-medium">Total Amount</span>
+                    <span className="font-bold text-slate-800">Rs. {(showReceiptModal.record.amountPaid || 18500).toLocaleString('en-IN')}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm pb-4 border-b border-emerald-200/60">
+                    <span className="text-slate-600 font-medium">Amount Received</span>
+                    <span className="font-bold text-emerald-600">Rs. {(showReceiptModal.record.amountPaid || 18500).toLocaleString('en-IN')}</span>
+                  </div>
+
+                  <div className="mt-4 bg-emerald-100/50 rounded-xl p-4 flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center shrink-0">
+                      <CheckCircle2 className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="text-[10px] text-emerald-800 font-bold uppercase tracking-wider mb-0.5">Amount Received</div>
+                      <div className="text-2xl font-black text-emerald-700">Rs. {(showReceiptModal.record.amountPaid || 18500).toLocaleString('en-IN')}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="pt-6 border-t border-slate-200/80 flex justify-between items-end pb-6">
+                <div className="flex items-start gap-3">
+                  <div className="w-6 h-6 bg-[#0050CB] text-white rounded-full flex items-center justify-center shrink-0 mt-0.5">
+                     <CheckCircle2 className="w-3.5 h-3.5" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500 font-medium mb-1">This is a computer generated receipt and does not require a signature.</p>
+                    <p className="text-[11px] text-slate-400">Thank you for being a part of GGPS School!</p>
+                  </div>
+                </div>
+
+                <div className="text-right">
+                   <div className="border border-dashed border-[#0050CB]/30 rounded-xl p-3 bg-blue-50/50 inline-block mb-1">
+                     <div className="text-[10px] font-black text-[#0050CB] uppercase tracking-wider text-center mb-1">GGPS BURSAR OFFICE</div>
+                     <div className="flex items-center gap-1.5 justify-center text-xs text-blue-800 font-medium">
+                       <CheckCircle2 className="w-3.5 h-3.5 text-[#0050CB]" />
+                       Digitally Verified & Cleared
+                     </div>
+                   </div>
+                   <div className="text-[9px] text-slate-400 font-mono text-right w-full block">Timestamp: {new Date().toISOString()}</div>
+                </div>
+              </div>
+              
+              <div className="absolute bottom-0 left-0 right-0 py-2 px-8 flex justify-between items-center text-[9px] text-slate-400">
+                <span>GGPS School | <i className="text-slate-500">Building Better Futures</i></span>
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 pt-2">
+            {/* Action Buttons */}
+            <div className="flex justify-end gap-3 pt-6 border-t border-slate-200 print:hidden relative z-10 bg-[#F8FAFC]">
               <button
                 onClick={() => setShowReceiptModal({ show: false, record: null })}
-                className="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-100 font-bold text-xs cursor-pointer"
+                className="px-5 py-2 rounded-xl text-slate-600 bg-slate-100 hover:bg-slate-200 font-bold text-sm cursor-pointer transition-colors"
               >
                 Close
               </button>
               <button
                 onClick={() => downloadFile(`/api/finance/receipts/${showReceiptModal.record?.receiptNumber}/pdf`, `GGPS_Fee_Receipt_${showReceiptModal.record?.receiptNumber || 'REC'}.pdf`)}
-                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs"
+                className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm flex items-center gap-2 cursor-pointer shadow-sm transition-colors"
               >
                 <Download className="w-4 h-4" />
                 <span>Download PDF</span>
               </button>
               <button
                 onClick={() => {
-                  printDocument('printable-receipt-container', `GGPS Receipt #${showReceiptModal.record?.receiptNumber}`);
+                  printDocument('printable-receipt-container', `GGPS Receipt #${showReceiptModal.record?.receiptNumber}`, true);
                 }}
-                className="px-5 py-2 rounded-xl bg-[#0050CB] hover:bg-[#0041A8] text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs"
+                className="px-6 py-2 rounded-xl bg-[#0050CB] hover:bg-[#0041A8] text-white font-bold text-sm flex items-center gap-2 cursor-pointer shadow-md shadow-blue-500/20 transition-all"
               >
                 <Printer className="w-4 h-4" />
-                <span>Print Official Receipt</span>
+                <span>Print Receipt</span>
               </button>
             </div>
           </div>

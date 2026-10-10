@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { 
   FileText, Plus, Search, ChevronDown, CheckCircle2, Award, User, 
   Calendar, BookOpen, X, Printer, Download, Filter, Layers, Users, 
-  Star, BarChart2, Lightbulb, ArrowRight, Home, Trash2, Eye, RefreshCw
+  Star, BarChart2, Lightbulb, ArrowRight, Home, Trash2, Eye, RefreshCw,
+  Calculator, FlaskConical, MessageSquare, CalendarDays, ShieldCheck, GraduationCap
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
@@ -901,84 +902,262 @@ export default function AssessmentsPage() {
       )}
 
       {/* MODAL: FULL REPORT CARD VIEW & PRINT */}
+      {/* MODAL: FULL REPORT CARD VIEW & PRINT */}
       {selectedReportCard && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-[#07152F] rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in duration-200">
-            {/* Header */}
-            <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-black text-[#000E28] dark:text-white">
-                  {selectedReportCard.childId ? `${selectedReportCard.childId.firstName} ${selectedReportCard.childId.lastName}` : 'Student'} — Report Card
-                </h3>
-                <p className="text-xs font-bold text-slate-400 mt-0.5">
-                  {selectedReportCard.term || 'Term 1'} • Grade: {selectedReportCard.childId?.grade || 'Pre-KG'}
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => printDocument('printable-admin-report-card-modal', 'GGPS School - Official Report Card')}
-                  className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-[#0050CB] text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer"
-                >
-                  <Printer className="w-3.5 h-3.5" />
-                  <span>Print</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={async () => {
-                    const studentId = selectedReportCard.childId?._id || selectedReportCard.childId;
-                    const studentName = selectedReportCard.childId ? `${selectedReportCard.childId.firstName}_${selectedReportCard.childId.lastName}` : 'Student';
-                    if (studentId) {
-                      await downloadPdf(`/api/v1/students/${studentId}/report-card`, `GGPS_Report_Card_${studentName}.pdf`);
-                    } else {
-                      toast.error('Student ID not found');
-                    }
-                  }}
-                  className="px-3 py-1.5 bg-[#0050CB] hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  <span>Download PDF</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSelectedReportCard(null)}
-                  className="p-1.5 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <div className="bg-[#F8FAFC] rounded-3xl border border-slate-200 shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200 relative">
+            
+            <div id="printable-admin-report-card-modal" className="bg-[#F8FAFC] flex-1 overflow-y-auto print:m-0 print:p-0">
+              
+              {/* Header Banner */}
+              <div className="bg-gradient-to-r from-[#001438] via-[#003180] to-[#0050CB] p-8 text-white relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20"></div>
+                <div className="absolute bottom-0 left-0 right-0">
+                   <svg viewBox="0 0 1440 120" className="w-full h-12 fill-[#F8FAFC] preserve-3d" preserveAspectRatio="none">
+                     <path d="M0,60 C480,120 960,0 1440,60 L1440,120 L0,120 Z"></path>
+                   </svg>
+                </div>
 
-            {/* Content */}
-            <div id="printable-admin-report-card-modal" className="p-6 overflow-y-auto space-y-5 text-xs">
-              <h4 className="font-bold text-slate-500 uppercase tracking-wider text-[11px]">Evaluated Skill Rubrics</h4>
-              <div className="space-y-2.5">
-                {selectedReportCard.rubrics?.map((rubric: any, idx: number) => (
-                  <div key={idx} className="flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-800">
-                    <span className="text-slate-700 dark:text-slate-300 font-medium">
-                      <span className="font-bold text-slate-400 mr-2">[{rubric.category}]</span> {rubric.skill}
-                    </span>
-                    <div className="shrink-0">{getScoreBadge(rubric.score)}</div>
+                <div className="relative z-10 flex justify-between items-start">
+                  <div className="flex items-center gap-5">
+                    <div className="w-20 h-20 bg-white rounded-2xl shadow-xl flex items-center justify-center text-[#0050CB] border-4 border-white/20">
+                      <BookOpen className="w-10 h-10" />
+                    </div>
+                    <div>
+                      <h1 className="text-4xl font-black tracking-tight mb-1">GGPS School</h1>
+                      <h2 className="text-lg text-blue-100 font-semibold mb-2">School Management System</h2>
+                      <div className="flex items-center gap-2 text-xs text-blue-200 font-medium">
+                        <span>CBSE Affiliation No: 1930412</span>
+                        <span className="w-1 h-1 bg-blue-400 rounded-full"></span>
+                        <span>Knowledge Park Campus</span>
+                        <span className="w-1 h-1 bg-blue-400 rounded-full"></span>
+                        <span>info@ggps.edu</span>
+                      </div>
+                    </div>
                   </div>
-                ))}
+                  <div className="text-right">
+                    <div className="text-white font-bold text-lg italic tracking-wide pb-1 border-b-2 border-[#FF690C] inline-block pr-2">
+                      Learn <span className="text-blue-300 mx-1.5">•</span> Grow <span className="text-blue-300 mx-1.5">•</span> Achieve
+                    </div>
+                  </div>
+                </div>
               </div>
 
+              {/* Title & Date Section */}
+              <div className="px-10 pt-4 pb-6 flex justify-between items-end">
+                <div>
+                  <h2 className="text-3xl font-black text-[#000E28]">
+                    Official <span className="text-[#0050CB]">Report Card</span>
+                  </h2>
+                  <p className="text-sm font-semibold text-slate-500 mt-1">Academic Performance & Skill Assessment</p>
+                </div>
+                <div className="flex gap-4">
+                  <div className="bg-white border border-slate-200 rounded-xl px-4 py-2 flex items-center gap-3 shadow-xs">
+                    <CalendarDays className="w-5 h-5 text-[#0050CB]" />
+                    <div>
+                      <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Printed On</div>
+                      <div className="text-xs font-bold text-[#000E28]">{new Date().toLocaleString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true })}</div>
+                    </div>
+                  </div>
+                  <div className="bg-blue-50 border border-blue-100 text-[#0050CB] rounded-xl px-4 py-2 flex items-center gap-2 font-black text-xs uppercase shadow-xs">
+                    <ShieldCheck className="w-4 h-4" />
+                    <span>Official Record</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Student Profile Card */}
+              <div className="px-10 pb-6">
+                <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-xs flex items-center justify-between relative overflow-hidden">
+                  <div className="absolute top-0 left-0 w-2 h-full bg-[#0050CB]"></div>
+                  
+                  <div className="flex items-center gap-6">
+                    <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center border-2 border-blue-100 shrink-0">
+                      <GraduationCap className="w-10 h-10 text-[#0050CB]" />
+                    </div>
+                    <div>
+                      <div className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">Student Name</div>
+                      <div className="text-2xl font-black text-[#000E28] mb-4">
+                        {selectedReportCard.childId ? `${selectedReportCard.childId.firstName} ${selectedReportCard.childId.lastName}` : 'Sammy Student'}
+                      </div>
+                      
+                      <div className="flex gap-10">
+                        <div>
+                          <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Admission No.</div>
+                          <div className="font-bold text-sm text-[#000E28]">{selectedReportCard.childId?.studentId || selectedReportCard.childId?.admissionNumber || 'GGPS2026LKG001'}</div>
+                        </div>
+                        <div className="w-px h-8 bg-slate-200"></div>
+                        <div>
+                          <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Grade / Class</div>
+                          <div className="font-bold text-sm text-[#000E28]">{selectedReportCard.childId?.grade || 'LKG'}</div>
+                        </div>
+                        <div className="w-px h-8 bg-slate-200"></div>
+                        <div>
+                          <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Academic Year</div>
+                          <div className="font-bold text-sm text-[#000E28]">2026 - 2027</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-[#0050CB] text-white px-4 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-sm">
+                    <Star className="w-3.5 h-3.5 fill-white" />
+                    <span>Active</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Evaluated Skill Rubrics */}
+              <div className="px-10 pb-6">
+                <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-xs">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-10 h-10 bg-[#0050CB] rounded-xl flex items-center justify-center shadow-md shadow-blue-500/20">
+                      <BarChart2 className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="font-black text-lg text-[#000E28]">Evaluated Skill Rubrics</h3>
+                      <p className="text-xs text-slate-500 font-medium">Your child's performance across key learning areas</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    {selectedReportCard.rubrics?.map((rubric: any, idx: number) => {
+                      let Icon = BookOpen;
+                      let colorClass = 'bg-blue-50 text-[#0050CB] border-blue-100';
+                      let iconBg = 'bg-[#0050CB] text-white';
+                      
+                      if (rubric.category.toLowerCase().includes('math') || rubric.category.toLowerCase().includes('number') || rubric.category.toLowerCase().includes('numeracy')) {
+                        Icon = Calculator;
+                        colorClass = 'bg-blue-50 border-blue-100';
+                        iconBg = 'bg-[#3b82f6] text-white';
+                      } else if (rubric.category.toLowerCase().includes('sci') || rubric.category.toLowerCase().includes('plant')) {
+                        Icon = FlaskConical;
+                        colorClass = 'bg-purple-50 border-purple-100';
+                        iconBg = 'bg-[#8b5cf6] text-white';
+                      } else if (rubric.category.toLowerCase().includes('social') || rubric.category.toLowerCase().includes('peer')) {
+                        Icon = Users;
+                        colorClass = 'bg-emerald-50 border-emerald-100';
+                        iconBg = 'bg-[#10b981] text-white';
+                      } else if (rubric.category.toLowerCase().includes('motor')) {
+                        Icon = Layers;
+                        colorClass = 'bg-amber-50 border-amber-100';
+                        iconBg = 'bg-amber-500 text-white';
+                      }
+
+                      return (
+                        <div key={idx} className={`flex items-center justify-between p-4 rounded-xl border ${colorClass} transition-colors`}>
+                          <div className="flex items-center gap-4">
+                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-sm ${iconBg}`}>
+                              <Icon className="w-6 h-6" />
+                            </div>
+                            <div>
+                              <div className="font-black text-sm text-[#000E28]">{rubric.category}</div>
+                              <div className="text-xs text-slate-600 font-medium mt-0.5">{rubric.skill}</div>
+                            </div>
+                          </div>
+                          
+                          <div className="shrink-0">
+                            {rubric.score === 'Mastered' ? (
+                              <div className="flex items-center gap-1.5 bg-emerald-100 text-emerald-700 px-4 py-1.5 rounded-full font-bold text-xs border border-emerald-200 shadow-xs">
+                                <Award className="w-4 h-4" />
+                                <span>Mastered</span>
+                              </div>
+                            ) : rubric.score === 'Developing' ? (
+                              <div className="flex items-center gap-1.5 bg-amber-100 text-amber-700 px-4 py-1.5 rounded-full font-bold text-xs border border-amber-200 shadow-xs">
+                                <Lightbulb className="w-4 h-4" />
+                                <span>Developing</span>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-1.5 bg-slate-100 text-slate-700 px-4 py-1.5 rounded-full font-bold text-xs border border-slate-200 shadow-xs">
+                                <CheckCircle2 className="w-4 h-4" />
+                                <span>{rubric.score}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* Teacher's Observations */}
               {selectedReportCard.teacherComments && (
-                <div className="bg-slate-50 dark:bg-slate-900/60 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
-                  <h4 className="font-bold text-slate-500 uppercase tracking-wider text-[10px] mb-1">Teacher's Observations</h4>
-                  <p className="text-slate-700 dark:text-slate-300 italic">{selectedReportCard.teacherComments}</p>
+                <div className="px-10 pb-8">
+                  <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-xs flex items-start gap-4">
+                    <div className="w-10 h-10 bg-[#0050CB] rounded-xl flex items-center justify-center shrink-0 shadow-md shadow-blue-500/20">
+                      <MessageSquare className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-black text-sm text-[#000E28] mb-2">Teacher's Observations</h4>
+                      <p className="text-slate-600 italic font-medium leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-100">
+                        <span className="text-[#0050CB] font-serif text-2xl leading-none mr-2">"</span>
+                        {selectedReportCard.teacherComments}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               )}
+
+              {/* Signatures & Footer */}
+              <div className="px-10 pt-4 pb-12 flex justify-between items-end relative overflow-hidden">
+                <div>
+                  <div className="font-['Damion'] text-3xl text-slate-800 mb-1 border-b border-slate-300 pb-2 pr-10">Mrs. Sharma</div>
+                  <div className="font-black text-sm text-[#000E28]">Class Teacher</div>
+                  <div className="text-xs text-slate-500 font-medium">GGPS School</div>
+                </div>
+
+                <div className="relative">
+                  <div className="w-32 h-32 rounded-full border-2 border-blue-200 flex items-center justify-center bg-blue-50/50 relative z-10">
+                    <div className="w-28 h-28 rounded-full border border-dashed border-blue-300 flex items-center justify-center flex-col text-center">
+                      <BookOpen className="w-8 h-8 text-[#0050CB] mb-1" />
+                      <div className="text-[7px] font-black text-[#0050CB] tracking-widest px-2">GGPS SCHOOL</div>
+                      <div className="flex gap-1 my-0.5"><Star className="w-2 h-2 fill-amber-400 text-amber-400"/><Star className="w-2 h-2 fill-amber-400 text-amber-400"/><Star className="w-2 h-2 fill-amber-400 text-amber-400"/></div>
+                      <div className="text-[5px] font-bold text-slate-500 tracking-wider w-3/4 leading-tight">LEARNING FOR A BRIGHTER FUTURE</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bottom Decorative Wave */}
+              <div className="h-12 bg-gradient-to-r from-[#0050CB] to-[#003180] relative flex items-center justify-end px-10 text-white/80 text-[10px] font-medium tracking-wide">
+                Building Better Futures
+              </div>
+
             </div>
 
-            {/* Footer */}
-            <div className="p-4 border-t border-slate-100 dark:border-slate-800 flex justify-end">
+            {/* Action Buttons (Sticky Bottom) */}
+            <div className="p-4 border-t border-slate-200 bg-white flex justify-end gap-3 print:hidden shadow-[0_-10px_20px_-10px_rgba(0,0,0,0.05)] relative z-10">
               <button
                 type="button"
                 onClick={() => setSelectedReportCard(null)}
-                className="px-5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors cursor-pointer"
+                className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold rounded-xl transition-colors cursor-pointer"
               >
                 Close
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  const studentId = selectedReportCard.childId?._id || selectedReportCard.childId;
+                  const studentName = selectedReportCard.childId ? `${selectedReportCard.childId.firstName}_${selectedReportCard.childId.lastName}` : 'Student';
+                  if (studentId) {
+                    await downloadPdf(`/api/v1/students/${studentId}/report-card`, `GGPS_Report_Card_${studentName}.pdf`);
+                  } else {
+                    toast.error('Student ID not found');
+                  }
+                }}
+                className="px-5 py-2.5 bg-blue-50 hover:bg-blue-100 text-[#0050CB] text-sm font-bold rounded-xl transition-colors flex items-center gap-2 cursor-pointer shadow-xs border border-blue-200"
+              >
+                <Download className="w-4 h-4" />
+                <span>Download PDF</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => printDocument('printable-admin-report-card-modal', 'GGPS School - Official Report Card', true)}
+                className="px-6 py-2.5 bg-[#0050CB] hover:bg-[#003E9E] text-white text-sm font-bold rounded-xl transition-colors flex items-center gap-2 cursor-pointer shadow-md shadow-blue-500/20"
+              >
+                <Printer className="w-4 h-4" />
+                <span>Print Record</span>
               </button>
             </div>
           </div>

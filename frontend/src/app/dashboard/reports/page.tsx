@@ -455,7 +455,7 @@ function ReportsContent() {
     const reportTitle = `${activeReport.toUpperCase()} REPORT - GGPS SCHOOL ERP`;
     const printableArea = document.getElementById('report-content-area');
     if (printableArea) {
-      printDocument(reportTitle, printableArea.innerHTML);
+      printDocument('report-content-area', reportTitle, true);
     } else {
       window.print();
     }
@@ -542,7 +542,7 @@ function ReportsContent() {
       </div>
 
       {/* TAB CONTENT AREA */}
-      <div id="report-content-area" className="w-full bg-white dark:bg-[#07152F] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+      <div id="report-content-area" className="w-full bg-white dark:bg-[#07152F] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden print:overflow-visible">
         {isLoading ? (
           <div className="p-16 flex flex-col items-center justify-center space-y-3">
             <Loader2 className="w-8 h-8 text-[#0050CB] animate-spin" />
@@ -848,7 +848,7 @@ function ReportsContent() {
                   </div>
 
                   {/* Detailed Assessment Ledger Table */}
-                  <div className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-xs">
+                  <div className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden print:overflow-visible shadow-xs">
                     <div className="p-3.5 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
                       <span className="font-extrabold text-xs text-slate-800 dark:text-slate-200">
                         Granular Assessment Ledger ({filteredAssessments.length} records)
@@ -868,7 +868,7 @@ function ReportsContent() {
                       )}
                     </div>
 
-                    <div className="overflow-x-auto">
+                    <div className="overflow-x-auto print:overflow-visible">
                       <table className="w-full text-left text-xs">
                         <thead className="bg-slate-50/50 dark:bg-slate-900/50 text-[10px] uppercase font-bold text-slate-400 border-b border-slate-100 dark:border-slate-800">
                           <tr>
@@ -1375,7 +1375,7 @@ function ReportsContent() {
                   </div>
 
                   {/* Section 5: Detailed Granular Daily Attendance Ledger Table */}
-                  <div className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-xs">
+                  <div className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden print:overflow-visible shadow-xs">
                     <div className="p-3.5 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
                       <span className="font-extrabold text-xs text-slate-800 dark:text-slate-200">
                         Granular Attendance Ledger ({filteredAttendanceRecords.length} records shown)
@@ -1395,7 +1395,7 @@ function ReportsContent() {
                       )}
                     </div>
 
-                    <div className="overflow-x-auto">
+                    <div className="overflow-x-auto print:overflow-visible">
                       <table className="w-full text-left text-xs">
                         <thead className="bg-slate-50/50 dark:bg-slate-900/50 text-[10px] uppercase font-bold text-slate-400 border-b border-slate-100 dark:border-slate-800">
                           <tr>
@@ -1920,7 +1920,7 @@ function ReportsContent() {
                   </div>
 
                   {/* Section 5: Detailed Financial & Dues Ledger Table */}
-                  <div className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-xs">
+                  <div className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden print:overflow-visible shadow-xs">
                     <div className="p-3.5 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
                       <span className="font-extrabold text-xs text-slate-800 dark:text-slate-200">
                         Granular Financial Ledger ({filteredFinancialRecords.length} records shown)
@@ -1941,7 +1941,7 @@ function ReportsContent() {
                       )}
                     </div>
 
-                    <div className="overflow-x-auto">
+                    <div className="overflow-x-auto print:overflow-visible">
                       <table className="w-full text-left text-xs">
                         <thead className="bg-slate-50/50 dark:bg-slate-900/50 text-[10px] uppercase font-bold text-slate-400 border-b border-slate-100 dark:border-slate-800">
                           <tr>
@@ -2385,8 +2385,8 @@ function ReportsContent() {
                   </div>
 
                   {/* Interactive Faculty Roster Table */}
-                  <div className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-2xs">
-                    <div className="overflow-x-auto custom-scrollbar">
+                  <div className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden print:overflow-visible shadow-2xs">
+                    <div className="overflow-x-auto custom-scrollbar print:overflow-visible">
                       <table className="w-full text-left text-xs">
                         <thead className="bg-slate-50/80 dark:bg-slate-900/80 text-[10.5px] uppercase font-black text-slate-400 border-b border-slate-200 dark:border-slate-800">
                           <tr>
