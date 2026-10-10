@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Image from "next/image";
 import { motion, useReducedMotion } from "framer-motion";
 
@@ -8,12 +8,21 @@ interface HeroStudentImageProps {
   className?: string;
 }
 
+const CANDIDATE_SOURCES = [
+  "/hero-student-girl-clean.png",
+  "/hero-student-girl.webp",
+  "/home.png",
+];
+
 export default function HeroStudentImage({ className = "" }: HeroStudentImageProps) {
   const prefersReduced = useReducedMotion();
+  const [srcIndex, setSrcIndex] = useState(0);
+
+  const activeSrc = CANDIDATE_SOURCES[srcIndex] || CANDIDATE_SOURCES[0];
 
   return (
     <div
-      className={`relative flex items-end justify-center pointer-events-none select-none ${className}`}
+      className={`relative w-full flex items-end justify-center select-none ${className}`}
     >
       {/* Dynamic Cyan / Sky Backlight Glow Halo behind Girl Silhouette */}
       <div
@@ -38,26 +47,26 @@ export default function HeroStudentImage({ className = "" }: HeroStudentImagePro
           ease: [0.16, 1, 0.3, 1],
           delay: 0.15,
         }}
-        className="relative w-full flex items-end justify-center"
+        className="relative flex items-end justify-center"
         style={{
-          // Dual Webkit & Standard Gradient Mask to assure zero rectangular bottom border
           maskImage:
             "linear-gradient(to bottom, black 0%, black 86%, rgba(0, 0, 0, 0.5) 94%, transparent 100%)",
           WebkitMaskImage:
             "linear-gradient(to bottom, black 0%, black 86%, rgba(0, 0, 0, 0.5) 94%, transparent 100%)",
         }}
       >
-        <div className="relative w-full max-w-[440px] sm:max-w-[500px] lg:max-w-[560px] xl:max-w-[620px] aspect-[765/858] max-h-[500px] sm:max-h-[560px] lg:max-h-[620px] xl:max-h-[660px]">
-          <Image
-            src="/hero-student-girl-clean.png"
-            alt="GGPS School Student with Backpack and Books"
-            fill
-            priority
-            quality={95}
-            sizes="(max-width: 640px) 340px, (max-width: 1024px) 500px, 620px"
-            className="object-contain object-bottom drop-shadow-[0_20px_35px_rgba(0,14,40,0.18)] dark:drop-shadow-[0_25px_45px_rgba(0,0,0,0.65)]"
-          />
-        </div>
+        <Image
+          src={activeSrc}
+          alt="GGPS School Student with Backpack and Books"
+          width={765}
+          height={858}
+          priority
+          unoptimized
+          onError={() => {
+            setSrcIndex((prev) => (prev < CANDIDATE_SOURCES.length - 1 ? prev + 1 : prev));
+          }}
+          className="w-auto h-[440px] sm:h-[500px] lg:h-[580px] xl:h-[640px] max-w-full object-contain object-bottom drop-shadow-[0_20px_35px_rgba(0,14,40,0.18)] dark:drop-shadow-[0_25px_45px_rgba(0,0,0,0.65)] pointer-events-none"
+        />
       </motion.div>
     </div>
   );
