@@ -10,6 +10,7 @@ import CtaBanner from '@/components/CtaBanner';
 import HeroFloatingNotificationCards from '@/components/ui/HeroFloatingNotificationCards';
 import HeroSparkles from '@/components/effects/HeroSparkles';
 import HeroSection from '@/components/home/HeroSection';
+import BottomCtaCard from '@/components/home/BottomCtaCard';
 import { useLanguage } from '@/context/LanguageContext';
 import {
   ArrowRight,
@@ -1591,91 +1592,9 @@ export default function Home() {
       </section>
 
       {/* ========================================== */}
-      {/* 7. BOTTOM CTA BANNER (Exact Reference Design) */}
+      {/* 7. BOTTOM CTA BANNER (High Quality Real-Time Interactive Card) */}
       {/* ========================================== */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 mb-8">
-        <motion.div
-          initial={{ opacity: 0, y: prefersReduced ? 0 : 25 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
-          className="relative w-full rounded-[28px] sm:rounded-[36px] lg:rounded-[44px] overflow-hidden shadow-[0_20px_60px_rgba(0,80,203,0.18)] dark:shadow-[0_20px_60px_rgba(0,0,0,0.6)] border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#000a1f] group"
-        >
-          {/* Exact Banner Graphic */}
-          <div className="relative w-full aspect-[1024/341]">
-            <AppImage
-              src="/ggps-bottom-cta-banner.png"
-              alt="Join GGPS School Today - A Brighter Future Awaits"
-              fill
-              priority
-              sizes="(max-width: 1280px) 100vw, 1280px"
-              className="object-cover w-full h-full select-none"
-            />
-
-            {/* Interactive Clickable Hotspots overlaying the exact buttons */}
-            {/* 1. Apply for Admission Button Hotspot */}
-            <Link
-              href="/admissions"
-              className="absolute left-[45.8%] top-[64.5%] w-[18.2%] h-[13.5%] rounded-full cursor-pointer z-20 focus:outline-none focus:ring-2 focus:ring-white/80 transition-all hover:scale-105 active:scale-95 group/btn"
-              aria-label="Apply for Admission"
-              title="Apply for Admission"
-            >
-              <span className="sr-only">Apply for Admission</span>
-              <span className="absolute inset-0 rounded-full bg-white/0 hover:bg-white/20 transition-colors" />
-            </Link>
-
-            {/* 2. Admin Sign In Button Hotspot */}
-            <Link
-              href="/login"
-              className="absolute left-[64.8%] top-[64.5%] w-[13.8%] h-[13.5%] rounded-full cursor-pointer z-20 focus:outline-none focus:ring-2 focus:ring-white/80 transition-all hover:scale-105 active:scale-95 group/btn"
-              aria-label="Admin Sign In"
-              title="Admin Sign In"
-            >
-              <span className="sr-only">Admin Sign In</span>
-              <span className="absolute inset-0 rounded-full bg-white/0 hover:bg-white/20 transition-colors" />
-            </Link>
-
-            {/* 3. Top-Left GGPS School Logo Hotspot */}
-            <Link
-              href="/"
-              className="absolute left-[5.5%] top-[4%] w-[19%] h-[19%] rounded-xl cursor-pointer z-20 focus:outline-none focus:ring-2 focus:ring-blue-400"
-              aria-label="GGPS School Home"
-            >
-              <span className="sr-only">GGPS School Home</span>
-            </Link>
-
-            {/* 4. Top-Right Badges Hotspot (Learn, Grow, Achieve) -> scrolls to #features */}
-            <a
-              href="#features"
-              onClick={(e) => {
-                e.preventDefault();
-                document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' });
-              }}
-              className="absolute right-[5%] top-[4.5%] w-[24%] h-[13%] rounded-full cursor-pointer z-20"
-              aria-label="Learn, Grow, Achieve Features"
-            >
-              <span className="sr-only">Explore Features</span>
-            </a>
-          </div>
-
-          {/* Mobile-friendly accessible button fallback bar on extra small screens */}
-          <div className="sm:hidden p-4 bg-[#0047B6] dark:bg-[#001438] flex flex-col gap-2.5 border-t border-white/10">
-            <Link
-              href="/admissions"
-              className="w-full py-3 rounded-full bg-white text-[#0050CB] font-extrabold text-sm text-center shadow-md flex items-center justify-center gap-2"
-            >
-              <span>Apply for Admission</span>
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-            <Link
-              href="/login"
-              className="w-full py-2.5 rounded-full bg-white/15 border border-white/40 text-white font-bold text-xs text-center flex items-center justify-center gap-1.5"
-            >
-              <span>Admin Sign In</span>
-            </Link>
-          </div>
-        </motion.div>
-      </section>
+      <BottomCtaCard />
 
       {/* ========================================== */}
       {/* 8. VIDEO MODAL / LIGHTBOX */}
