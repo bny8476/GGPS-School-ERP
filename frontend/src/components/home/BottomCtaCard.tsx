@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, useReducedMotion } from "framer-motion";
@@ -8,131 +8,123 @@ import {
   GraduationCap,
   Users,
   Star,
-  CheckCircle2,
-  Lock,
-  ArrowRight,
-  UserPlus,
-  Play,
   Building2,
-  UserCheck,
+  User,
   ShieldCheck,
   Flower2,
+  Presentation,
 } from "lucide-react";
 
-const BENEFITS = [
+const RIGHT_FEATURES = [
   {
     icon: Building2,
-    title: "Modern Infrastructure",
-    desc: "Smart digital labs, Wi-Fi campus & interactive classrooms",
+    title: "Modern\nInfrastructure",
   },
   {
-    icon: UserCheck,
-    title: "Qualified Faculty",
-    desc: "Experienced educators fostering individual potential",
+    icon: User,
+    title: "Qualified\nFaculty",
   },
   {
     icon: ShieldCheck,
-    title: "Safe & Secure Environment",
-    desc: "CCTV surveillance, RFID entry & 24/7 security staff",
+    title: "Safe & Secure\nEnvironment",
   },
   {
     icon: Flower2,
-    title: "Holistic Development",
-    desc: "Sports academies, arts, public speaking & STEAM clubs",
+    title: "Holistic\nDevelopment",
   },
 ];
 
 export default function BottomCtaCard() {
   const prefersReduced = useReducedMotion();
-  const [hoveredBenefit, setHoveredBenefit] = useState<number | null>(null);
 
   return (
-    <section className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 mb-8 select-none">
-      {/* Outer Card with Rounded Corners, Shadow & Depth */}
+    <section className="relative w-full max-w-[1360px] mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 mb-8 select-none">
+      {/* Outer Card with Exact Reference Geometry & Soft Sky-Blue Ambient Aura */}
       <motion.div
-        initial={prefersReduced ? { opacity: 1 } : { opacity: 0, y: 30 }}
+        initial={prefersReduced ? { opacity: 1 } : { opacity: 0, y: 24 }}
         whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: "-60px" }}
+        viewport={{ once: true, margin: "-50px" }}
         transition={{ duration: 0.65, ease: [0.16, 1, 0.3, 1] }}
-        className="relative overflow-hidden rounded-[28px] sm:rounded-[36px] lg:rounded-[44px] shadow-[0_25px_70px_-15px_rgba(0,80,203,0.28)] dark:shadow-[0_0_55px_rgba(0,80,203,0.35),0_25px_70px_-10px_rgba(0,10,40,0.85)] border border-blue-200/70 dark:border-blue-500/35 bg-gradient-to-r from-blue-900 via-[#003893] to-[#0050CB]"
+        className="relative overflow-hidden rounded-[32px] sm:rounded-[38px] lg:rounded-[44px] shadow-[0_20px_55px_-12px_rgba(0,40,120,0.22)] dark:shadow-[0_20px_60px_-10px_rgba(0,10,35,0.75)] border border-blue-100/80 dark:border-blue-900/40 bg-[#002766]"
       >
-        <div className="relative min-h-[520px] sm:min-h-[580px] lg:min-h-[590px] xl:min-h-[620px] flex flex-col lg:flex-row items-stretch">
+        <div className="relative min-h-[500px] sm:min-h-[540px] lg:min-h-[560px] xl:min-h-[590px] flex flex-col lg:flex-row items-stretch">
           
           {/* ======================================================== */}
-          {/* LEFT COLUMN: High-Resolution Campus & Students Photo    */}
+          {/* LEFT SECTION: Campus Photo with Logo & Floating Stats    */}
           {/* ======================================================== */}
-          <div className="relative w-full lg:w-[48%] xl:w-[46%] min-h-[300px] sm:min-h-[360px] lg:min-h-full overflow-hidden">
-            {/* Campus Photo */}
+          <div className="relative w-full lg:w-[48%] xl:w-[46%] min-h-[320px] sm:min-h-[380px] lg:min-h-full overflow-hidden shrink-0">
+            {/* High-Resolution Campus & Students Photo */}
             <Image
               src="/ggps-school-campus-hero.jpg"
-              alt="GGPS School Campus and Students Walking with Backpacks"
+              alt="GGPS School Campus and Students Walking"
               fill
               priority
               quality={95}
               sizes="(max-width: 1024px) 100vw, 48vw"
-              className="object-cover object-center lg:object-[45%_center] transition-transform duration-700 hover:scale-105"
+              className="object-cover object-center lg:object-[46%_center]"
             />
 
-            {/* Depth of Field Vignettes */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-black/30 lg:to-transparent pointer-events-none" />
+            {/* Soft Ambient Light Gradient for clean text contrast */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
 
-            {/* Top-Left School Brand Crest Badge */}
-            <div className="absolute top-4 sm:top-6 left-4 sm:left-6 z-20">
-              <Link
-                href="/"
-                className="inline-flex items-center gap-2.5 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-2xl bg-white/92 dark:bg-[#000E28]/92 backdrop-blur-md border border-white/70 dark:border-white/10 shadow-lg transition-transform hover:scale-[1.02]"
-              >
-                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-[#0050CB] flex items-center justify-center text-white shadow-xs">
-                  <GraduationCap className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
-                </div>
-                <div className="flex flex-col text-left">
-                  <span className="text-xs sm:text-sm font-black text-[#000E28] dark:text-white leading-tight tracking-tight">
-                    GGPS School
-                  </span>
-                  <span className="text-[10px] sm:text-[11px] font-medium text-slate-500 dark:text-slate-400 leading-tight">
-                    School Management System
-                  </span>
-                </div>
-              </Link>
+            {/* TOP-LEFT LOGO & TEXT: GGPS School | School Management System */}
+            <div className="absolute top-5 sm:top-6 left-5 sm:left-7 z-30 flex items-center gap-3">
+              <div className="relative w-11 h-11 sm:w-12 sm:h-12 shrink-0 drop-shadow-[0_2px_8px_rgba(0,0,0,0.18)]">
+                <Image
+                  src="/ggps-crest-logo.png"
+                  alt="GGPS School Crest"
+                  width={48}
+                  height={48}
+                  className="object-contain w-full h-full"
+                />
+              </div>
+              <div className="flex flex-col text-left">
+                <span className="text-[17px] sm:text-[19px] font-black text-[#00173E] tracking-tight leading-none drop-shadow-[0_1px_1px_rgba(255,255,255,0.8)]">
+                  GGPS School
+                </span>
+                <span className="text-[11px] sm:text-[11.5px] font-medium text-[#2E4765] tracking-tight leading-tight mt-0.5 drop-shadow-[0_1px_1px_rgba(255,255,255,0.8)]">
+                  School Management System
+                </span>
+              </div>
             </div>
 
-            {/* Bottom-Left Floating Statistics Panel */}
-            <div className="absolute bottom-4 sm:bottom-6 left-4 sm:left-6 right-4 sm:right-auto z-20">
-              <div className="inline-flex items-center justify-between sm:justify-start gap-3 sm:gap-6 px-4 py-2.5 sm:px-6 sm:py-3.5 rounded-2xl sm:rounded-full bg-white/95 dark:bg-[#000E28]/95 backdrop-blur-md border border-white/80 dark:border-white/15 shadow-2xl text-[#000E28] dark:text-white">
+            {/* BOTTOM-LEFT FLOATING METRICS CAPSULE PILL */}
+            <div className="absolute bottom-5 sm:bottom-6 left-4 sm:left-6 z-30">
+              <div className="inline-flex items-center gap-3 sm:gap-5 px-4 py-2.5 sm:px-5 sm:py-3 rounded-full bg-white/95 backdrop-blur-md border border-white/80 shadow-[0_12px_32px_rgba(0,18,50,0.22)] text-[#00173E]">
                 {/* 1000+ Happy Students */}
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-full bg-[#E5EEFF] dark:bg-[#0050CB]/30 flex items-center justify-center text-[#0050CB] dark:text-sky-400 shrink-0">
-                    <Users className="w-3.5 h-3.5" />
+                <div className="flex items-center gap-2 sm:gap-2.5">
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#E0F0FE] flex items-center justify-center text-[#0050CB] shrink-0">
+                    <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.2]" />
                   </div>
-                  <div className="flex flex-col text-left leading-tight">
-                    <span className="text-xs sm:text-sm font-black text-[#0050CB] dark:text-sky-400">1000+</span>
-                    <span className="text-[10px] text-slate-600 dark:text-slate-300 font-medium">Happy Students</span>
+                  <div className="flex flex-col text-left leading-none">
+                    <span className="text-xs sm:text-[13px] font-black text-[#00173E]">1000+</span>
+                    <span className="text-[9.5px] sm:text-[10px] text-slate-500 font-medium mt-0.5 whitespace-nowrap">Happy Students</span>
                   </div>
                 </div>
 
-                <div className="w-[1px] h-6 bg-slate-200 dark:bg-slate-700 hidden sm:block" />
+                <div className="w-[1px] h-6 bg-slate-200" />
 
                 {/* 100+ Expert Teachers */}
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center text-[#0050CB] dark:text-sky-400 shrink-0">
-                    <GraduationCap className="w-3.5 h-3.5" />
+                <div className="flex items-center gap-2 sm:gap-2.5">
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#E0F0FE] flex items-center justify-center text-[#0050CB] shrink-0">
+                    <Presentation className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.2]" />
                   </div>
-                  <div className="flex flex-col text-left leading-tight">
-                    <span className="text-xs sm:text-sm font-black text-[#0050CB] dark:text-sky-400">100+</span>
-                    <span className="text-[10px] text-slate-600 dark:text-slate-300 font-medium">Expert Teachers</span>
+                  <div className="flex flex-col text-left leading-none">
+                    <span className="text-xs sm:text-[13px] font-black text-[#00173E]">100+</span>
+                    <span className="text-[9.5px] sm:text-[10px] text-slate-500 font-medium mt-0.5 whitespace-nowrap">Expert Teachers</span>
                   </div>
                 </div>
 
-                <div className="w-[1px] h-6 bg-slate-200 dark:bg-slate-700 hidden sm:block" />
+                <div className="w-[1px] h-6 bg-slate-200" />
 
                 {/* 24/7 Support */}
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-full bg-emerald-100 dark:bg-emerald-950/40 flex items-center justify-center text-emerald-600 shrink-0">
-                    <ShieldCheck className="w-3.5 h-3.5" />
+                <div className="flex items-center gap-2 sm:gap-2.5">
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#E0F0FE] flex items-center justify-center text-[#0050CB] shrink-0">
+                    <ShieldCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.2]" />
                   </div>
-                  <div className="flex flex-col text-left leading-tight">
-                    <span className="text-xs sm:text-sm font-black text-emerald-600 dark:text-emerald-400">24/7</span>
-                    <span className="text-[10px] text-slate-600 dark:text-slate-300 font-medium">Support</span>
+                  <div className="flex flex-col text-left leading-none">
+                    <span className="text-xs sm:text-[13px] font-black text-[#00173E]">24/7</span>
+                    <span className="text-[9.5px] sm:text-[10px] text-slate-500 font-medium mt-0.5 whitespace-nowrap">Support</span>
                   </div>
                 </div>
               </div>
@@ -140,219 +132,156 @@ export default function BottomCtaCard() {
           </div>
 
           {/* ======================================================== */}
-          {/* S-CURVE WAVE DIVIDER WITH SUBTLE YELLOW ACCENT SWOOSH   */}
+          {/* S-CURVE ORGANIC WAVE DIVIDER WITH CYAN & YELLOW SWOOSHES */}
           {/* ======================================================== */}
-          <div className="hidden lg:block absolute left-[44%] xl:left-[43%] top-0 bottom-0 w-24 xl:w-32 z-10 pointer-events-none">
+          <div className="hidden lg:block absolute left-[44%] xl:left-[43%] top-0 bottom-0 w-36 xl:w-44 z-20 pointer-events-none">
             <svg
               className="w-full h-full"
-              viewBox="0 0 120 600"
+              viewBox="0 0 160 600"
               preserveAspectRatio="none"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
             >
-              <defs>
-                <linearGradient id="bottomWaveGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#0043AF" />
-                  <stop offset="50%" stopColor="#0050CB" />
-                  <stop offset="100%" stopColor="#00358C" />
-                </linearGradient>
-                <linearGradient id="bottomWaveGlow" x1="0%" y1="50%" x2="100%" y2="50%">
-                  <stop offset="0%" stopColor="#38BDF8" stopOpacity="0.4" />
-                  <stop offset="100%" stopColor="#0050CB" stopOpacity="0" />
-                </linearGradient>
-              </defs>
+              {/* Deep Ocean Blue Wave Mask Extension */}
               <path
-                d="M 60,0 C 110,180 0,380 60,600 L 120,600 L 120,0 Z"
-                fill="url(#bottomWaveGrad)"
+                d="M 70,0 C 135,160 0,380 75,600 L 160,600 L 160,0 Z"
+                fill="#002D7A"
               />
+              {/* Secondary Gradient Depth Wave */}
               <path
-                d="M 40,0 C 95,190 -10,390 40,600 L 70,600 C 10,390 115,190 60,0 Z"
-                fill="url(#bottomWaveGlow)"
+                d="M 85,0 C 145,170 18,390 90,600 L 160,600 L 160,0 Z"
+                fill="#002366"
               />
+              {/* Bottom Cyan Accent Wave Swoosh */}
               <path
-                d="M 52,40 C 102,210 -3,390 52,560"
-                stroke="#FFD13B"
-                strokeWidth="3.2"
-                strokeOpacity="0.65"
-                strokeLinecap="round"
+                d="M 12,600 C 35,530 85,540 140,600 Z"
+                fill="#38BDF8"
+                opacity="0.9"
+              />
+              {/* Bottom Golden Yellow Accent Wave Swoosh */}
+              <path
+                d="M 5,600 C 25,565 65,572 105,600 Z"
+                fill="#FACC15"
+                opacity="0.95"
               />
             </svg>
           </div>
 
           {/* ======================================================== */}
-          {/* RIGHT COLUMN: Real Typography & Real Clickable Buttons   */}
+          {/* RIGHT SECTION: Deep Royal Blue Area with Exact Design    */}
           {/* ======================================================== */}
-          <div className="relative flex-1 bg-gradient-to-br from-[#0048B8] via-[#0050CB] to-[#002B75] dark:from-[#001438] dark:via-[#001D54] dark:to-[#000E28] p-6 sm:p-8 lg:p-10 xl:p-12 flex flex-col justify-between text-white z-20">
+          <div className="relative flex-1 bg-gradient-to-br from-[#003893] via-[#00276E] to-[#00174A] p-6 sm:p-8 lg:p-9 xl:p-12 flex flex-col justify-between text-white z-10 overflow-hidden">
             
-            {/* Ambient Lighting Orbs */}
-            <div className="absolute top-0 right-0 w-96 h-96 bg-[#38BDF8]/15 rounded-full blur-3xl pointer-events-none" />
-            <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-[#FFD13B]/10 rounded-full blur-3xl pointer-events-none" />
+            {/* Radial Atmospheric Ambient Depth Glows */}
+            <div className="absolute -top-16 -right-16 w-80 h-80 bg-[#38BDF8]/15 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute bottom-0 right-1/3 w-72 h-72 bg-[#0050CB]/25 rounded-full blur-3xl pointer-events-none" />
 
-            {/* Top Bar: Learn, Grow, Achieve Interactive Pill Badges */}
-            <div className="flex items-center justify-between sm:justify-end gap-2.5 sm:gap-3 mb-6 relative z-10">
-              <div className="flex items-center gap-2 sm:gap-2.5">
-                <Link
-                  href="/features"
-                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 hover:bg-white/25 border border-white/20 backdrop-blur-md text-xs font-semibold text-white/95 shadow-xs transition-transform hover:-translate-y-0.5 active:scale-95"
-                >
-                  <GraduationCap className="w-3.5 h-3.5 text-[#38BDF8]" />
-                  <span>Learn</span>
-                </Link>
-                <Link
-                  href="/features"
-                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 hover:bg-white/25 border border-white/20 backdrop-blur-md text-xs font-semibold text-white/95 shadow-xs transition-transform hover:-translate-y-0.5 active:scale-95"
-                >
-                  <Users className="w-3.5 h-3.5 text-emerald-300" />
-                  <span>Grow</span>
-                </Link>
-                <Link
-                  href="/features"
-                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 hover:bg-white/25 border border-white/20 backdrop-blur-md text-xs font-semibold text-white/95 shadow-xs transition-transform hover:-translate-y-0.5 active:scale-95"
-                >
-                  <Star className="w-3.5 h-3.5 text-[#FFD13B] fill-[#FFD13B]" />
-                  <span>Achieve</span>
-                </Link>
+            {/* TOP BAR: Learn, Grow, Achieve Interactive Pills */}
+            <div className="flex items-center justify-end gap-2.5 relative z-10 mb-4 sm:mb-6">
+              <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 backdrop-blur-md text-xs font-semibold text-white shadow-xs transition-transform hover:-translate-y-0.5 active:scale-95 cursor-pointer">
+                <GraduationCap className="w-3.5 h-3.5 text-white" />
+                <span>Learn</span>
+              </div>
+              <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 backdrop-blur-md text-xs font-semibold text-white shadow-xs transition-transform hover:-translate-y-0.5 active:scale-95 cursor-pointer">
+                <Users className="w-3.5 h-3.5 text-white" />
+                <span>Grow</span>
+              </div>
+              <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 backdrop-blur-md text-xs font-semibold text-white shadow-xs transition-transform hover:-translate-y-0.5 active:scale-95 cursor-pointer">
+                <Star className="w-3.5 h-3.5 text-[#FACC15] fill-[#FACC15]" />
+                <span>Achieve</span>
               </div>
             </div>
 
-            {/* Middle Grid: Main Text & Action Buttons on Left, 4 Benefits on Right */}
-            <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-center my-auto relative z-10">
+            {/* MAIN CONTENT GRID: Left Typography & Right 4 Feature Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 sm:gap-8 items-center my-auto relative z-10">
               
-              {/* Left Column: Heading, Subtitle & REAL-TIME BUTTONS */}
-              <div className="xl:col-span-8 flex flex-col items-start text-left">
+              {/* LEFT: Flying Plane, A Brighter Future Awaits, Headline & Subtitle */}
+              <div className="md:col-span-7 xl:col-span-8 flex flex-col items-start text-left">
                 
-                {/* Handwritten Script with Flying Paper Airplane Doodle & Yellow Curve */}
-                <div className="flex items-center gap-3 mb-2">
+                {/* 1. Flying Paper Airplane Doodle & Script Tagline */}
+                <div className="flex items-center gap-2.5 mb-2.5">
+                  {/* Dotted Flight Loop & Paper Plane */}
+                  <svg
+                    className="w-12 h-8 text-white/80 shrink-0"
+                    viewBox="0 0 48 30"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M3 24 C 11 30, 20 28, 18 19 C 16 12, 26 14, 33 10"
+                      stroke="white"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeDasharray="2.5 2.5"
+                    />
+                    <path
+                      d="M33 8 L 45 4 L 37 15 L 38 9 Z M 45 4 L 38 9"
+                      fill="white"
+                      stroke="white"
+                      strokeWidth="1.2"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+
+                  {/* Handwriting cursive: A Brighter Future Awaits */}
                   <div className="relative">
-                    <p className="text-2xl sm:text-3xl font-bold text-[#FEF08A] tracking-tight leading-none drop-shadow-xs font-serif italic">
+                    <span className="font-serif italic font-bold text-xl sm:text-2xl lg:text-[25px] text-[#FFD13B] tracking-tight leading-none drop-shadow-xs">
                       A Brighter Future Awaits
-                    </p>
+                    </span>
+                    {/* Underlying Golden Curve */}
                     <svg
-                      className="absolute -bottom-1 left-0 w-full h-2.5 text-[#FFD13B]"
-                      viewBox="0 0 160 12"
+                      className="absolute -bottom-1 left-0 w-full h-2 text-[#FFD13B]"
+                      viewBox="0 0 160 8"
                       fill="none"
                       xmlns="http://www.w3.org/2000/svg"
                     >
                       <path
-                        d="M 2,8 Q 80,1 158,6"
+                        d="M 2 5 Q 80 1 158 5"
                         stroke="currentColor"
-                        strokeWidth="2.5"
+                        strokeWidth="2.2"
                         strokeLinecap="round"
                       />
                     </svg>
                   </div>
-
-                  {/* Paper Plane Doodle Graphic */}
-                  <motion.div
-                    animate={prefersReduced ? {} : { x: [0, 8, 0], y: [0, -4, 0] }}
-                    transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                    className="text-white/80"
-                  >
-                    <svg
-                      width="24"
-                      height="24"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="rotate-12"
-                    >
-                      <path d="m22 2-7 20-4-9-9-4Z" />
-                      <path d="M22 2 11 13" />
-                    </svg>
-                  </motion.div>
                 </div>
 
-                {/* Pre-headline Capsule Tag: READY TO GET STARTED? */}
-                <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-white/10 border border-white/20 text-[#38BDF8] text-[11px] sm:text-xs font-mono font-bold tracking-wider uppercase mb-3.5">
+                {/* 2. Capsule Badge: < READY TO GET STARTED? > */}
+                <div className="inline-flex items-center px-3.5 py-1 rounded-full bg-[#0062D6] border border-[#38BDF8]/45 text-white text-[11px] sm:text-xs font-mono font-bold tracking-wider mb-4 shadow-sm">
                   <span>&lt; READY TO GET STARTED? &gt;</span>
                 </div>
 
-                {/* Main Heading: Join GGPS School Today */}
-                <h2 className="text-3xl sm:text-4xl lg:text-4xl xl:text-5xl font-black tracking-tight leading-[1.12] mb-3.5 text-white">
-                  Join{" "}
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#38BDF8] via-white to-[#BAE6FD] drop-shadow-sm">
-                    GGPS School
-                  </span>{" "}
-                  Today
+                {/* 3. Main Headline: Join GGPS School Today */}
+                <h2 className="text-3xl sm:text-4xl lg:text-[44px] xl:text-[52px] font-black text-white leading-[1.08] tracking-tight mb-4">
+                  <span className="block">Join GGPS</span>
+                  <span className="block">
+                    School <span className="text-[#22D3EE] drop-shadow-xs">Today</span>
+                  </span>
                 </h2>
 
-                {/* Description */}
-                <p className="text-sm sm:text-base text-blue-100/90 leading-relaxed max-w-xl mb-7 font-normal">
+                {/* 4. Subtitle */}
+                <p className="text-white/90 text-sm sm:text-[15px] leading-relaxed max-w-lg font-normal">
                   Give your school the tools it needs to grow, succeed and make a lasting impact.
                 </p>
-
-                {/* ======================================================== */}
-                {/* REAL-TIME INTERACTIVE BUTTONS (NOT IMAGE BUTTONS)         */}
-                {/* ======================================================== */}
-                <div className="flex flex-wrap sm:flex-nowrap items-center gap-3.5 w-full">
-                  {/* 1. Real Clickable Button: Apply for Admission */}
-                  <Link
-                    href="/admissions"
-                    id="bottom-card-apply-admission-btn"
-                    className="group relative inline-flex items-center justify-center gap-2.5 px-6 sm:px-7 py-3.5 rounded-full bg-white hover:bg-blue-50 text-[#000E28] font-black text-sm sm:text-base shadow-xl shadow-black/20 hover:shadow-2xl hover:shadow-black/30 transition-all duration-200 hover:-translate-y-0.5 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white overflow-hidden cursor-pointer"
-                  >
-                    <div className="w-5.5 h-5.5 rounded-full bg-[#0050CB] flex items-center justify-center text-white shrink-0 shadow-xs">
-                      <UserPlus className="w-3.2 h-3.2" />
-                    </div>
-                    <span className="relative z-10 text-[#000E28] font-black tracking-tight">
-                      Apply for Admission
-                    </span>
-                    <ArrowRight
-                      className="w-4 h-4 text-[#0050CB] transition-transform duration-200 group-hover:translate-x-1"
-                      strokeWidth={2.6}
-                    />
-                    <span className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-100/60 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-out pointer-events-none" />
-                  </Link>
-
-                  {/* 2. Real Clickable Button: Admin Sign In */}
-                  <Link
-                    href="/login"
-                    id="bottom-card-admin-signin-btn"
-                    className="group inline-flex items-center justify-center gap-2 px-5 sm:px-6 py-3.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/25 hover:border-white/40 text-white font-semibold text-sm sm:text-base backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#38BDF8] cursor-pointer"
-                  >
-                    <div className="w-5.5 h-5.5 rounded-full border border-white/40 group-hover:border-white/70 flex items-center justify-center bg-white/5 transition-colors">
-                      <Play className="w-2.5 h-2.5 fill-white text-white ml-0.5 transition-transform group-hover:scale-110" />
-                    </div>
-                    <span className="font-semibold text-white tracking-normal">
-                      Admin Sign In
-                    </span>
-                  </Link>
-                </div>
-
               </div>
 
-              {/* Right Column: 4 Vertical Stacked Real Benefit Cards */}
-              <div className="xl:col-span-4 flex flex-col gap-2.5 w-full">
-                {BENEFITS.map((item, idx) => {
+              {/* RIGHT: 4 Vertically Stacked Glass Feature Cards */}
+              <div className="md:col-span-5 xl:col-span-4 flex flex-col gap-2.5 sm:gap-3 w-full">
+                {RIGHT_FEATURES.map((item, idx) => {
                   const Icon = item.icon;
-                  const isHovered = hoveredBenefit === idx;
-
                   return (
                     <motion.div
                       key={idx}
-                      whileHover={prefersReduced ? {} : { x: -4 }}
-                      onMouseEnter={() => setHoveredBenefit(idx)}
-                      onMouseLeave={() => setHoveredBenefit(null)}
-                      className={`relative px-4 py-3 rounded-2xl border transition-all duration-200 cursor-default flex items-center gap-3.5 select-none ${
-                        isHovered
-                          ? "bg-white/25 border-white/50 shadow-lg backdrop-blur-md"
-                          : "bg-white/10 hover:bg-white/15 border-white/15 backdrop-blur-xs"
-                      }`}
+                      whileHover={prefersReduced ? {} : { x: 4 }}
+                      className="flex items-center gap-3.5 px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-2xl bg-[#002B7A]/55 hover:bg-[#003893]/75 border border-white/15 backdrop-blur-md transition-all duration-200 cursor-pointer shadow-sm select-none"
                     >
-                      <div className="w-10 h-10 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center text-[#38BDF8] shrink-0 shadow-xs">
-                        <Icon className="w-5 h-5 text-white" />
+                      {/* Vibrant Blue Rounded Square Icon Box */}
+                      <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-b from-[#0284C7] to-[#004FAF] flex items-center justify-center text-white shrink-0 shadow-md">
+                        <Icon className="w-5 h-5 text-white stroke-[2.2]" />
                       </div>
-                      <div className="flex flex-col text-left min-w-0">
-                        <span className="text-xs sm:text-sm font-bold text-white tracking-tight leading-tight">
-                          {item.title}
-                        </span>
-                        <span className="text-[11px] text-blue-100/75 leading-tight line-clamp-1 mt-0.5 font-normal">
-                          {item.desc}
-                        </span>
-                      </div>
+                      {/* Feature Name */}
+                      <span className="text-white text-xs sm:text-[13px] font-semibold leading-tight text-left whitespace-pre-line">
+                        {item.title}
+                      </span>
                     </motion.div>
                   );
                 })}
@@ -360,18 +289,71 @@ export default function BottomCtaCard() {
 
             </div>
 
-            {/* Bottom Subtle Trust Micro-Tagline */}
-            <div className="pt-6 mt-4 border-t border-white/10 flex flex-wrap items-center justify-between text-[11px] sm:text-xs text-blue-100/75 font-medium">
-              <span className="flex items-center gap-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                CBSE & State Board Curriculum Certified
-              </span>
-              <span className="flex items-center gap-1.5 mt-1 sm:mt-0">
-                <Lock className="w-3.5 h-3.5 text-[#38BDF8]" />
-                Encrypted Data Security & Parent Privacy
-              </span>
+            {/* ======================================================== */}
+            {/* BOTTOM RIGHT: Fresh Green Leaves Foliage Corner Artwork  */}
+            {/* ======================================================== */}
+            <div className="absolute -bottom-6 -right-6 w-36 h-36 sm:w-44 sm:h-44 pointer-events-none z-20">
+              <svg
+                viewBox="0 0 160 160"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                className="w-full h-full drop-shadow-lg"
+              >
+                {/* Stem 1 */}
+                <path
+                  d="M160 160 C 130 135 110 95 90 70"
+                  stroke="#166534"
+                  strokeWidth="3.5"
+                  strokeLinecap="round"
+                />
+                {/* Leaf 1 (Top Left) */}
+                <path
+                  d="M90 70 C 85 45 105 25 125 35 C 135 55 115 75 90 70 Z"
+                  fill="url(#leafGrad1)"
+                />
+                {/* Leaf 1 Vein */}
+                <path d="M92 68 Q 105 48 123 37" stroke="#86EFAC" strokeWidth="1.2" opacity="0.7" />
+
+                {/* Leaf 2 (Center) */}
+                <path
+                  d="M110 95 C 100 70 120 48 142 55 C 150 78 132 100 110 95 Z"
+                  fill="url(#leafGrad2)"
+                />
+                <path d="M112 93 Q 124 72 140 57" stroke="#BBF7D0" strokeWidth="1.2" opacity="0.7" />
+
+                {/* Leaf 3 (Bottom Left Outer) */}
+                <path
+                  d="M125 120 C 100 115 95 135 105 155 C 125 158 135 138 125 120 Z"
+                  fill="url(#leafGrad1)"
+                />
+
+                {/* Leaf 4 (Corner Fill) */}
+                <path
+                  d="M140 110 C 130 85 155 75 160 95 C 160 115 150 120 140 110 Z"
+                  fill="url(#leafGrad3)"
+                />
+
+                <defs>
+                  <linearGradient id="leafGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#4ADE80" />
+                    <stop offset="50%" stopColor="#22C55E" />
+                    <stop offset="100%" stopColor="#15803D" />
+                  </linearGradient>
+                  <linearGradient id="leafGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#86EFAC" />
+                    <stop offset="50%" stopColor="#22C55E" />
+                    <stop offset="100%" stopColor="#166534" />
+                  </linearGradient>
+                  <linearGradient id="leafGrad3" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#22C55E" />
+                    <stop offset="100%" stopColor="#14532D" />
+                  </linearGradient>
+                </defs>
+              </svg>
             </div>
 
+            {/* Bottom Cyan and Yellow Accent Curve along bottom edge */}
+            <div className="absolute inset-x-0 bottom-0 h-4 bg-gradient-to-r from-transparent via-[#38BDF8]/40 to-transparent pointer-events-none" />
           </div>
 
         </div>
