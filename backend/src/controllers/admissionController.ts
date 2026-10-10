@@ -238,6 +238,30 @@ export const approveAdmission = async (req: Request, res: Response) => {
       return res.status(404).json({ success: false, message: 'Admission record not found' });
     }
 
+    // 0. Idempotency Check: if already approved/enrolled with a studentId
+    if (admission.studentId) {
+      const existingStudent = await Student.findById(admission.studentId);
+      if (existingStudent) {
+        const existingEnrollment = await Enrollment.findOne({ studentId: existingStudent._id });
+        const existingParent = await Parent.findOne({ _id: existingStudent.parentId });
+        const existingParentUser = existingParent?.userId ? await User.findById(existingParent.userId) : null;
+
+        return res.status(200).json({
+          success: true,
+          message: `Admission is already approved! Student ID: ${existingStudent.studentId}`,
+          student: existingStudent,
+          enrollment: existingEnrollment,
+          admissionNumber: existingStudent.admissionNumber,
+          rollNumber: existingEnrollment?.rollNumber || '',
+          parent: existingParent,
+          parentUser: existingParentUser ? {
+            _id: existingParentUser._id,
+            email: existingParentUser.email,
+          } : undefined,
+        });
+      }
+    }
+
     // 1. Resolve Academic Year
     let activeYear = await AcademicYear.findOne({ isCurrent: true });
     if (!activeYear) {
@@ -261,7 +285,7 @@ export const approveAdmission = async (req: Request, res: Response) => {
     }
 
     // 3. Resolve Section
-    const sectionName = req.body.sectionName || 'A';
+    const sectionName = req.body?.sectionName || 'A';
     let sectionDoc = await Section.findOne({ classId: classDoc._id, name: new RegExp(`^${sectionName}$`, 'i') });
     if (!sectionDoc) {
       sectionDoc = await Section.create({ name: sectionName, classId: classDoc._id, capacity: 30 });
@@ -269,82 +293,159 @@ export const approveAdmission = async (req: Request, res: Response) => {
 
     const yearStr = activeYear.name || '2026-27';
 
-    // 4. Find or Create Parent User & Parent Profile
-    let parentUser = await User.findOne({ email: admission.email });
+    // 4. Resolve Clean Contact & Parent Data
+    const rawPhone = String(admission.contactNumber || admission.parentPhone || '').trim();
+    const cleanPhoneDigits = rawPhone.replace(/\D/g, '').slice(-10);
+    const validPhone = /^\d{10}$/.test(cleanPhoneDigits) ? cleanPhoneDigits : '9999999999';
+
+    const rawEmail = String(admission.email || admission.parentEmail || '').trim().toLowerCase();
+    const isValidEmail = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(rawEmail);
+    const parentEmail = isValidEmail
+      ? rawEmail
+      : (cleanPhoneDigits ? `parent.${cleanPhoneDigits}@ggps.internal` : `parent.${admission._id}@ggps.internal`);
+
+    const rawParentName = String(admission.parentName || admission.fatherName || 'Parent Guardian').trim();
+    const cleanParentName = (/^[a-zA-Z\s'.-]+$/.test(rawParentName) && rawParentName.length >= 2)
+      ? rawParentName
+      : 'Parent Guardian';
+
+    const rawMotherName = String(admission.motherName || 'Mother Guardian').trim();
+    const cleanMotherName = (/^[a-zA-Z\s'.-]+$/.test(rawMotherName) && rawMotherName.length >= 2)
+      ? rawMotherName
+      : 'Mother Guardian';
+
+    const rawAddress = String(admission.address || '').trim();
+    const cleanAddress = rawAddress.length >= 5 ? rawAddress : 'School Campus Residential / Local';
+
+    // 5. Find or Create Parent User & Parent Profile
+    let parentUser = await User.findOne({
+      $or: [
+        { email: parentEmail },
+        ...(cleanPhoneDigits ? [{ phoneNumber: cleanPhoneDigits }] : []),
+      ],
+    });
+
     if (!parentUser) {
       let parentRole = await Role.findOne({ name: 'Parent' });
       if (!parentRole) {
-        parentRole = await Role.create({ name: 'Parent', permissions: ['child:read', 'attendance:read', 'diary:read', 'fees:read'] });
+        parentRole = await Role.create({
+          name: 'Parent',
+          permissions: ['child:read', 'attendance:read', 'diary:read', 'fees:read'],
+        });
       }
 
       const defaultPass = 'Welcome@123';
       const salt = await bcrypt.genSalt(10);
       const passwordHash = await bcrypt.hash(defaultPass, salt);
 
-      const nameParts = admission.parentName.split(' ');
-      const pFirst = nameParts[0] || 'Parent';
-      const pLast = nameParts.slice(1).join(' ') || 'Guardian';
+      const nameParts = cleanParentName.split(/\s+/);
+      const pFirst = nameParts[0] && /[a-zA-Z]/.test(nameParts[0]) ? nameParts[0] : 'Parent';
+      const pLast = nameParts.slice(1).join(' ') && /[a-zA-Z]/.test(nameParts.slice(1).join(' ')) ? nameParts.slice(1).join(' ') : 'Guardian';
 
-      parentUser = await User.create({
-        firstName: pFirst,
-        lastName: pLast,
-        email: admission.email,
-        passwordHash,
-        role: parentRole._id,
-        phoneNumber: admission.contactNumber,
-        isActive: true,
-        status: 'Active',
-      });
+      try {
+        parentUser = await User.create({
+          firstName: pFirst,
+          lastName: pLast,
+          email: parentEmail,
+          passwordHash,
+          role: parentRole._id,
+          phoneNumber: validPhone,
+          isActive: true,
+          status: 'Active',
+        });
+      } catch (userErr: any) {
+        if (userErr.code === 11000) {
+          parentUser = await User.findOne({
+            $or: [{ email: parentEmail }, { phoneNumber: validPhone }],
+          });
+        }
+        if (!parentUser) throw userErr;
+      }
     }
 
-    let parentDoc = await Parent.findOne({ $or: [{ userId: parentUser._id }, { primaryEmail: admission.email }] });
+    let parentDoc = await Parent.findOne({
+      $or: [
+        { userId: parentUser._id },
+        { primaryEmail: parentEmail },
+        ...(cleanPhoneDigits ? [{ fatherContact: cleanPhoneDigits }] : []),
+      ],
+    });
+
     if (!parentDoc) {
-      parentDoc = await Parent.create({
-        userId: parentUser._id,
-        fatherName: admission.parentName,
-        motherName: 'Mother',
-        primaryEmail: admission.email,
-        address: admission.address || 'Address',
-        fatherContact: admission.contactNumber,
-        whatsappNumber: admission.contactNumber,
-      });
+      try {
+        parentDoc = await Parent.create({
+          userId: parentUser._id,
+          fatherName: cleanParentName,
+          motherName: cleanMotherName,
+          primaryEmail: parentEmail,
+          address: cleanAddress,
+          fatherContact: validPhone,
+          whatsappNumber: validPhone,
+        });
+      } catch (pDocErr: any) {
+        if (pDocErr.code === 11000) {
+          parentDoc = await Parent.findOne({
+            $or: [{ userId: parentUser._id }, { primaryEmail: parentEmail }],
+          });
+        }
+        if (!parentDoc) throw pDocErr;
+      }
     }
 
-    // 5. Generate Authoritative Unique Identifiers
+    // 6. Resolve Child Name
+    const cleanChildFirstName = String(admission.childFirstName || 'Student').trim();
+    const rawChildLastName = String(admission.childLastName || '').trim();
+    // If last name is '-' or has no letters, safely fall back to first name
+    const cleanChildLastName = (rawChildLastName && rawChildLastName !== '-' && /[a-zA-Z]/.test(rawChildLastName))
+      ? rawChildLastName
+      : (cleanChildFirstName || 'Student');
+
+    // 7. Generate Authoritative Unique Identifiers
     const studentId = await generateNextStudentID(yearStr, className);
-    const rawAdm = admission.applicationNumber || (await generateNextAdmissionNumber(yearStr, className));
-    const admissionNumber = String(rawAdm).replace(/-/g, '');
+    let admissionNumber = await generateNextAdmissionNumber(yearStr, className);
+    let admAttempts = 0;
+    while (await Student.exists({ admissionNumber })) {
+      admAttempts++;
+      admissionNumber = await generateNextAdmissionNumber(yearStr, className);
+      if (admAttempts > 10) break;
+    }
     const rollNumber = await generateNextRollNumber(yearStr, className, sectionName);
 
-    // 6. Create Student Record
+    // 8. Create Student Record
     const student = await Student.create({
       studentId,
       admissionNumber,
-      firstName: admission.childFirstName,
-      lastName: admission.childLastName,
-      gender: admission.gender || 'Other',
-      dateOfBirth: admission.dateOfBirth,
+      firstName: cleanChildFirstName,
+      lastName: cleanChildLastName,
+      gender: ['Male', 'Female', 'Other'].includes(admission.gender || '') ? admission.gender : 'Other',
+      dateOfBirth: (admission.dateOfBirth && new Date(admission.dateOfBirth) <= new Date()) ? admission.dateOfBirth : undefined,
       grade: className,
       classId: classDoc._id,
       sectionId: sectionDoc._id,
       parentId: parentDoc._id,
-      emergencyContact: admission.contactNumber,
+      emergencyContact: validPhone,
       enrollmentDate: new Date(),
       status: 'Active',
     });
 
-    // 7. Create Enrollment Record
-    const enrollment = await Enrollment.create({
+    // 9. Create Enrollment Record
+    let enrollment = await Enrollment.findOne({
       studentId: student._id,
       academicYearId: activeYear._id,
-      classId: classDoc._id,
-      sectionId: sectionDoc._id,
-      rollNumber,
-      admissionDate: new Date(),
-      status: 'Active',
     });
+    if (!enrollment) {
+      enrollment = await Enrollment.create({
+        studentId: student._id,
+        academicYearId: activeYear._id,
+        classId: classDoc._id,
+        sectionId: sectionDoc._id,
+        rollNumber,
+        admissionDate: new Date(),
+        status: 'Active',
+      });
+    }
 
-    // 8. Link StudentParent Junction
+    // 10. Link StudentParent Junction
     await StudentParent.findOneAndUpdate(
       { studentId: student._id, parentId: parentDoc._id },
       {
@@ -353,40 +454,51 @@ export const approveAdmission = async (req: Request, res: Response) => {
         relationship: 'Guardian',
         isPrimary: true,
       },
-      { upsert: true }
+      { upsert: true, new: true }
     );
 
-    // 9. Update Admission Stage
+    // 11. Update Admission Record
     admission.status = 'Admission Confirmed';
     admission.stage = 'Enrolled';
     admission.studentId = student._id;
+    admission.childLastName = cleanChildLastName;
+    if (!admission.email && parentEmail) {
+      admission.email = parentEmail;
+    }
+    if (!admission.applicationNumber || admission.applicationNumber.includes('ENQ')) {
+      admission.applicationNumber = admissionNumber;
+    }
     await admission.save();
 
-    // 10. Send Welcome Notification to Parent
-    await Notification.create({
-      recipient: parentUser._id,
-      userId: parentUser._id,
-      studentId: student._id,
-      targetRole: 'Parent',
-      title: 'Admission Approved!',
-      message: `Congratulations! ${student.firstName} ${student.lastName} has been officially enrolled into ${className} (Section ${sectionName}). Admission No: ${admissionNumber}`,
-      type: 'admission',
-      priority: 'high',
-      link: '/parent',
-      metadata: {
+    // 12. Send Welcome Notification to Parent & Emit Sockets
+    try {
+      await Notification.create({
+        recipient: parentUser._id,
+        userId: parentUser._id,
         studentId: student._id,
-        admissionNumber,
-        rollNumber,
-        className,
-        sectionName,
-      },
-    });
+        targetRole: 'Parent',
+        title: 'Admission Approved!',
+        message: `Congratulations! ${student.firstName} ${student.lastName} has been officially enrolled into ${className} (Section ${sectionName}). Admission No: ${admissionNumber}`,
+        type: 'admission',
+        priority: 'high',
+        link: '/parent',
+        metadata: {
+          studentId: student._id,
+          admissionNumber,
+          rollNumber,
+          className,
+          sectionName,
+        },
+      });
 
-    emitToUser(parentUser._id.toString(), 'notification:new', {
-      type: 'admission',
-      message: `Admission Confirmed: ${student.firstName} has been enrolled!`,
-    });
-    emitToRole('Admin', 'student:created', { student, enrollment });
+      emitToUser(parentUser._id.toString(), 'notification:new', {
+        type: 'admission',
+        message: `Admission Confirmed: ${student.firstName} has been enrolled!`,
+      });
+      emitToRole('Admin', 'student:created', { student, enrollment });
+    } catch (notifErr) {
+      console.warn('Non-fatal: notification/socket emit failed during admission approval:', notifErr);
+    }
 
     res.status(200).json({
       success: true,
@@ -401,9 +513,17 @@ export const approveAdmission = async (req: Request, res: Response) => {
         email: parentUser.email,
       },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Approve admission error:', error);
-    res.status(500).json({ success: false, message: 'Failed to approve admission', error });
+    const errorMessage = error?.message || 'Failed to approve admission';
+    const validationDetails = error?.errors
+      ? Object.values(error.errors).map((e: any) => (e as any)?.message).join(', ')
+      : undefined;
+    res.status(500).json({
+      success: false,
+      message: validationDetails ? `${errorMessage}: ${validationDetails}` : errorMessage,
+      error: error?.message || error,
+    });
   }
 };
 

@@ -35,7 +35,12 @@ const ParentSchema: Schema = new Schema(
     fatherContact: {
       type: String,
       trim: true,
-      match: [PHONE_REGEX, 'Contact must be a valid 10-digit number'],
+      validate: {
+        validator: function (v: string) {
+          return !v || PHONE_REGEX.test(v);
+        },
+        message: 'Contact must be a valid 10-digit number',
+      },
     },
     motherName: {
       type: String,
@@ -49,7 +54,12 @@ const ParentSchema: Schema = new Schema(
     motherContact: {
       type: String,
       trim: true,
-      match: [PHONE_REGEX, 'Contact must be a valid 10-digit number'],
+      validate: {
+        validator: function (v: string) {
+          return !v || PHONE_REGEX.test(v);
+        },
+        message: 'Contact must be a valid 10-digit number',
+      },
     },
     guardianName: {
       type: String,
@@ -60,7 +70,12 @@ const ParentSchema: Schema = new Schema(
     guardianContact: {
       type: String,
       trim: true,
-      match: [PHONE_REGEX, 'Guardian contact must be a valid 10-digit number'],
+      validate: {
+        validator: function (v: string) {
+          return !v || PHONE_REGEX.test(v);
+        },
+        message: 'Guardian contact must be a valid 10-digit number',
+      },
     },
     primaryEmail: {
       type: String,
@@ -79,7 +94,12 @@ const ParentSchema: Schema = new Schema(
     whatsappNumber: {
       type: String,
       trim: true,
-      match: [PHONE_REGEX, 'WhatsApp number must be a valid 10-digit number'],
+      validate: {
+        validator: function (v: string) {
+          return !v || PHONE_REGEX.test(v);
+        },
+        message: 'WhatsApp number must be a valid 10-digit number',
+      },
     },
     userId: { type: Schema.Types.ObjectId, ref: 'User' },
   },

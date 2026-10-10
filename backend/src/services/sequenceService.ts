@@ -10,12 +10,18 @@ const inMemoryCounters = new Map<string, number>();
  */
 async function getNextSequence(key: string, session?: mongoose.ClientSession): Promise<number> {
   if (mongoose.connection.readyState === 1) {
-    const counter = await Counter.findOneAndUpdate(
-      { key },
-      { $inc: { sequence: 1 } },
-      { upsert: true, returnDocument: 'after', session }
-    );
-    return counter ? counter.sequence : 1;
+    try {
+      const counter = await Counter.findOneAndUpdate(
+        { key },
+        { $inc: { sequence: 1 } },
+        { upsert: true, returnDocument: 'after', session, maxTimeMS: 3000 }
+      );
+      if (counter && typeof counter.sequence === 'number') {
+        return counter.sequence;
+      }
+    } catch (err) {
+      // Graceful fallback to memory sequence if collection query fails/times out
+    }
   }
 
   const current = inMemoryCounters.get(key) || 0;
@@ -96,11 +102,16 @@ export async function generateNextStudentID(
   let candidateId = `GGPS${year}${className}${String(seqNumber).padStart(3, '0')}`;
 
   if (mongoose.connection.readyState === 1) {
-    const StudentModel = mongoose.models.Student || mongoose.model('Student');
-    while (await StudentModel.exists({ studentId: candidateId })) {
-      seqNumber = await getNextSequence(key, session);
-      candidateId = `GGPS${year}${className}${String(seqNumber).padStart(3, '0')}`;
-    }
+    try {
+      const StudentModel = mongoose.models.Student || mongoose.model('Student');
+      let attempts = 0;
+      while (await StudentModel.exists({ studentId: candidateId })) {
+        attempts++;
+        if (attempts > 50) break;
+        seqNumber = await getNextSequence(key, session);
+        candidateId = `GGPS${year}${className}${String(seqNumber).padStart(3, '0')}`;
+      }
+    } catch (_) {}
   }
 
   return candidateId;
@@ -123,11 +134,16 @@ export async function generateNextAdmissionNumber(
   let candidateAdm = `GGPS${year}Admin${String(seqNumber).padStart(3, '0')}`;
 
   if (mongoose.connection.readyState === 1) {
-    const StudentModel = mongoose.models.Student || mongoose.model('Student');
-    while (await StudentModel.exists({ admissionNumber: candidateAdm })) {
-      seqNumber = await getNextSequence(key, session);
-      candidateAdm = `GGPS${year}Admin${String(seqNumber).padStart(3, '0')}`;
-    }
+    try {
+      const StudentModel = mongoose.models.Student || mongoose.model('Student');
+      let attempts = 0;
+      while (await StudentModel.exists({ admissionNumber: candidateAdm })) {
+        attempts++;
+        if (attempts > 50) break;
+        seqNumber = await getNextSequence(key, session);
+        candidateAdm = `GGPS${year}Admin${String(seqNumber).padStart(3, '0')}`;
+      }
+    } catch (_) {}
   }
 
   return candidateAdm;
@@ -187,15 +203,20 @@ export async function generateNextRollNumber(
   let candidate = String(seqNumber).padStart(3, '0');
 
   if (mongoose.connection.readyState === 1) {
-    const EnrollmentModel = mongoose.models.Enrollment || mongoose.model('Enrollment');
-    const StudentModel = mongoose.models.Student || mongoose.model('Student');
-    while (
-      (await EnrollmentModel.exists({ rollNumber: candidate })) ||
-      (await StudentModel.exists({ rollNumber: candidate }))
-    ) {
-      seqNumber = await getNextSequence(key, session);
-      candidate = String(seqNumber).padStart(3, '0');
-    }
+    try {
+      const EnrollmentModel = mongoose.models.Enrollment || mongoose.model('Enrollment');
+      const StudentModel = mongoose.models.Student || mongoose.model('Student');
+      let attempts = 0;
+      while (
+        (await EnrollmentModel.exists({ rollNumber: candidate })) ||
+        (await StudentModel.exists({ rollNumber: candidate }))
+      ) {
+        attempts++;
+        if (attempts > 50) break;
+        seqNumber = await getNextSequence(key, session);
+        candidate = String(seqNumber).padStart(3, '0');
+      }
+    } catch (_) {}
   }
 
   return candidate;

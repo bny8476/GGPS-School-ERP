@@ -24,7 +24,15 @@ export const createNameValidator = (fieldName = 'Name', minLen = 2, maxLen = 60)
 
 export const nameValidator = createNameValidator('Name');
 export const firstNameValidator = createNameValidator('First name', 2, 50);
-export const lastNameValidator = createNameValidator('Last name', 1, 50);
+export const lastNameValidator = z
+  .string()
+  .trim()
+  .min(1, 'Last name is required')
+  .max(50, 'Last name cannot exceed 50 characters')
+  .refine(
+    (val) => val === '-' || NAME_REGEX.test(val),
+    'Last name can contain only letters, spaces, hyphens, apostrophes, and periods'
+  );
 
 /**
  * Reusable backend email validator

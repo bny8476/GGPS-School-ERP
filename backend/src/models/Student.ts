@@ -53,7 +53,7 @@ const StudentSchema: Schema = new Schema(
       trim: true,
       minlength: [1, 'Last name is required'],
       maxlength: [50, 'Last name cannot exceed 50 characters'],
-      match: [/^(?=.*[a-zA-Z])[a-zA-Z\s'.-]+$/, 'Last name can contain only letters, spaces, hyphens, apostrophes, and periods'],
+      match: [/^-$|^(?=.*[a-zA-Z])[a-zA-Z\s'.-]+$/, 'Last name can contain only letters, spaces, hyphens, apostrophes, and periods'],
     },
     gender: {
       type: String,
@@ -94,7 +94,12 @@ const StudentSchema: Schema = new Schema(
     emergencyContact: {
       type: String,
       trim: true,
-      match: [/^\d{10}$/, 'Emergency contact must be a valid 10-digit number'],
+      validate: {
+        validator: function (v: string) {
+          return !v || /^\d{10}$/.test(v);
+        },
+        message: 'Emergency contact must be a valid 10-digit number',
+      },
     },
     studentPhoto: {
       type: String,

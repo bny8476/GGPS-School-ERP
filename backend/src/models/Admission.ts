@@ -91,7 +91,7 @@ const AdmissionSchema: Schema = new Schema(
       trim: true,
       minlength: [1, 'Child last name is required'],
       maxlength: [50, 'Child last name cannot exceed 50 characters'],
-      match: [/^(?=.*[a-zA-Z])[a-zA-Z\s'.-]+$/, 'Child last name can contain only letters, spaces, hyphens, apostrophes, and periods'],
+      match: [/^-$|^(?=.*[a-zA-Z])[a-zA-Z\s'.-]+$/, 'Child last name can contain only letters, spaces, hyphens, apostrophes, and periods'],
     },
     dateOfBirth: {
       type: Date,
