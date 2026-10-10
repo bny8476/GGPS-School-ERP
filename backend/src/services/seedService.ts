@@ -218,7 +218,7 @@ export const seedDatabase = async () => {
         passwordHash: hashedPassword,
         role: parentRole._id,
         isActive: true,
-        phoneNumber: '+91 98765 00007',
+        phoneNumber: '9876500007',
       },
       options
     );
@@ -230,8 +230,8 @@ export const seedDatabase = async () => {
         fatherName: 'Paul Parent',
         motherName: 'Patty Parent',
         primaryEmail: 'parent@school.com',
-        fatherContact: '+91 98765 00007',
-        whatsappNumber: '+91 98765 00007',
+        fatherContact: '9876500007',
+        whatsappNumber: '9876500007',
         address: '123 GGPS Campus Way',
       },
       options

@@ -2,7 +2,11 @@ import mongoose, { Schema, Document } from 'mongoose';
 
 const NAME_REGEX = /^(?=.*[a-zA-Z])[a-zA-Z\s'.-]+$/;
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-const PHONE_REGEX = /^\d{10}$/;
+const isValidPhone = (v?: string): boolean => {
+  if (!v || typeof v !== 'string' || v.trim() === '') return true;
+  const digits = v.replace(/\D/g, '');
+  return digits.length >= 7 && digits.length <= 15;
+};
 
 export interface IParent extends Document {
   fatherName: string;
@@ -36,10 +40,8 @@ const ParentSchema: Schema = new Schema(
       type: String,
       trim: true,
       validate: {
-        validator: function (v: string) {
-          return !v || PHONE_REGEX.test(v);
-        },
-        message: 'Contact must be a valid 10-digit number',
+        validator: isValidPhone,
+        message: 'Contact must be a valid phone number (7-15 digits)',
       },
     },
     motherName: {
@@ -55,10 +57,8 @@ const ParentSchema: Schema = new Schema(
       type: String,
       trim: true,
       validate: {
-        validator: function (v: string) {
-          return !v || PHONE_REGEX.test(v);
-        },
-        message: 'Contact must be a valid 10-digit number',
+        validator: isValidPhone,
+        message: 'Contact must be a valid phone number (7-15 digits)',
       },
     },
     guardianName: {
@@ -71,10 +71,8 @@ const ParentSchema: Schema = new Schema(
       type: String,
       trim: true,
       validate: {
-        validator: function (v: string) {
-          return !v || PHONE_REGEX.test(v);
-        },
-        message: 'Guardian contact must be a valid 10-digit number',
+        validator: isValidPhone,
+        message: 'Guardian contact must be a valid phone number (7-15 digits)',
       },
     },
     primaryEmail: {
@@ -95,10 +93,8 @@ const ParentSchema: Schema = new Schema(
       type: String,
       trim: true,
       validate: {
-        validator: function (v: string) {
-          return !v || PHONE_REGEX.test(v);
-        },
-        message: 'WhatsApp number must be a valid 10-digit number',
+        validator: isValidPhone,
+        message: 'WhatsApp number must be a valid phone number',
       },
     },
     userId: { type: Schema.Types.ObjectId, ref: 'User' },
