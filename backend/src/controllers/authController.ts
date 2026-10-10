@@ -20,6 +20,7 @@ import {
 } from '../services/tokenService';
 
 import { ROLE_PERMISSIONS } from '../config/permissions';
+import { ensureDbConnected } from '../config/db';
 export { ROLE_PERMISSIONS };
 
 // @desc    Register new user (Self-registration strictly creates Parent account)
@@ -119,6 +120,9 @@ export const loginUser = async (req: Request, res: Response) => {
     const normalizedEmail = normalizeEmail(email);
 
     // 1. Try MongoDB database authentication
+    if (mongoose.connection.readyState !== 1) {
+      await ensureDbConnected(5000);
+    }
     if (mongoose.connection.readyState !== 1) {
       return res.status(503).json({
         success: false,

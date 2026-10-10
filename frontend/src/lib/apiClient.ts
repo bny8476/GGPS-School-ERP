@@ -128,6 +128,16 @@ class ApiClient {
       throw new ApiError(msg, 0);
     }
 
+    // Attempt automatic retry on 503 (database warming up or transient service unavailable)
+    if (response.status === 503) {
+      await new Promise((r) => setTimeout(r, 1500));
+      try {
+        response = await fetch(url, init);
+      } catch {
+        // Fall through to error handler
+      }
+    }
+
     // Attempt silent token refresh on 401 before giving up
     if (response.status === 401 && !path.includes("/auth/login") && !path.includes("/auth/refresh")) {
       const refreshed = await attemptTokenRefresh();

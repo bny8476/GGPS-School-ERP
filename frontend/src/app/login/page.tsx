@@ -215,6 +215,22 @@ export default function LoginPage() {
           credentials: "include", body: JSON.stringify({ email: cleanEmail, password }),
         });
       }
+
+      // If server responded with 503 (e.g. database warming up or reconnecting), auto-retry once after 1.5s
+      if (res.status === 503) {
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+        try {
+          res = await fetch(`${apiBase}/api/v1/auth/login`, {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            credentials: "include", body: JSON.stringify({ email: cleanEmail, password }),
+          });
+        } catch {
+          res = await fetch("/api/v1/auth/login", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            credentials: "include", body: JSON.stringify({ email: cleanEmail, password }),
+          });
+        }
+      }
       const ct = res.headers.get("content-type") || "";
       if (!ct.includes("application/json")) throw new Error("Unable to connect to the server. Please check your connection and try again.");
       const data = await res.json();
@@ -279,6 +295,7 @@ export default function LoginPage() {
           if (data.message?.toLowerCase().includes("student")) setError("Students do not have direct login access. Please use the Parent Portal.");
           else setError("Your account is currently inactive. Please contact the school administrator.");
         } else if (res.status === 400) setError(data.message || "Please enter a valid email address and password.");
+        else if (res.status === 503) setError("The database service is currently reconnecting. Please try again in a few moments.");
         else setError(data.message || "Something went wrong. Please try again.");
       }
     } catch (err: any) {

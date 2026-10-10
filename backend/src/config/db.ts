@@ -16,6 +16,14 @@ mongoose.connection.on('connected', () => {
 
 mongoose.connection.on('disconnected', () => {
   console.warn('⚠️  [DB] Mongoose disconnected from database.');
+  if (!isConnecting && env.NODE_ENV !== 'test') {
+    setTimeout(() => {
+      if (mongoose.connection.readyState !== 1) {
+        console.log('[DB] Triggering reconnection after disconnect event...');
+        connectDB().catch((err) => console.error('[DB] Auto-reconnect error:', err));
+      }
+    }, 2000);
+  }
 });
 
 mongoose.connection.on('reconnected', () => {
@@ -25,6 +33,24 @@ mongoose.connection.on('reconnected', () => {
 mongoose.connection.on('error', (err) => {
   console.error('⚠️  [DB] Mongoose connection error:', err?.message || err);
 });
+
+export const ensureDbConnected = async (timeoutMs = 10000): Promise<boolean> => {
+  if (mongoose.connection.readyState === 1) return true;
+
+  if (mongoose.connection.readyState === 0 && !isConnecting) {
+    connectDB().catch((err) => {
+      console.error('[DB] Auto-reconnect triggered from ensureDbConnected failed:', err);
+    });
+  }
+
+  const startTime = Date.now();
+  while (Date.now() - startTime < timeoutMs) {
+    if (mongoose.connection.readyState === 1) return true;
+    await new Promise((resolve) => setTimeout(resolve, 200));
+  }
+
+  return mongoose.connection.readyState === 1;
+};
 
 const attemptPrimaryConnect = async (): Promise<boolean> => {
   if (mongoose.connection.readyState === 1) return true;
@@ -119,62 +145,68 @@ const connectInMemoryDB = async (): Promise<boolean> => {
   }
 };
 
-const connectDB = async () => {
-  if (isConnecting) return;
+export const connectDB = async (): Promise<boolean> => {
+  if (mongoose.connection.readyState === 1) return true;
+  if (isConnecting) {
+    return ensureDbConnected(10000);
+  }
   isConnecting = true;
 
-  // Use external database if explicit, in production, or when a remote MongoDB URI is configured
-  const isExplicitExternal =
-    process.env.USE_EXTERNAL_DB === 'true' ||
-    env.NODE_ENV === 'production' ||
-    (Boolean(env.MONGODB_URI) &&
-      env.MONGODB_URI !== 'in-memory' &&
-      !env.MONGODB_URI.includes('localhost:27017'));
+  try {
+    // Use external database if explicit, in production, or when a remote MongoDB URI is configured
+    const isExplicitExternal =
+      process.env.USE_EXTERNAL_DB === 'true' ||
+      env.NODE_ENV === 'production' ||
+      (Boolean(env.MONGODB_URI) &&
+        env.MONGODB_URI !== 'in-memory' &&
+        !env.MONGODB_URI.includes('localhost:27017'));
 
-  if (!isExplicitExternal) {
-    await connectInMemoryDB();
-    isConnecting = false;
-    return;
-  }
-
-  // 1. Try initial connection with retries for production / external DB
-  let connected = false;
-  const maxInitialAttempts = env.NODE_ENV === 'production' ? 3 : 1;
-
-  for (let attempt = 1; attempt <= maxInitialAttempts; attempt++) {
-    if (attempt > 1) {
-      console.log(`[DB] Retrying connection attempt ${attempt}/${maxInitialAttempts} in 3 seconds...`);
-      await new Promise((res) => setTimeout(res, 3000));
+    if (!isExplicitExternal) {
+      const ok = await connectInMemoryDB();
+      return ok;
     }
-    connected = await attemptPrimaryConnect();
-    if (connected) break;
-  }
 
-  // 2. Production handling: Keep service alive & retry periodically in background
-  if (!connected && env.NODE_ENV === 'production') {
-    console.warn('⚠️  [DB] Database is currently unreachable in production. Starting background auto-reconnector every 10s...');
-    console.warn('⚠️  API server will stay ALIVE to serve health checks. Database-dependent endpoints will return 503 until connection is established.');
+    // 1. Try initial connection with retries for production / external DB
+    let connected = false;
+    const maxInitialAttempts = env.NODE_ENV === 'production' ? 3 : 1;
 
-    if (!reconnectTimer) {
-      reconnectTimer = setInterval(async () => {
-        console.log('[DB] Background reconnection attempt...');
-        const ok = await attemptPrimaryConnect();
-        if (ok) {
-          console.log('✓ [DB] Background reconnection succeeded!');
-        }
-      }, 10000);
-      reconnectTimer.unref();
+    for (let attempt = 1; attempt <= maxInitialAttempts; attempt++) {
+      if (attempt > 1) {
+        console.log(`[DB] Retrying connection attempt ${attempt}/${maxInitialAttempts} in 3 seconds...`);
+        await new Promise((res) => setTimeout(res, 3000));
+      }
+      connected = await attemptPrimaryConnect();
+      if (connected) break;
     }
+
+    // 2. Production handling: Keep service alive & retry periodically in background
+    if (!connected && env.NODE_ENV === 'production') {
+      console.warn('⚠️  [DB] Database is currently unreachable in production. Starting background auto-reconnector every 10s...');
+      console.warn('⚠️  API server will stay ALIVE to serve health checks. Database-dependent endpoints will return 503 until connection is established.');
+
+      if (!reconnectTimer) {
+        reconnectTimer = setInterval(async () => {
+          console.log('[DB] Background reconnection attempt...');
+          const ok = await attemptPrimaryConnect();
+          if (ok) {
+            console.log('✓ [DB] Background reconnection succeeded!');
+          }
+        }, 10000);
+        reconnectTimer.unref();
+      }
+      return false;
+    }
+
+    // 3. In development / testing fallback
+    if (!connected) {
+      const memOk = await connectInMemoryDB();
+      return memOk;
+    }
+
+    return true;
+  } finally {
     isConnecting = false;
-    return;
   }
-
-  // 3. In development / testing fallback
-  if (!connected) {
-    await connectInMemoryDB();
-  }
-
-  isConnecting = false;
 };
 
 // Graceful cleanup on shutdown

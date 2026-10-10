@@ -8,7 +8,7 @@ import { createServer } from 'http';
 import swaggerUi from 'swagger-ui-express';
 
 import env from './config/env';
-import connectDB from './config/db';
+import connectDB, { ensureDbConnected } from './config/db';
 import logger from './utils/logger';
 import { requestLogger } from './middleware/requestLogger';
 import { errorHandler } from './middleware/errorHandler';
@@ -172,8 +172,8 @@ app.get('/', (req: Request, res: Response) => {
   });
 });
 
-// Global Database Availability Guard: Short-circuits non-health routes with 503 if DB is down
-app.use((req: Request, res: Response, next: NextFunction) => {
+// Global Database Availability Guard: Gracefully awaits active connection before rejecting with 503
+app.use(async (req: Request, res: Response, next: NextFunction) => {
   if (
     req.path === '/' ||
     req.path.startsWith('/health') ||
@@ -182,17 +182,32 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     return next();
   }
 
-  // Fail-closed in any environment (except during automated isolated tests that mock DB)
-  if (mongoose.connection.readyState !== 1 && env.NODE_ENV !== 'test') {
-    return res.status(503).json({
-      success: false,
-      error: 'Service Unavailable',
-      message: 'Database connection is currently offline. Please try again shortly or contact system administrator.',
-      databaseStatus: 'disconnected',
-    });
+  // Allow isolated automated tests that mock the DB
+  if (env.NODE_ENV === 'test') {
+    return next();
   }
 
-  next();
+  // Fast-path: database already connected
+  if (mongoose.connection.readyState === 1) {
+    return next();
+  }
+
+  // Gracefully wait up to 8s for the database to complete connecting/reconnecting
+  try {
+    const isReady = await ensureDbConnected(8000);
+    if (isReady) {
+      return next();
+    }
+  } catch (err) {
+    logger.error({ err }, 'Error while awaiting database connection');
+  }
+
+  return res.status(503).json({
+    success: false,
+    error: 'Service Unavailable',
+    message: 'Database connection is currently offline. Please try again shortly or contact system administrator.',
+    databaseStatus: 'disconnected',
+  });
 });
 
 // Canonical API Router (supports both /api/v1 and legacy /api)
