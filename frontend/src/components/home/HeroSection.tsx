@@ -11,16 +11,13 @@ import {
   Headphones,
   Users,
   GraduationCap,
-  ShieldCheck,
   FileText,
 } from "lucide-react";
 import HeroBackground from "./HeroBackground";
 import HeroStudentImage from "./HeroStudentImage";
 import FloatingNotificationCard from "./FloatingNotificationCard";
-import { useLanguage } from "@/context/LanguageContext";
 
 export default function HeroSection() {
-  const { t } = useLanguage();
   const prefersReduced = useReducedMotion();
 
   return (
@@ -44,15 +41,9 @@ export default function HeroSection() {
               transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
               className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#E5EEFF]/90 dark:bg-blue-950/70 border border-blue-200/80 dark:border-blue-800/60 shadow-xs mb-5"
             >
-              <div className="w-5 h-5 rounded-full bg-[#0050CB] text-[#FFB703] flex items-center justify-center shrink-0 shadow-2xs">
-                <Sparkles className="w-3 h-3" />
-              </div>
+              <Sparkles className="w-3.5 h-3.5 text-[#0050CB] dark:text-[#38BDF8]" />
               <span className="text-xs font-bold text-[#0050CB] dark:text-[#38BDF8] tracking-tight">
-                #1 School Management Platform
-              </span>
-              <span className="text-blue-300 dark:text-blue-600">•</span>
-              <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">
-                CBSE & State Board Ready
+                Complete School ERP Platform
               </span>
             </motion.div>
 
@@ -99,25 +90,22 @@ export default function HeroSection() {
               </motion.span>
             </h1>
 
-            {/* Description Subtitle */}
+            {/* Description Subtitle matching exact screenshot copy */}
             <motion.p
               initial={prefersReduced ? { opacity: 1 } : { opacity: 0, y: 15 }}
               animate={prefersReduced ? { opacity: 1 } : { opacity: 1, y: 0 }}
               transition={{ duration: 0.55, delay: 0.38, ease: [0.16, 1, 0.3, 1] }}
-              className="text-slate-600 dark:text-slate-300 text-sm sm:text-base lg:text-[17px] leading-relaxed max-w-lg mb-7 font-normal"
+              className="text-slate-600 dark:text-slate-300 text-sm sm:text-base lg:text-[16.5px] leading-relaxed max-w-lg mb-7 font-normal"
             >
-              {t(
-                "hero.subtitle",
-                "GGPS School brings together students, parents, teachers and administrators with a powerful, easy-to-use school management system."
-              )}
+              An all-in-one School ERP solution designed to automate admissions, fee collections, attendance, examinations, and payroll — connecting administrators, teachers, parents, and students in real time.
             </motion.p>
 
-            {/* Action CTA Buttons */}
+            {/* Action CTA Button */}
             <motion.div
               initial={prefersReduced ? { opacity: 1 } : { opacity: 0, y: 14 }}
               animate={prefersReduced ? { opacity: 1 } : { opacity: 1, y: 0 }}
               transition={{ duration: 0.55, delay: 0.46, ease: [0.16, 1, 0.3, 1] }}
-              className="flex flex-wrap sm:flex-nowrap items-center gap-3 w-full mb-8"
+              className="flex items-center gap-3 w-full mb-8"
             >
               {/* Primary CTA: Enquire About Admission */}
               <Link
@@ -126,7 +114,7 @@ export default function HeroSection() {
               >
                 <span className="text-[#FFB703] text-xs">✦</span>
                 <span className="relative z-10 font-bold">
-                  {t("nav.enquireAboutAdmission", "Enquire About Admission")}
+                  Enquire About Admission
                 </span>
                 <ArrowRight
                   className="w-4 h-4 relative z-10 transition-transform duration-200 group-hover:translate-x-1"
@@ -134,8 +122,6 @@ export default function HeroSection() {
                 />
                 <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/25 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out" />
               </Link>
-
-
             </motion.div>
 
             {/* Trust Micro-Badges */}
@@ -149,19 +135,19 @@ export default function HeroSection() {
                 <div className="w-5 h-5 rounded-full bg-[#E5EEFF] dark:bg-[#0050CB]/20 flex items-center justify-center text-[#0050CB]">
                   <Lock className="w-3 h-3" />
                 </div>
-                <span>Safe & Secure</span>
+                <span>Safe & Secure Platform</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="w-5 h-5 rounded-full bg-[#E5EEFF] dark:bg-[#0050CB]/20 flex items-center justify-center text-[#0050CB]">
                   <Check className="w-3 h-3" />
                 </div>
-                <span>Easy to Use</span>
+                <span>Easy to Use for Everyone</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="w-5 h-5 rounded-full bg-[#E5EEFF] dark:bg-[#0050CB]/20 flex items-center justify-center text-[#0050CB]">
                   <Headphones className="w-3 h-3" />
                 </div>
-                <span>24/7 Support</span>
+                <span>24/7 Support Always Here</span>
               </div>
             </motion.div>
 
