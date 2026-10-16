@@ -35,7 +35,8 @@ mongoose.connection.on('error', (err) => {
 });
 
 export const ensureDbConnected = async (timeoutMs = 10000): Promise<boolean> => {
-  if (mongoose.connection.readyState === 1) return true;
+  const isConnected = (): boolean => (mongoose.connection.readyState as number) === 1;
+  if (isConnected()) return true;
 
   if (mongoose.connection.readyState === 0 && !isConnecting) {
     connectDB().catch((err) => {
@@ -45,11 +46,11 @@ export const ensureDbConnected = async (timeoutMs = 10000): Promise<boolean> => 
 
   const startTime = Date.now();
   while (Date.now() - startTime < timeoutMs) {
-    if (mongoose.connection.readyState === 1) return true;
+    if (isConnected()) return true;
     await new Promise((resolve) => setTimeout(resolve, 200));
   }
 
-  return mongoose.connection.readyState === 1;
+  return isConnected();
 };
 
 const attemptPrimaryConnect = async (): Promise<boolean> => {
