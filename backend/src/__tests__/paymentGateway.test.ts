@@ -45,8 +45,9 @@ describe('Payment Gateway Integration & Audit Transactions', () => {
       }),
     } as any);
 
-    jest.spyOn(Parent, 'findOne').mockResolvedValue(null);
-    jest.spyOn(Student, 'findOne').mockResolvedValue(null);
+    const mockParentDocId = new mongoose.Types.ObjectId();
+    jest.spyOn(Parent, 'findOne').mockResolvedValue({ _id: mockParentDocId, userId: parentId } as any);
+    jest.spyOn(Student, 'findOne').mockResolvedValue({ _id: new mongoose.Types.ObjectId(), parentId: mockParentDocId } as any);
     jest.spyOn(Student, 'findById').mockReturnValue({
       select: (jest.fn() as any).mockResolvedValue({ firstName: 'Alice', lastName: 'Student' }),
     } as any);

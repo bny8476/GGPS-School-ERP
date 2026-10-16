@@ -65,8 +65,7 @@ export const protect = async (req: Request, res: Response, next: NextFunction): 
   }
 
   let queryToken: string | undefined;
-  // 3. Fallback to query parameter (useful for iframe / PDF report-card downloads)
-  if (typeof req.query.token === 'string') {
+  if (typeof req.query?.token === 'string') {
     const rawQuery = req.query.token.trim();
     if (rawQuery && rawQuery !== 'null' && rawQuery !== 'undefined') {
       queryToken = rawQuery;
